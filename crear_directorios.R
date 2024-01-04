@@ -1,6 +1,10 @@
+# Preparacion de la estructura de carpetas
+# Se lee la estructura de carpetas de datasets de subtopicos para replicarla
+
 library(googledrive)
 library(purrr)
 
+# definir mail del usuario gmail con el que leer el drive
 drive_auth(email = "")
 
 df <- drive_ls(path = as_id("https://drive.google.com/drive/folders/16Out5kOds2kfsbudRvSoHGHsDfCml1p0"))
