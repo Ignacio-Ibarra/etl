@@ -16,9 +16,9 @@ id_subtopicos <- df[df$name == "SUBTOPICOS",]$id
 subtopicos <- drive_ls(id_subtopicos)
 
 walk(subtopicos$name, \(x) {
-  if (!dir.exists(glue::glue("scripts/{x}"))) {
+  if (!dir.exists(glue::glue("scripts/subtopicos/{x}"))) {
     
-    dir.create(glue::glue("scripts/{x}"))
+    dir.create(glue::glue("scripts/subtopicos/{x}"))
   }
 })
 
