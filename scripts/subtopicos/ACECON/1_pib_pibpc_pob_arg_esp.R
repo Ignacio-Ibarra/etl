@@ -1,6 +1,7 @@
 # 1_pib_pibpc_pob_arg_esp
 # output con el pib, pib per capita y poblacion de argentina y españa
 # a partir de los datos de la web de Fundacion Norte y Sur, World Economic Outlook y Maddison Project Database
+# Los graficos son de “Lineas”. Hay un grafico por pais. Se marca el valor final (2022) en cada una de las 3 variables. 
 
 subtopico <- "ACECON"
 periodo <- 2018:2022
