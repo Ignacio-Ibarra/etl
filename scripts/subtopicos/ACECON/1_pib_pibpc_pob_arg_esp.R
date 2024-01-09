@@ -7,7 +7,6 @@ periodo <- 2018:2022
 
 library(tidyverse)
 
-
 # Insumos -------
 
 
@@ -263,7 +262,7 @@ pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>%
 pib_pibpc_pob <- bind_rows(pib_pibpc_pob_arg, pib_pibpc_pob_resto)
 
 
-# comparo contra output previo
+# comparo contra output previo -----
 
 # descargo outout primera entrega del drive
 temp <- tempfile(fileext = ".csv")
@@ -284,9 +283,13 @@ diff <-  vs %>%
            poblacion_base1900.x != poblacion_base1900.y
            ) 
 
+pib_pibpc_pob %>% 
+  write_argendata(file_name = "_diff_1_pib_pibpc_pob_arg_esp.csv",
+                  subtopico =  subtopico)
 
 # write output ------
 
 pib_pibpc_pob %>% 
-  write_argendata(file_name = "1_pib_pibpc_pob_arg_esp.csv",subtopico =  subtopico)
+  write_argendata(file_name = "1_pib_pibpc_pob_arg_esp.csv",
+                  subtopico =  subtopico)
 
