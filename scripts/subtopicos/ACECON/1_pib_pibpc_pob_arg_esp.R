@@ -284,7 +284,7 @@ diff <-  vs %>%
            poblacion_base1900.x != poblacion_base1900.y
            ) 
 
-pib_pibpc_pob %>% 
+diff %>% 
   write_argendata(file_name = "_diff_1_pib_pibpc_pob_arg_esp.csv",
                   subtopico =  subtopico)
 
