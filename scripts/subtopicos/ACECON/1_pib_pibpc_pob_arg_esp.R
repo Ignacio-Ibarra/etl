@@ -3,10 +3,7 @@
 # a partir de los datos de la web de Fundacion Norte y Sur, World Economic Outlook y Maddison Project Database
 # Los graficos son de “Lineas”. Hay un grafico por pais. Se marca el valor final (2022) en cada una de las 3 variables. 
 
-subtopico <- "ACECON"
 periodo <- 2018:2022
-
-library(tidyverse)
 
 # Insumos -------
 
@@ -267,8 +264,11 @@ pib_pibpc_pob <- bind_rows(pib_pibpc_pob_arg, pib_pibpc_pob_resto)
 
 # descargo outout primera entrega del drive
 temp <- tempfile(fileext = ".csv")
+
 url_out_prev <- "https://drive.google.com/file/d/1J0YGNiWdmTpZrH0FlMZef0Kb1_CUeib5/view?usp=sharing"
 googledrive::drive_download(url_out_prev, path = temp, overwrite = T)
+# alternativa
+# se puede leer directo desde la url https://drive.usercontent.google.com/download?id=1J0YGNiWdmTpZrH0FlMZef0Kb1_CUeib5
 out_prev <- read.csv2(file = temp)
 
 out_prev <- out_prev %>% 
@@ -290,7 +290,9 @@ diff %>%
 
 # write output ------
 
-pib_pibpc_pob %>% 
+pib_pibpc_pob %>%
+  left_join(iso_countrycodes) %>% 
+  relocate(pais, .after = iso3) %>% 
   write_argendata(file_name = "1_pib_pibpc_pob_arg_esp.csv",
                   subtopico =  subtopico)
 
