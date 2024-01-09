@@ -7,11 +7,21 @@ Este proyecto busca sistematizar en scripts de R o Python los procesos de genera
 
 ### scripts
 
-En /scripts hay una carpeta por subtopico, en cada carpeta de subtopico hay un script por cada output a generar. Cada script de generación de datos es independiente de los otros.
+1) Scripts generales que aplican a todo el proyecto:
+- main.R: script inicial para la ejecucion de scripts por subtopicos
+- aux_functions.R: funciones auxiliares ad_hoc
+- consolidar_metadata.R: script de lectura y consolidacion de metadata para analisis y unificacion de fuentes
+- insumos.R: descarga general de insumos crudos para reunir en data/_INSUMOS/raw
+- crear_directorios.R: replica la esctructura de directorios de Drive de argendata
+
+2) /subtopicos: directorio con un un subdirectorio por subtopico con los scripts particulares de genereción de outputs (1 script x 1 output)
+
 
 ### data
 
-En /data hay una carpeta por subtopico, dentro de cada subtopico hay una carpeta /datasets y dentro de ella hay una carpeta /outputs y una carpeta /raw
+En /data se alojan los datos crudos (raw) y los datos procesados para los graficos (outputs) replicando la esctructura del drive de argendata.
 
+- directorios '/{subtopicos}': cada directorio contiene un directorio '/datasets', el cual contiene dos directorios /outputs y /raw.
+- /_INSUMOS reune todos los raw de diferentes subtopicos
 
 
