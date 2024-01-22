@@ -4,6 +4,7 @@
 # Los graficos son de “Lineas”. Hay un grafico por pais. Se marca el valor final (2022) en cada una de las 3 variables. 
 
 periodo <- 2018:2022
+output_name <- "1_pib_pibpc_pob_arg_esp"
 
 # Insumos -------
 
@@ -14,22 +15,17 @@ download.file("https://docs.google.com/spreadsheets/d/e/2PACX-1vTAGGfIqDw18YDI5z
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
               destfile = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"))
 
+# cuentas nacionales fund norte y sur
+# PIB moneda nacional constante 2004 (esta en miles)
+# PIB per capita moneda nacional constante 2004
+cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
+                                  sheet = "PBI en US$", col_names = F) 
 
 # IMF outlook database 
 # descargo la base entera por mayor facilidad de referencia
 
 download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx",
               destfile = glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
-
-
-
-# Maddison database
-
-download.file(url = "https://www.rug.nl/ggdc/historicaldevelopment/maddison/data/mpd2020.xlsx", 
-              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"))
-
-# Lectura y procesamiento -----------
 
 # imf weo
 # unidades 
@@ -39,9 +35,12 @@ download.file(url = "https://www.rug.nl/ggdc/historicaldevelopment/maddison/data
 
 weo_imf <- read_tsv(glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
 
-weo_imf <- weo_imf %>% 
-  # limpio nombres de columnas: pasar a minusculas, remove non-ascii chars y cambia " " por "_"
-  janitor::clean_names()
+
+# Maddison database
+
+download.file(url = "https://www.rug.nl/ggdc/historicaldevelopment/maddison/data/mpd2020.xlsx", 
+              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
+              destfile = glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"))
 
 # maddison database
 # GDP pc	Real GDP per capita in 2011$
@@ -53,18 +52,16 @@ pibpc_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/ra
 pop_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"),
                                       sheet = "Population", skip = 1)
 
-# cuentas nacionales fund norte y sur
-# ngdp_r = PIB moneda nacional constante 2004 (esta en miles)
-# ngdprpc = PIB per capita moneda nacional constante 2004
 
-cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                                  sheet = "PBI en US$", col_names = F) %>% 
-  select(1,3,11) %>% .[107:225,] # definicion del analista de datos a usar
-
-# uso los codigos del fmi para renombrar columnas
+# procesamiento -----------
 
 
-colnames(cn_arg_fnys) <- c("anio", "ngdp_r", "ngdprpc")
+weo_imf <- weo_imf %>% 
+  # limpio nombres de columnas: pasar a minusculas, remove non-ascii chars y cambia " " por "_"
+  janitor::clean_names()
+
+
+
 
 # proceso weo_imf
 
@@ -175,6 +172,13 @@ subset_maddison_db <- subset_maddison_db %>%
 
 # proceso cuentas nacionales fund norte y sur (orlando ferreres)
 
+cn_arg_fnys <- cn_arg_fnys %>% 
+  select(1,3,11) %>% .[107:225,] # definicion del analista de datos a usar
+
+# uso los codigos del fmi para renombrar columnas
+# ngdp_r = PIB moneda nacional constante 2004 (esta en miles)
+# ngdprpc = PIB per capita moneda nacional constante 2004
+colnames(cn_arg_fnys) <- c("anio", "ngdp_r", "ngdprpc")
 
 cn_arg_fnys <- cn_arg_fnys %>% 
   mutate(across(everything(), as.numeric)) %>% 
@@ -262,14 +266,8 @@ pib_pibpc_pob <- bind_rows(pib_pibpc_pob_arg, pib_pibpc_pob_resto)
 
 # comparo contra output previo -----
 
-# descargo outout primera entrega del drive
-temp <- tempfile(fileext = ".csv")
-
-url_out_prev <- "https://drive.google.com/file/d/1J0YGNiWdmTpZrH0FlMZef0Kb1_CUeib5/view?usp=sharing"
-googledrive::drive_download(url_out_prev, path = temp, overwrite = T)
-# alternativa
-# se puede leer directo desde la url https://drive.usercontent.google.com/download?id=1J0YGNiWdmTpZrH0FlMZef0Kb1_CUeib5
-out_prev <- read.csv2(file = temp)
+# se puede leer outoput del drive directo desde la url
+out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
 
 out_prev <- out_prev %>% 
   mutate(across(-c(pais, iso3), as.numeric))
@@ -283,16 +281,22 @@ diff <-  vs %>%
            pbi_per_capita_precios_constantes_base100.x != pbi_per_capita_precios_constantes_base100.y |
            poblacion_base1900.x != poblacion_base1900.y
            ) 
+diff %>% 
+  as_tibble() %>% 
+  head(25)
 
 diff %>% 
   write_argendata(file_name = "_diff_1_pib_pibpc_pob_arg_esp.csv",
                   subtopico =  subtopico)
 
 # write output ------
+iso_countrycodes <- get_iso_paises()
 
 pib_pibpc_pob %>%
   left_join(iso_countrycodes) %>% 
   relocate(pais, .after = iso3) %>% 
-  write_argendata(file_name = "1_pib_pibpc_pob_arg_esp.csv",
-                  subtopico =  subtopico)
+  write_argendata(file_name = glue::glue("{output_name}.csv"),
+                  subtopico = subtopico)
+
+rm(list = ls())
 
