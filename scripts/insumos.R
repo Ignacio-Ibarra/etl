@@ -47,3 +47,10 @@ pob_indec_url <- "https://www.indec.gob.ar/ftp/cuadros/poblacion/c1_proyecciones
 download.file(url = pob_indec_url, 
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
               destfile = glue::glue("data/_INSUMOS/raw/c1_proyecciones_nac_2010_2040.xls"))
+
+# Valor agregado bruto e insumo de mano de obra por sector de actividad económica  -----------
+serie_cgi <- "https://www.indec.gob.ar/ftp/cuadros/economia/serie_cgi_01_24.xls"
+
+download.file(serie_cgi,
+              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
+              destfile = glue::glue("data/{subtopico}/datasets/raw/serie_cgi.xls"))
