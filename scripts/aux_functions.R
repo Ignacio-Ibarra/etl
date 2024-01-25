@@ -12,9 +12,20 @@ write_argendata <- function(data, file_name, subtopico) {
 expansor_xvar <- function(x,var) {
   for (i in 1:length(x)) {
     if (is.na(x[i])) {
-      x[i] <- x[i-1]*var[i]
+      new_value <- x[i-1]*var[i]
+      
+      if (length(new_value) == 0) {
+        new_value <- NA
+      }
+      
+      x[i] <- new_value
     } 
   }
+  
+  if (any(is.na(x))) {
+    warning("La expansion del vector dejo valores faltantes") 
+  }
+  
   x
 }
 
@@ -55,6 +66,8 @@ comparar_cols <- function(dataframe) {
 
 tidy_indec <- function(x, tabla = NULL) {
   
+  tablas_posibles <- c("sh_oferta_demanda", "serie_cgi")
+  
   if (is.null(tabla)) {
     stop("Tabla no puede ser nulo")
   }
@@ -77,11 +90,84 @@ tidy_indec <- function(x, tabla = NULL) {
     x <- x %>% 
       fill(anio)
     
+    x <- x %>% 
+      filter(!is.na(trim))
+    
     x
+    
+  } else if (tabla == "serie_cgi") {
+    x <- x %>% 
+      .[-c(1,4:5),] %>% 
+      t() %>% 
+      as_tibble(.name_repair = "unique")
+    
+    names(x) <- x[2,] %>%
+      janitor::make_clean_names() 
+    
+    x <- x[-c(1:2),]
+    
+    x <- x %>% 
+      rename(anio = na, trim = na_2)
+    
+    x <- x %>% 
+      mutate(anio = as.numeric(gsub(" .*", "", anio )))
+    
+    x <- x %>% 
+      fill(anio)
+    
+    x <- x %>% 
+      filter(!is.na(trim))
+    x
+    
   } else {
-    stop("Tabla no contemplada")
+    stop(glue::glue("Tabla no contemplada. Tablas posibles:\n{paste0(tablas_posibles, collapse = '\n')}"))
   }
   
   
+}
+
+subtopico_init <- function(subtopico_nombre, entrega_subtopico) {
+  
+  df <- drive_ls(path = as_id("https://drive.google.com/drive/folders/16Out5kOds2kfsbudRvSoHGHsDfCml1p0"))
+  
+  id_subtopicos <- df[df$name == "SUBTOPICOS",]$id
+  
+  subtopicos <- drive_ls(id_subtopicos)
+  
+  
+  # eleccion del subtopico
+  # subtopico <- subtopicos$name[subtopicos$name == x]
+  
+  # levanta los outputs del subtopico
+  
+  outputs <- drive_ls(subtopicos$id[subtopicos$name == subtopico_nombre]) %>% 
+    filter(name == "datasets") %>% 
+    pull(id) %>% 
+    drive_ls(.) %>% 
+    filter(name == "outputs") %>% 
+    pull(id) %>% 
+    drive_ls(.) %>% 
+    # seleccionar la entrega
+    filter(str_detect(name, entrega_subtopico)) %>% 
+    pull(id) %>% 
+    drive_ls(.)
+  
+  # levanta lista de scripts del subtopico
+  # scripts_subtopico <- list.files(glue::glue("scripts/subtopicos/{subtopico}/"),
+  # full.names = T)
+  
+  
+  # le asigna nombres a los elementos de la lista
+  # names(scripts_subtopico) <-  list.files(glue::glue("scripts/subtopicos/{subtopico}/")) %>% 
+  # str_remove_all(pattern = "\\d_")
+  
+  # scripts_subtopico <- as.list(scripts_subtopico)
+  
+  # correr script de la lista para el subtopico
+  # source(scripts_subtopico$pib_pibpc_pob_arg_esp.R)
+  
+  rm(list = c("df", "subtopicos", "id_subtopicos"))
+  
+  outputs
 }
 
