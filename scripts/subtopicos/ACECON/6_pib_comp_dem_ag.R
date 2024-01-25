@@ -164,10 +164,11 @@ out_prev <- out_prev %>%
 vs <- out_prev %>% 
   left_join(df_output, by = c("anio"))
 
-diff <-  vs %>% 
+vs <-  vs %>% 
   mutate(across(where(is.numeric), \(x) round(x, 2))) 
 
-diff <- comparar_cols(diff) %>% 
+
+diff <- comparar_cols(vs) %>% 
   filter(if_any(-anio,\(x) x != 0))
   
 diff %>% 
