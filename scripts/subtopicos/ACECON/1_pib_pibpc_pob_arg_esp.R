@@ -6,7 +6,7 @@
 periodo <- 2018:2022
 output_name <- "1_pib_pibpc_pob_arg_esp"
 
-# Insumos -------
+# Descargas -------
 
 
 # cuentas nacionales fundacion norte y sur 
@@ -15,11 +15,6 @@ download.file("https://docs.google.com/spreadsheets/d/e/2PACX-1vTAGGfIqDw18YDI5z
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
               destfile = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"))
 
-# cuentas nacionales fund norte y sur
-# PIB moneda nacional constante 2004 (esta en miles)
-# PIB per capita moneda nacional constante 2004
-cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                                  sheet = "PBI en US$", col_names = F) 
 
 # IMF outlook database 
 # descargo la base entera por mayor facilidad de referencia
@@ -27,20 +22,14 @@ cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/r
 download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx",
               destfile = glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
 
-# imf weo
-# unidades 
-# "NGDP_R" (pib) esta en miles de millones de moneda nacional constantes (1e9)
-# "NGDPRPC" (pib per capita) esta en moneda nacional constantes
-# "LP" (poblacion) esta en millones (1e6)
-
-weo_imf <- read_tsv(glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
-
 
 # Maddison database
 
 download.file(url = "https://www.rug.nl/ggdc/historicaldevelopment/maddison/data/mpd2020.xlsx", 
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
               destfile = glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"))
+
+# Lectura -------
 
 # maddison database
 # GDP pc	Real GDP per capita in 2011$
@@ -51,6 +40,20 @@ pibpc_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/ra
 
 pop_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"),
                                       sheet = "Population", skip = 1)
+
+# cuentas nacionales fund norte y sur
+# PIB moneda nacional constante 2004 (esta en miles)
+# PIB per capita moneda nacional constante 2004
+cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
+                                  sheet = "PBI en US$", col_names = F) 
+
+# imf weo
+# unidades 
+# "NGDP_R" (pib) esta en miles de millones de moneda nacional constantes (1e9)
+# "NGDPRPC" (pib per capita) esta en moneda nacional constantes
+# "LP" (poblacion) esta en millones (1e6)
+
+weo_imf <- read_tsv(glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
 
 
 # procesamiento -----------
