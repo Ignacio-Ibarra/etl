@@ -32,8 +32,10 @@ expansor_xvar <- function(x,var) {
 expansor_imf_maddison <- expansor_xvar
 
 # levanta diccionario de codigos iso y nombres de pais
-get_iso_paises <- function() read.csv("https://docs.google.com/spreadsheets/d/1kK1Yu6gz5kEWe_i0vamiGttkXUH5H90e/export?format=csv&id=1kK1Yu6gz5kEWe_i0vamiGttkXUH5H90e&gid=808722347") %>% 
+get_iso_paises <- function() {
+  read.csv("https://docs.google.com/spreadsheets/d/1kK1Yu6gz5kEWe_i0vamiGttkXUH5H90e/export?format=csv&id=1kK1Yu6gz5kEWe_i0vamiGttkXUH5H90e&gid=808722347") %>% 
   select(iso3, pais = iso3_desc_fundar)
+}
 
 # Cargar bibliotecas necesarias
 library(dplyr)
@@ -171,3 +173,43 @@ subtopico_init <- function(subtopico_nombre, entrega_subtopico) {
   outputs
 }
 
+
+tidy_weo <- function(x) {
+  
+  
+  x <- x %>% 
+    # limpio nombres de columnas: pasar a minusculas, remove non-ascii chars y cambia " " por "_"
+    janitor::clean_names()
+  
+  
+  # proceso weo_imf
+  
+  x <- x %>% 
+    # selecciono vars de interes
+    select(-c(weo_country_code,country, subject_descriptor, subject_notes, units,
+              scale, country_series_specific_notes, estimates_start_after))
+  
+  # limpieza de n/a y strings de los valores
+  x <- x %>% 
+    mutate(across(matches("\\d{4}"), \(x) parse_number(x, na  =c("n/a", "--"))))
+  
+  # le doy formato longer adecuado
+  x <- x %>% 
+    pivot_longer(cols = -c(iso, weo_subject_code), names_to = "anio")
+  
+  # una columna por indicador
+  x <- x %>% 
+    pivot_wider(names_from = weo_subject_code, values_from = value) 
+  
+  # limpio nombres de columnas (nombre de indicadores)
+  x <- janitor::clean_names(x )
+  
+  x <- x %>% 
+    mutate(anio = as.numeric(gsub("\\D","", anio)))
+  
+  x <- x %>% 
+    mutate(anio = as.numeric(gsub("\\D","", anio)))
+  
+  x
+  
+}
