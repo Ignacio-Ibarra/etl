@@ -33,39 +33,8 @@ metadata <- map(metadata_files$id, \(x) {
 
 metadata <- bind_rows(metadata)
 
-metadata <- metadata |> 
+metadata <- metadata %>% 
   filter(!if_all(everything(), is.na))
-
-metadata |> 
-  filter(is.na(fuente_nombre) & is.na(url_path)) |> nrow()
-
-
-metadata %>% 
-  filter(str_detect(pattern = "iso3",
-                    tolower(variable_nombre))) %>% 
-  distinct(subtopico_desc, dataset_nombre) %>% 
-  nrow()
-# 
-# subtopicos_por_fuente <- metadata %>% 
-#   mutate(across(c(fuente_nombre, institucion), tolower)) |>
-#   mutate(institucion = case_when(
-#     str_detect(institucion, "indec|instituto nacional de estadística y censos") ~ "indec",
-#     str_detect(institucion, "world bank") ~ "banco mundial",
-#     str_detect(institucion, "cedlas") ~ "cedlas",
-#     str_detect(institucion, "centro de estudios para la prod") ~ "cep xxi",
-#     str_detect(institucion, "comisión económica para américa") ~ "cepal",
-#     T ~ institucion
-#   )) |> 
-#   distinct(subtopico_desc, item_titulo, url_path, institucion) |>
-#   group_by(institucion, url_path) |> 
-#   summarise(cantidad_subtopicos = n_distinct(subtopico_desc),
-#             cantidad_items = n_distinct(item_titulo)) |> 
-#   ungroup() |> 
-#   arrange(desc(cantidad_subtopicos))
-# 
-# subtopicos_por_fuente |> 
-#   write.csv(file = "subtopics-items-por-fuente-argendata.csv",na = "", 
-#             eol = "\n",row.names = F, fileEncoding = "UTF-8", dec = ".")
 
 
 metadata %>% 
