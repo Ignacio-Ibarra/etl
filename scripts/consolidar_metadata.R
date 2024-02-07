@@ -7,7 +7,7 @@ library(tidyverse)
 # definir mail del usuario gmail con el que leer el drive
 drive_auth(email = Sys.getenv("USER_GMAIL"))
 
-paths_raiz <- drive_ls(path = as_id("https://drive.google.com/drive/folders/16Out5kOds2kfsbudRvSoHGHsDfCml1p0"))
+df <- drive_ls(path = as_id("https://drive.google.com/drive/folders/16Out5kOds2kfsbudRvSoHGHsDfCml1p0"))
 
 id_subtopicos <- df[df$name == "SUBTOPICOS",]$id
 
@@ -25,7 +25,7 @@ metadata_files <- files_subtopicos %>%
   filter(! str_detect(tolower(name),
                     "ejemplo"))
 
-googlesheets4::gs4_auth(email = "jgjuara@fund.ar")
+googlesheets4::gs4_auth(email = Sys.getenv("USER_GMAIL"))
 
 metadata <- map(metadata_files$id, \(x) {
   googlesheets4::read_sheet(x, skip = 6, col_types = "c")
@@ -40,23 +40,33 @@ metadata |>
   filter(is.na(fuente_nombre) & is.na(url_path)) |> nrow()
 
 
-subtopicos_por_fuente <- metadata %>% 
-  mutate(across(c(fuente_nombre, institucion), tolower)) |>
-  mutate(institucion = case_when(
-    str_detect(institucion, "indec|instituto nacional de estadística y censos") ~ "indec",
-    str_detect(institucion, "world bank") ~ "banco mundial",
-    str_detect(institucion, "cedlas") ~ "cedlas",
-    str_detect(institucion, "centro de estudios para la prod") ~ "cep xxi",
-    str_detect(institucion, "comisión económica para américa") ~ "cepal",
-    T ~ institucion
-  )) |> 
-  distinct(subtopico_desc, item_titulo, url_path, institucion) |>
-  group_by(institucion, url_path) |> 
-  summarise(cantidad_subtopicos = n_distinct(subtopico_desc),
-            cantidad_items = n_distinct(item_titulo)) |> 
-  ungroup() |> 
-  arrange(desc(cantidad_subtopicos))
+metadata %>% 
+  filter(str_detect(pattern = "iso3",
+                    tolower(variable_nombre))) %>% 
+  distinct(subtopico_desc, dataset_nombre) %>% 
+  nrow()
+# 
+# subtopicos_por_fuente <- metadata %>% 
+#   mutate(across(c(fuente_nombre, institucion), tolower)) |>
+#   mutate(institucion = case_when(
+#     str_detect(institucion, "indec|instituto nacional de estadística y censos") ~ "indec",
+#     str_detect(institucion, "world bank") ~ "banco mundial",
+#     str_detect(institucion, "cedlas") ~ "cedlas",
+#     str_detect(institucion, "centro de estudios para la prod") ~ "cep xxi",
+#     str_detect(institucion, "comisión económica para américa") ~ "cepal",
+#     T ~ institucion
+#   )) |> 
+#   distinct(subtopico_desc, item_titulo, url_path, institucion) |>
+#   group_by(institucion, url_path) |> 
+#   summarise(cantidad_subtopicos = n_distinct(subtopico_desc),
+#             cantidad_items = n_distinct(item_titulo)) |> 
+#   ungroup() |> 
+#   arrange(desc(cantidad_subtopicos))
+# 
+# subtopicos_por_fuente |> 
+#   write.csv(file = "subtopics-items-por-fuente-argendata.csv",na = "", 
+#             eol = "\n",row.names = F, fileEncoding = "UTF-8", dec = ".")
 
-subtopicos_por_fuente |> 
-  write.csv(file = "subtopics-items-por-fuente-argendata.csv",na = "", 
-            eol = "\n",row.names = F, fileEncoding = "UTF-8", dec = ".")
+
+metadata %>% 
+  write_csv("metadata.csv")
