@@ -5,3 +5,4 @@
 .creds
 _diff_*
 .Renviron
+metadata.csv
