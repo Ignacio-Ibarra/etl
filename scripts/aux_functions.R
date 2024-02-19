@@ -71,7 +71,7 @@ tidy_indec <- function(x, tabla = NULL) {
   tablas_posibles <- c("sh_oferta_demanda", "serie_cgi")
   
   if (is.null(tabla)) {
-    stop("Tabla no puede ser nulo")
+    stop(glue::glue("Tabla no puede ser nulo. Tablas posibles:\n{paste0(tablas_posibles, collapse = '\n')}"))
   }
   
   if (tabla == "sh_oferta_demanda") {
