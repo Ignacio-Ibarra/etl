@@ -1,0 +1,2 @@
+id_fuente,url,nombre,institucion,actualizable,fecha_descarga,fecha_actualizar,path_raw,path_clean,script
+1,https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx,World Economic Outlook database,FMI,TRUE,2024-02-19,2024-11-01,weo-imf.xls,NA,descarga_weo_imf.R
