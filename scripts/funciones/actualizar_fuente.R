@@ -81,7 +81,7 @@ actualizar_fuente <- function(id_fuente,
   print( df[df$id_fuente == inputs$id_fuente ,])
   
   df %>%
-    write_csv("data/_FUENTES/fuentes_lista.csv")
-
+    write_csv("data/_FUENTES/fuentes_lista.csv", na = "", eol = "\n")
+  
   
 }

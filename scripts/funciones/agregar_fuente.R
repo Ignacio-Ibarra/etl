@@ -15,14 +15,15 @@
 #' @examples
 #' 
 
-agregar_fuente <- function(url,
-                           nombre,
-                           institucion,
-                           actualizable,
-                           fecha_descarga,
-                           fecha_actualizar,
-                           path_raw,
-                           script) {
+agregar_fuente <- function(url = NULL,
+                           nombre = NULL,
+                           institucion = NULL,
+                           actualizable = NULL,
+                           fecha_descarga = NULL,
+                           fecha_actualizar = NULL,
+                           path_raw = NULL,
+                           script = NULL) {
+  
   
   
   inputs <- list(
@@ -36,27 +37,35 @@ agregar_fuente <- function(url,
     "script" = script
   )
   
+  
+  nullable <- c("fecha_actualizar")
+  
+  
+  for (i in nullable) {
+    inputs[i] <- NA
+  }
+  
   inputs$fecha_descarga <- as.Date(inputs$fecha_descarga)
   
   inputs$fecha_actualizar <- as.Date(inputs$fecha_actualizar)
   
 
-  stopifnot("No se admiten parametros nulos" = !any(sapply(inputs, is.null)))
+  stopifnot("No se admiten parametros nulos" = !any(sapply(inputs[which(names(inputs) != nullable)], is.null)))
   
-  stopifnot("No se admiten parametros con NAs" = !any(sapply(inputs, is.na)))
+  stopifnot("No se admiten parametros con NAs" = !any(sapply(inputs[which(names(inputs) != nullable)], is.na)))
   
-  stopifnot("No se admiten parametros con string vacios. Eg: ''" = !any(sapply(inputs, function(x) {as.character(x) == ''})))
+  stopifnot("No se admiten parametros con string vacios. Eg: ''" = !any(sapply(inputs[which(names(inputs) != nullable)], function(x) {as.character(x) == ''})))
   
   stopifnot("param 'actualizable' debe ser logico" = is.logical(inputs$actualizable))
   
   stopifnot("param 'fecha_descarga' debe ser fecha" = !is.na(inputs$fecha_descarga))
   
-  stopifnot("param 'fecha_actualizar' debe ser fecha" = !is.na(inputs$fecha_actualizar))
+  # stopifnot("param 'fecha_actualizar' debe ser fecha" = !is.na(inputs$fecha_actualizar))
   
   stopifnot("param 'url' debe ser una url valida" =  grepl("^(https|http)://",inputs$url))
   
   
-  df <- read_csv("data/_FUENTES/fuentes_lista.csv", col_types = cols("numeric", 
+  df <- readr::read_csv("data/_FUENTES/fuentes_lista.csv", col_types = readr::cols("numeric", 
                                                              "character",
                                                              "character",
                                                              "character",
@@ -93,15 +102,26 @@ agregar_fuente <- function(url,
   
   print(paste("La fuente quedara registrada con el id:", inputs$id_fuente))
   
-  print(df %>% 
-          add_row(!!!inputs) %>% tail(1))
+  print(df %>%
+          add_row(!!!inputs) %>% 
+          tail(1))
+
   
   guardar <- readline(prompt = "Guardar fuente? y/n")
   
   if (guardar == "y") {
-    df %>% 
-      add_row(!!!inputs) %>% 
-      write_csv("data/_FUENTES/fuentes_lista.csv")
+    
+    as_tibble(inputs) %>% 
+      select(  id_fuente ,
+               url,
+               nombre,
+               institucion,
+               actualizable,
+               fecha_descarga,
+               fecha_actualizar,
+               path_raw,
+               script ) %>% 
+      write_csv("data/_FUENTES/fuentes_lista.csv", na = "", append = T, eol = "\n")
   } else {
     warning("No se guardaron los datos de la fuente en fuentes_lista.csv")
     df %>% 
