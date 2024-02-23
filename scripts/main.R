@@ -8,8 +8,7 @@ googledrive::drive_auth(email = Sys.getenv("USER_GMAIL"))
 argendata_drive <- Sys.getenv("ARGENDATA_DRIVE")
 
 
-source("scripts/aux_functions.R")
-
+walk(.x = list.files("scripts/funciones/", full.names = T), source)
 
 
 # asignar var subtopico con el nombre del subtopico a trabajar
