@@ -24,9 +24,6 @@ metadata_files <- files_subtopicos %>%
   filter(str_detect(tolower(name), "argendata -")) %>% 
   filter(! str_detect(tolower(name), "ejemplo"))
 
-# Autentica el acceso a Google Sheets usando la misma dirección de correo electrónico
-googlesheets4::gs4_auth(email = Sys.getenv("USER_GMAIL"))
-
 # Para cada archivo de metadatos, lee su contenido saltando las primeras 6 filas y asumiendo que las columnas son tipo texto
 metadata <- map2(metadata_files$id, metadata_files$name, \(x, y) {
   googlesheets4::read_sheet(x, skip = 6, col_types = "c") %>% 
@@ -43,3 +40,9 @@ metadata <- metadata %>%
 # Escribe el dataframe final a un archivo CSV llamado "metadata.csv"
 metadata %>% 
   write_csv("metadata.csv")
+
+# Dataframe solo de fuentes
+
+metadata %>% 
+  distinct(fuente_nombre, url_path, institucion) %>% 
+  write_csv("fuentes.csv")
