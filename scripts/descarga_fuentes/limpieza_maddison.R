@@ -1,6 +1,6 @@
 # limpieza a formato tidy de la maddison db
 
-path <- "data/_INSUMOS/raw/mpd2020.xlsx"
+path <- "data/_FUENTES/raw/mpd2020.xlsx"
 
 readxl::excel_sheets(path)
 
