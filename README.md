@@ -44,6 +44,8 @@ Los scripts deben usar fuentes clean ya registradas en el drive de Argendata, el
 
 Cada script debe guardar el output en formato en una carpeta con el nombre del subtopico, por ej.: `/data/ACECON/`. Para guardar el output el script debe utilizar la función `argendatar::write_output()` usando el parametro `exportar = T`, esta función escribe un json que contiene la data y la metadata del output, y además escribe un csv usando el estándar de Argendata.
 
+Los json y csv generados como outputs deben ser pusheados al repositorio hasta su validación para carga directa en el drive de Argendata.
+
 
 ## Estructura
 
