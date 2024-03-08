@@ -49,17 +49,26 @@ Los json y csv generados como outputs deben ser pusheados al repositorio hasta s
 
 ## Estructura
 
+```
 /scripts 
-|-- utils
-|-- descarga_fuentes
+|-- /utils
+|-- /descarga_fuentes
   |-- descarga_weo_imf.R
-|-- limpieza_fuentes
+|-- /limpieza_fuentes
   |-- limpieza_weo_imf.R
-|-- subtopicos
-  |-- ACECON
+|-- /subtopicos
+  |-- /ACECON
     |-- output1.R
-  |-- SUBTOP
+  |-- /SUBTOP
 |-- main.R
+/data
+|-- /_FUENTES
+  |-- /raw
+  |-- /clean
+|-- /ACECON
+  |-- output1.csv
+|-- /SUBTOP
+```
 
 Para replicar la estructura de carpetas de subtopicos del drive dentro de /data y /scripts programaticamente se puede usar el script `crear_directorios.R` que aprovecha la función `argendatar::subtopicos()`.
 
