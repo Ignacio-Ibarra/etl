@@ -22,23 +22,26 @@ for(l in links) {
     janitor::make_clean_names() %>%
     gsub("_xlsx", ".xlsx", .)
   
-  # download.file(l,
-  #               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-  #               destfile = sprintf("data/_FUENTES/raw/%s", name)
-  # )
+  download.file(l,
+                mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
+                destfile = sprintf("data/_FUENTES/raw/%s", name)
+  )
   
   print(l)
   
-  # agregar_fuente(nombre = paste("Indicadores Sociales de Argentina", gsub(".xlsx","", name), sep = "-"),
+  # agregar_fuente_raw(
+  #   nombre = paste("Indicadores Sociales de Argentina", gsub(".xlsx","", name), sep = "-"),
   #                url = l,
   #                institucion = "Centro de Estudios Distributivos, Laborales y Sociales",
-  #                path_raw = name, actualizable = T, fecha_descarga = Sys.Date(),
+  #                path_raw = name,
+  #                actualizable = T,
+  #                fecha_descarga = Sys.Date(),
   #                fecha_actualizar = "",
   #                script = "descarga_cedlas.R")
   
   
-  id <- read_csv("data/_FUENTES/fuentes_lista.csv") %>% 
-    filter(url == l) %>% 
+  id <- fuentes_raw() %>%
+    filter(url == l) %>%
     pull(id_fuente)
   
   actualizar_fuente(id_fuente = id, fecha_descarga = Sys.Date())
