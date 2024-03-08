@@ -6,3 +6,5 @@
 _diff_*
 .Renviron
 metadata.csv
+.Rbuildignore
+argendata-etl.Rproj

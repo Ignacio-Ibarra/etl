@@ -87,6 +87,20 @@ diff %>%
 # Write output ------
 
 
-df_output %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-  subtopico = subtopico)
+write_output( data = df_output,
+                extension = 'csv',
+                output_name = 'A1_inb_pib',
+                subtopico = 'ACECON',
+                fuentes = 'World Development Indicators',
+                analista = 'Andrés Salles',
+                aclaraciones = NULL,
+                exportar = TRUE,
+                pk = c("anio", "iso3"),
+                es_serie_tiempo = TRUE,
+                columna_indice_tiempo = "anio",
+                columna_geo_referencia = "iso3",
+                nivel_agregacion = "pais",
+                nullables = FALSE,
+                etiquetas_indicadores = list("diferencia_inb_pbi" = "Diferencia entre Ingreso Bruto Nacional y PBI"),
+                unidades = "Porcentaje respecto al PBI",
+                classes = NULL)
