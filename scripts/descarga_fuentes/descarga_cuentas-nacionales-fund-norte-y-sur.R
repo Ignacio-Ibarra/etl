@@ -10,10 +10,10 @@ download.file(link,
               destfile = ruta)
 
 
-# agregar_fuente(url = link, nombre = "Cuentas Nacionales",
+# agregar_fuente_raw(url = link, nombre = "Cuentas Nacionales",
 #                institucion = "Fundación Norte y Sur", actualizable = F,
 #                path_raw = "cuentas-nacionales-fundacion-norte-y-sur.xlsx",
 #                script = "descarga_cuentas-nacionales-fund-norte-y-sur.R",
 #                fecha_descarga = Sys.Date())
 
-actualizar_fuente(id = 35, fecha_descarga = Sys.Date())
+actualizar_fuente(id = 36, fecha_descarga = Sys.Date())

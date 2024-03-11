@@ -24,4 +24,4 @@ download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Data
 #   script = "descarga_weo_imf.R"
 # )
 
-actualizar_fuente(id_fuente = 1, fecha_descarga = Sys.Date())
+actualizar_fuente(id_fuente = 34, fecha_descarga = Sys.Date())
