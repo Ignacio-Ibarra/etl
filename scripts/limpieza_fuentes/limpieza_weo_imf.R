@@ -6,6 +6,9 @@ descargar_fuente_raw(id_fuente = 34,
 
 data <- readr::read_tsv("data/_FUENTES/raw/weo-imf.xls")
 
+data <- data %>% 
+  mutate(across(everything(), as.character))
+
 # pivot longer
 data <- data %>% 
   pivot_longer(cols = matches("\\d{4}"),
@@ -66,6 +69,10 @@ write_csv_fundar(data,
 
 write_csv_fundar(diccionario,
                  file = "data/_FUENTES/clean/diccionario_weo_imf.csv")
+
+readr::write_csv(x = data, file = "data/_FUENTES/clean/weo_imf.csv",
+                 quote = "all", 
+                 na = "", eol = "\n")
 
 agregar_fuente_clean(path_clean = "weo_imf.csv",
                      id_fuente_raw = 34,
