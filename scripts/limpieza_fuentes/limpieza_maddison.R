@@ -26,6 +26,7 @@ data <- data %>%
   filter(!is.na(valor))
 
 
+ultimo_dato <- data %>% pull(anio) %>% last()
 # guardar
 write_csv_fundar(data, file = "data/_FUENTES/clean/mpd2020.csv")  
 

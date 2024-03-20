@@ -9,7 +9,7 @@ download.file(url = pob_indec_url,
 agregar_fuente_raw(url = pob_indec_url,institucion = "INDEC", actualizable = T,
                fecha_descarga = Sys.Date(),path_raw = "c1_proyecciones_nac_2010_2040.xls",
                script = "descarga_proy_pob_indec.R",
-               nombre = "Población. Proyecciones y estimaciones"
+               nombre = "Población. Proyecciones y estimaciones 2010-2040"
                 )
 
 actualizar_fuente(id_fuente = 39, fecha_descarga = Sys.Date())
