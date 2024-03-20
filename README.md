@@ -72,3 +72,137 @@ Los json y csv generados como outputs deben ser pusheados al repositorio hasta s
 
 Para replicar la estructura de carpetas de subtopicos del drive dentro de /data y /scripts programaticamente se puede usar el script `crear_directorios.R` que aprovecha la función `argendatar::subtopicos()`.
 
+## Pasos para trabajar en un subtópico
+
+Al momento de empezar a trabajar en Argendata debemos configurar primero las variables de entorno. Se pueden configurar usando `usethis::edit_r_environ()`
+
+```
+USER_GMAIL="mail de fundar"
+ARGENDATA_DRIVE="id del drive de argendata"
+```
+
+Al inicio de cada sesión de trabajo ejecutar el script "main.R"
+
+```r
+source("scripts/main.R")
+```
+
+El script carga las librerías mínimas requeridas, define la autenticación de las APIs de google drive y google sheet a partir de la variable de entorno y si es necesario crea la estructura de carpetas para data y scripts.
+
+Luego el trabajo con un subtópico dado se puede definir en 2 partes. Por un lado está la captura y preparación de fuentes de datos, y por el otro lado está la generación de los outputs propiamente dichos.
+
+### Captura - Fuentes Raw
+
+Llamamos fuentes raw a los archivos insumo tal cual se descargan de su origen sin ningún procesamiento por parte nuestra. Cada fuente a utilizar debería tener script en `scripts/descarga_fuentes` que permita la descarga de la misma, dentro de su script de descarga tiene que haber un llamado a la función `agregar_fuente_raw()` que cargue el archivo de la fuente descargada en el drive y la metadata de la misma en la  sheet de fuentes_raw. Prestar especial atención a la información que cargamos al agregar la fuente, en particular al `nombre` y `path_raw` que asignamos. Ambos deben ser únicos pero además hay que tomar la desición si incluir en ellos alguna referencia a la fecha de corte de la fuente o no. 
+
+
+El estándar es que aquellas fuentes que reciben actualizaciones periodicas regulares (por ej., series trimestrales o anuales de INDEC u otros organismos) no lleven indicación del año en el nombre ni el path. Por ejemplo, se prefiere como path "serie_cgi.xls" en vez de "serie_cgi_01_24.xls" y se prefiere "World Economic Outlook database" en vez de "World Economic Outlook database Octubre 2023". Esto es para que futuras descargas de la misma fuente puedan sobreescribir el mismo archivo en el drive sin romper el flujo definido en scripts. La indicación de fecha en el path o nombre de la fuente solo debería usarse cuando indican que esos datos para esa fecha no son actualizables ni deben ser sobreescritos. Por ejemplo podría ser el caso si cargaramos como fuente "Censo Nacional 2010", como tal la fuente es única y no debería reemplazarse con el censo 2022 que debería cargarse también como "Censo Nacional 2022".
+
+Siempre verificar antes que la fuente no estuviera previamente cargada, puede ser que otro usuario ya haya creado el script de descarga y cargado la fuente en el drive. Se pueden explorar las fuentes cargadas con la función `fuentes_raw()`. 
+
+### Preprocesamiento - Fuentes clean
+
+En general las fuentes deben ser preprocesadas para su uso, de ese procesamiento salen lo que llamamos fuentes clean. Cada fuente clean debe ser generada con un script en `scripts/limpieza_fuentes`. La fuente clean debería cumplir al menos:
+
+- nombres de columnas estén en minusculas, sin espacios ni caracteres especiales. Pueden usar la función `janitor::clean_names()` a tal fin. 
+- limpieza de columnas o filas enteramente vacías, o que solo tienen aclaraciones o notas provenientes de la importación desde excel
+- ser exportada en csv utf-8
+- en lo posible formato long preferido
+
+Se espera que cada fuente clean consista en una sola tabla cuando se trate de un dato tabular. Por ej., a partir de una fuente raw como "serie_cgi" que es un excel con múltiples hojas se espera que pasemos a una fuente clean para cada hoja que se requiera de "serie_cgi".
+
+En los casos de fuentes clean para las que tenemos la expectativa de que serán actualizadas con regularidad (al menos anual) es importante que el código tenga la flexibilidad para ejecutarse sin grandes ajustes con la próxima versión de la fuente raw que se actualice.
+
+Por ejemplo, si tenemos un pequeño dataset de copas del mundo con formato wide que seguirá agregando datos a lo ancho, con una nueva columna para cada nuevo mundial :
+
+
+```r
+datos <- tibble(
+       "iso" = c("ARG", "FRA"),
+       "2006" = c(2,1),
+       "2010" = c(2,1),
+       "2014" = c(2,1),
+       "2018" = c(2,2)
+       )
+
+```
+
+Una de las cosas que deberíamos hacer pivotear a lo largo esta fuente de datos, pero para ello se prefiere el código:
+
+```r
+datos %>% 
+  pivot_longer(cols = -iso,
+               values_to = "copas", names_to = "anio")
+```
+
+En vez del código:
+
+````r
+datos %>% 
+  pivot_longer(cols = c(`2006`, `2010`, `2014`, `2018`), 
+               values_to = "copas", names_to = "anio")
+
+```
+
+Ya que el primer caso es agnóstico respecto a las columnas que refieren a los años y que irán variando con el tiempo y aún servirá cuando la fuente sea actualizada:
+
+```r
+datos <- tibble(
+  "iso" = c("ARG", "FRA"),
+  "2006" = c(2,1),
+  "2010" = c(2,1),
+  "2014" = c(2,1),
+  "2018" = c(2,2),
+  "2022" = c(3,2)
+)
+
+datos %>% 
+  pivot_longer(cols = -iso,
+               values_to = "copas", names_to = "anio")
+               
+```
+
+### Creación de outputs - Subtópicos
+
+Para los scripts de creación de outputs se debe generar un script para cada output dentro de su carpeta de subtopico que debe ser nombrada de acuerdo a su codigo de 6 letras. Las carpetas de subtopicos son creadas en la ejecución de `main.R` por lo cual no debería ser necesario crearlas a mano. Los scripts se guardan en `scripts/subtopicos/{nombre del subtopico}` y deberían estar nombrados de forma que haga facil reconocer qué output generan.
+
+*Consideraciones generales*
+
+En el caso de que sea necesario más de un script para crear un output dado, los scripts deberían tener definida la secuencia lógica de forma inherente, es decir, si se necesita que se ejecuten primero el script A y luego el script B para generar el output 1, es preciso que el propio script B llame la secuencia del script A. Esto se puede hacer mediante el uso de `source()` o mejor aún definiendo los procedimientos como funciones. 
+
+Dado que se espera poder actualizar los outputs sin grandes modificaciones del código se requiere que el procesamiento sea en la mayor medida posible agnóstico respecto de nombres de columnas que puedan variar al actualizar las fuentes (ver ejemplo de codigo anterior).
+
+Las variables que sirvan para parametrizar el procedimiento de generación del output (por ej.: fechas de corte para filtros, o listas de codigos para filtros de paises de interés, etc.) deberían aparecer definidas al principio del script.
+
+De igual manera, toda la lectura de los insumos o fuentes a utilizar para generar los outputs debe realizarse al comienzo del codigo para facilitar su actualizacion o modificación si fuera necesario. Para descargar una fuente raw o fuente clean se debería incluir siempre un llamado a las funciones `descargar_fuente_clean()` y `descargar_fuente_raw()`, de esta forma el procedimiento de generación del output se puede independizar de guardar manualmente las fuentes que utiliza.
+
+
+
+
+Breve esquema de un script de generacion de output
+
+```r
+# librerias
+
+# carga de insumos
+descarga_fuentes_clean()
+# otras fuentes
+
+# definicion de variables
+fecha_corte <- 2022
+paises <- c("ARG", "USA")
+
+# procesamiento
+
+
+# guardar output
+
+```
+
+
+
+
+
+
+
+
