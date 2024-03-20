@@ -70,21 +70,18 @@ write_csv_fundar(data,
 write_csv_fundar(diccionario,
                  file = "data/_FUENTES/clean/diccionario_weo_imf.csv")
 
-readr::write_csv(x = data, file = "data/_FUENTES/clean/weo_imf.csv",
-                 quote = "all", 
-                 na = "", eol = "\n")
 
-agregar_fuente_clean(path_clean = "weo_imf.csv",
-                     id_fuente_raw = 34,
-                     nombre = "World Economic Outlook database",
-                     script = "limpieza_weo_imf.R")
+# agregar_fuente_clean(path_clean = "weo_imf.csv",
+#                      id_fuente_raw = 34,
+#                      nombre = "World Economic Outlook database",
+#                      script = "limpieza_weo_imf.R")
 
 actualizar_fuente_clean(id_fuente_clean = 2)
 
-agregar_fuente_clean(path_clean = "diccionario_weo_imf.csv",
-                     id_fuente_raw = 34,
-                     nombre = "World Economic Outlook diccionario",
-                     script = "limpieza_weo_imf.R")
+# agregar_fuente_clean(path_clean = "diccionario_weo_imf.csv",
+#                      id_fuente_raw = 34,
+#                      nombre = "World Economic Outlook diccionario",
+#                      script = "limpieza_weo_imf.R")
 
 actualizar_fuente_clean(id_fuente_clean = 3)
 
