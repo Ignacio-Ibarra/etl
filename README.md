@@ -138,7 +138,7 @@ datos %>%
 
 En vez del código:
 
-````r
+```r
 datos %>% 
   pivot_longer(cols = c(`2006`, `2010`, `2014`, `2018`), 
                values_to = "copas", names_to = "anio")
