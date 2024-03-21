@@ -13,22 +13,10 @@ cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/r
 
 
 # oferta y demanda global trimestral INDEC cuentas nacionales
-oyd_cn_indec_url <- "https://www.indec.gob.ar/ftp/cuadros/economia/sh_oferta_demanda_12_23.xls"  
-
-download.file(url = oyd_cn_indec_url, 
-              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/{subtopico}/datasets/raw/sh_oferta_demanda_12_23.xls"))
 
 pib_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/sh_oferta_demanda_12_23.xls"), sheet = 2, col_names = F)
 
 
-# estimacion nacional de poblacion indec
-pob_indec_url <- "https://www.indec.gob.ar/ftp/cuadros/poblacion/c1_proyecciones_nac_2010_2040.xls"
-
-
-download.file(url = pob_indec_url,
-              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/{subtopico}/datasets/raw/c1_proyecciones_nac_2010_2040.xls"))
 
 pob_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/c1_proyecciones_nac_2010_2040.xls"), col_names = F) 
 

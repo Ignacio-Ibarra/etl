@@ -1,51 +1,18 @@
-# 1_pib_pibpc_pob_arg_esp
+# dataset: 1_pib_pibpc_pob_arg_esp.csv
 # output con el pib, pib per capita y poblacion de argentina y españa
-# a partir de los datos de la web de Fundacion Norte y Sur, World Economic Outlook y Maddison Project Database
-# Los graficos son de “Lineas”. Hay un grafico por pais. Se marca el valor final (2022) en cada una de las 3 variables. 
-
-periodo <- 2018:2022
-output_name <- "1_pib_pibpc_pob_arg_esp"
-
-# Descargas -------
 
 
-# cuentas nacionales fundacion norte y sur 
+# lectura de datos --------------------------------------------------------
 
-download.file("https://docs.google.com/spreadsheets/d/e/2PACX-1vTAGGfIqDw18YDI5zasGBRa4sG1ddUfMcKT87fzTkvz8HMe8Ipl6zJU0M2788oZrw/pub?output=xls",
-              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"))
-
-
-# IMF outlook database 
-# descargo la base entera por mayor facilidad de referencia
-
-download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx",
-              destfile = glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
-
-
-# Maddison database
-
-download.file(url = "https://www.rug.nl/ggdc/historicaldevelopment/maddison/data/mpd2020.xlsx", 
-              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"))
-
-# Lectura -------
 
 # maddison database
-# GDP pc	Real GDP per capita in 2011$
-# Population	Population, mid-year (thousands)
 
-
-pibpc_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"), sheet = "GDP pc", skip = 1)
-
-pop_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"),
-                                      sheet = "Population", skip = 1)
+maddison_db <- read_csv("data/_FUENTES/clean/mpd2020.csv")
 
 # cuentas nacionales fund norte y sur
 # PIB moneda nacional constante 2004 (esta en miles)
 # PIB per capita moneda nacional constante 2004
-cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                                  sheet = "PBI en US$", col_names = F) 
+cuentas_nacionales <- read_csv("data/_FUENTES/clean/cuentas-nacionales-fundacion-norte-y-sur.csv")
 
 # imf weo
 # unidades 
@@ -53,53 +20,42 @@ cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/r
 # "NGDPRPC" (pib per capita) esta en moneda nacional constantes
 # "LP" (poblacion) esta en millones (1e6)
 
-weo_imf <- read_tsv(glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
+weo_imf <- read_csv("data/_FUENTES/clean/weo_imf.csv")
+diccionario_weo <- read_csv("data/_FUENTES/clean/diccionario_weo_imf.csv")
+
+# parametros generales ---------
+
+periodo_weo <- 2018:2022
+output_name <- "1_pib_pibpc_pob_arg_esp"
 
 
 # procesamiento -----------
 
 
-weo_imf <- weo_imf %>% 
-  # limpio nombres de columnas: pasar a minusculas, remove non-ascii chars y cambia " " por "_"
-  janitor::clean_names()
-
-
-
-
 # proceso weo_imf
 
-subset_weo_imf <- weo_imf %>% 
+weo_imf <- weo_imf %>% 
   # selecciono vars de interes
-  filter(weo_subject_code %in% c("NGDP_R", "NGDPRPC", "LP")) %>% 
-  select(-c(weo_country_code,country, subject_descriptor, subject_notes, units,
-            scale, country_series_specific_notes, estimates_start_after))
+  filter(weo_subject_code %in% c("NGDP_R", "NGDPRPC", "LP")) 
 
-# le doy formato longer adecuado
-subset_weo_imf <- subset_weo_imf %>% 
-  pivot_longer(cols = -c(iso, weo_subject_code), names_to = "anio")
+
 
 # una columna por indicador
-subset_weo_imf <- subset_weo_imf %>% 
-  pivot_wider(names_from = weo_subject_code, values_from = value) 
+weo_imf <- weo_imf %>% 
+  pivot_wider(names_from = weo_subject_code, values_from = valor) 
 
 # limpio nombres de columnas (nombre de indicadores)
-subset_weo_imf <- janitor::clean_names(subset_weo_imf )
+weo_imf <- janitor::clean_names(weo_imf )
 
-subset_weo_imf <- subset_weo_imf %>% rename(poblacion = lp)
+weo_imf <- weo_imf %>% rename(poblacion = lp)
 
-# datos char a numericos con limpieza de "," y pasan a unidades simples 
-subset_weo_imf <- subset_weo_imf %>% 
-  mutate(anio = as.integer(gsub(pattern = "\\D", "",anio)),
-         ngdp_r = as.numeric(gsub(",", "", ngdp_r))*1e9,
-         ngdprpc = as.numeric(gsub(",", "", ngdprpc)),
-         poblacion = as.numeric(gsub(",", "", poblacion))*1e6)
 
 # filtro anios de interes
-subset_weo_imf <- subset_weo_imf %>% 
-  filter(anio %in% periodo)
+weo_imf <- weo_imf %>% 
+  filter(anio %in% periodo_weo)
 
 
-subset_weo_imf <- subset_weo_imf %>%
+weo_imf <- weo_imf %>%
   # completo gdp a partir de gdp per capita y pob
   mutate(ngdp_r = ifelse(is.na(ngdp_r) & !is.na(ngdprpc) & !is.na(poblacion), 
                          ngdprpc*poblacion,
@@ -111,71 +67,50 @@ subset_weo_imf <- subset_weo_imf %>%
                    ngdprpc
   ))
 
-subset_weo_imf <- subset_weo_imf %>%
+weo_imf <- weo_imf %>%
   # agrupa por pais
-  group_by(iso) %>% 
+  group_by(iso3) %>% 
   # excluyo filas con NA en alguna variabl
-  filter(if_all(everything(), \(x) !is.na(x))) %>%
+  filter(if_all(everything(), function(x) !is.na(x))) %>%
   # cuento filas por pais
   mutate(filas = n()) %>%
   # deberia haber tantas filas por pais como anios en estudio
   # paises que no tengan dato para algun anio quedan excluidos
-  filter(filas == length(periodo)) %>%
+  filter(filas == length(periodo_weo)) %>%
   select(-filas) %>%
   arrange(anio) %>% 
   # calculo las variaciones interanuales para pib, pibpc y pob
   mutate(across(-c(anio),
-                \(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
+                function(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
   ungroup() %>% 
-  select(anio, iso, matches("var")) %>%
+  select(anio, iso3, matches("var")) %>%
   filter(anio != 2018) # excluyo el 
 
 
 #  proceso maddison database pibpc
 
+maddison_db <- maddison_db %>% 
+  filter(anio %in% 1900:2018 & indicador %in% c("gdppc", "pop"))
 
-pibpc_maddison_db <- pibpc_maddison_db %>% 
-  filter(year %in% 1900:2018)
 
-pibpc_maddison_db <- pibpc_maddison_db %>% 
-  # excluyo columnas que solo tienen NA
-  select(where(\(x){all(!is.na(x))}))
-
-pibpc_maddison_db <- pibpc_maddison_db %>%
+maddison_db <- maddison_db %>%
   #  paso a formato largo
-  pivot_longer(cols = -year, names_to = "iso", values_to = "ngdprpc")
+  pivot_wider(names_from = indicador, values_from = valor)
 
-# proceso maddison db population
+maddison_db <- maddison_db %>% 
+  rename(ngdprpc = gdppc, poblacion = pop)
 
-pop_maddison_db <- pop_maddison_db %>% 
-  filter(year %in% 1900:2018)
 
-pop_maddison_db <- pop_maddison_db %>% 
-  # excluyo columnas que solo tienen NA
-  select(where(\(x){all(!is.na(x))}))
-
-pop_maddison_db <- pop_maddison_db %>% 
-  #  paso a formato largo
-  pivot_longer(cols = -year, names_to = "iso", values_to = "poblacion")
-
-subset_maddison_db <- left_join(pibpc_maddison_db, pop_maddison_db, by = c("year", "iso"))
-
-subset_maddison_db <- subset_maddison_db %>% 
-  # paso poblacion de miles a unidades simples
-  # calculo pib = pibpc*pob
-  mutate(poblacion = 1000*poblacion,
-         ngdp_r = ngdprpc*poblacion)
-
-subset_maddison_db <- subset_maddison_db %>% 
-  filter(iso != "ARG")
-
-subset_maddison_db <- subset_maddison_db %>% 
-  rename(anio = year)
+maddison_db <- maddison_db %>% 
+  mutate(ngdp_r = ngdprpc * poblacion )
+  
+maddison_db <- maddison_db %>% 
+  filter(iso3 != "ARG")
 
 
 # proceso cuentas nacionales fund norte y sur (orlando ferreres)
 
-cn_arg_fnys <- cn_arg_fnys %>% 
+cn_arg_fnys <- cuentas_nacionales %>% 
   select(1,3,11) %>% .[107:225,] # definicion del analista de datos a usar
 
 # uso los codigos del fmi para renombrar columnas
