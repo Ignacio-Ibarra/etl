@@ -56,7 +56,8 @@ data <- data %>%
   ))
 
 diccionario <- data %>% 
-  distinct(weo_subject_code, subject_descriptor, subject_notes, scale, iso3, country_series_specific_notes, estimates_start_after) %>% 
+  distinct(weo_subject_code, subject_descriptor, subject_notes, scale, iso3,
+           country_series_specific_notes, estimates_start_after) %>% 
   mutate(scale_aclaracion = "Todos los indicadores fueron rexpresados en unidades.")
 
 
