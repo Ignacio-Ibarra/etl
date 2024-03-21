@@ -7,6 +7,12 @@ walk(argendataR::subtopicos()$tree$name, function(x) {
     
     dir.create(glue::glue("scripts/subtopicos/{x}"))
   }
+  
+  if (!file.exists(glue::glue("scripts/subtopicos/{x}/fuentes_{x}.R"))) {
+    
+    file.create(glue::glue("scripts/subtopicos/{x}/fuentes_{x}.R"))
+    
+  }
 })
 
 if (!dir.exists("data")) {dir.create("data")}

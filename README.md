@@ -58,6 +58,7 @@ Los json y csv generados como outputs deben ser pusheados al repositorio hasta s
   |-- limpieza_weo_imf.R
 |-- /subtopicos
   |-- /ACECON
+    |-- fuentes_acecon.R
     |-- output1.R
   |-- /SUBTOP
 |-- main.R
@@ -162,9 +163,46 @@ datos %>%
                
 ```
 
-### Creación de outputs - Subtópicos
+### Trabajo con Subtópicos
 
-Para los scripts de creación de outputs se debe generar un script para cada output dentro de su carpeta de subtopico que debe ser nombrada de acuerdo a su codigo de 6 letras. Las carpetas de subtopicos son creadas en la ejecución de `main.R` por lo cual no debería ser necesario crearlas a mano. Los scripts se guardan en `scripts/subtopicos/{nombre del subtopico}` y deberían estar nombrados de forma que haga facil reconocer qué output generan.
+Cada subtópico tiene su propia carpeta en `/scripts`. La estructura de carpetas se crea con la rutina de `scripts/utils/crear_directorios.R` que se ejecuta al correr `main.R`. Dentro de cada carpeta de un subtópico en `/scripts` debe existir un archivo `fuentes_{subtopico}.R` (por ej.: 'fuentes_acecon.R') y uno o más scripts de creación de outputs.
+
+El archivo `fuentes_{subtopico}.R` debe listar las descargas de fuentes desde el drive de Argendata que son necesarias para el subtópico. Por ej. para ACECON sería:
+
+```r
+descarga_fuentes_clean(id_fuente = 1)
+descarga_fuentes_clean(id_fuente = 2)
+descarga_fuentes_clean(id_fuente = 4)
+descarga_fuentes_clean(id_fuente = 6)
+
+```
+
+Para descargar una fuente raw o fuente clean se debería incluir siempre un llamado a las funciones `descargar_fuente_clean()` y `descargar_fuente_raw()`. Por eso todas las fuentes usadas deben estar registradas como describió más arriba.
+
+La descarga de fuentes se plantea así para evitar volver a descargar la misma fuente en cada script particular de creación de outputs pero poder realizarla en bloque para cada ejecución completa de un subtópico.
+
+Para los scripts de creación de outputs se debe generar un script para cada output dentro de su carpeta de subtopico. Los scripts se guardan en `scripts/subtopicos/{nombre del subtopico}` y deberían estar nombrados de forma que haga facil reconocer qué output generan. Se puede usar la función `argendataR::script_subtopico` para crear un archivo .R con un estructura básica de script de creación de outputs. A esta función hay que pasarle el path completo de donde queremos crear el archivo y su nombre.
+
+Breve esquema de un script de generacion de output
+
+```r
+# dataset:
+# librerias ---------
+
+# lectura de datos ---------
+# los datos utilizados deben estar cargados como fuentes del proyecto en fuentes_raw() o fuentes_clean()
+# todos los insumos a utilizar deben leerse de /data/_FUENTES/clean o /data/_FUENTES/raw
+
+# parametros generales ---------
+# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+
+# procesamiento ---------
+
+# guardar output ---------
+# usar write_output con exportar = T para generar la salida
+# write_output()
+
+```
 
 *Consideraciones generales*
 
@@ -173,32 +211,6 @@ En el caso de que sea necesario más de un script para crear un output dado, los
 Dado que se espera poder actualizar los outputs sin grandes modificaciones del código se requiere que el procesamiento sea en la mayor medida posible agnóstico respecto de nombres de columnas que puedan variar al actualizar las fuentes (ver ejemplo de codigo anterior).
 
 Las variables que sirvan para parametrizar el procedimiento de generación del output (por ej.: fechas de corte para filtros, o listas de codigos para filtros de paises de interés, etc.) deberían aparecer definidas al principio del script.
-
-De igual manera, toda la lectura de los insumos o fuentes a utilizar para generar los outputs debe realizarse al comienzo del codigo para facilitar su actualizacion o modificación si fuera necesario. Para descargar una fuente raw o fuente clean se debería incluir siempre un llamado a las funciones `descargar_fuente_clean()` y `descargar_fuente_raw()`, de esta forma el procedimiento de generación del output se puede independizar de guardar manualmente las fuentes que utiliza.
-
-
-
-
-Breve esquema de un script de generacion de output
-
-```r
-# librerias
-
-# carga de insumos
-descarga_fuentes_clean()
-# otras fuentes
-
-# definicion de variables
-fecha_corte <- 2022
-paises <- c("ARG", "USA")
-
-# procesamiento
-
-
-# guardar output
-
-```
-
 
 
 
