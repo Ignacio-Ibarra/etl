@@ -4,6 +4,15 @@ Este proyecto busca sistematizar en scripts de R o Python los procesos de genera
 
 ## Flujo de trabajo
 
+0. instalar el paquete [argendataR](https://github.com/argendata/argendataR)
+1. configurar variables de entorno
+2. ejecutar `scripts/main.R`
+3. crear los scripts de descarga de fuente y limpieza de fuentes necesarios para el subtopico (si es que no existen ya)
+4. ir a la carpeta del subtopico dentro de scripts
+5. completar el script de fuentes_*.R del subtopico con las funciones `descargar_fuente_clean()` o `descargar_fuente_raw()` que corresponda
+6. crear los scripts para cada output dentro de la carpeta del subtopico (recomienddo usar  `script_subtopico()`)
+7. pushear los scripts y los outputs generados
+
 ### main.R
 
 Este script es el punto de entrada del proyecto. Por el momento solo realiza la carga de librerías indispensables para  el proyecto y la autneticación con el drive de Argendata.
