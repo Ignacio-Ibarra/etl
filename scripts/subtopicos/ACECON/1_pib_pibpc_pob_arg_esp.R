@@ -12,7 +12,7 @@ maddison_db <- read_csv("data/_FUENTES/clean/mpd2020.csv")
 # cuentas nacionales fund norte y sur
 # PIB moneda nacional constante 2004 (esta en miles)
 # PIB per capita moneda nacional constante 2004
-cuentas_nacionales <- read_csv("data/_FUENTES/clean/cuentas-nacionales-fundacion-norte-y-sur.csv")
+pbi_fnys <- read_csv("data/_FUENTES/clean/pbi-pbipc-fyns.csv")
 
 # imf weo
 # unidades 
@@ -84,13 +84,21 @@ weo_imf <- weo_imf %>%
                 function(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
   ungroup() %>% 
   select(anio, iso3, matches("var")) %>%
-  filter(anio != 2018) # excluyo el 
+  filter(anio != 2018) 
 
 
 #  proceso maddison database pibpc
 
 maddison_db <- maddison_db %>% 
-  filter(anio %in% 1900:2018 & indicador %in% c("gdppc", "pop"))
+  complete(anio, iso3, indicador)
+
+paises_excluidos <- maddison_db %>% 
+  filter(is.na(valor) & anio == 1900) %>% 
+  pull(iso3) %>% unique()
+
+maddison_db <- maddison_db %>% 
+  filter(anio %in% 1900:2018 & indicador %in% c("gdppc", "pop") & 
+           ! iso3 %in% paises_excluidos)
 
 
 maddison_db <- maddison_db %>%
@@ -110,61 +118,69 @@ maddison_db <- maddison_db %>%
 
 # proceso cuentas nacionales fund norte y sur (orlando ferreres)
 
-cn_arg_fnys <- cuentas_nacionales %>% 
-  select(1,3,11) %>% .[107:225,] # definicion del analista de datos a usar
+pbi_fnys <- pbi_fnys %>% 
+  filter((indicador == "PIB a precios de mercado" &
+           unidad == "miles de $ de 2004") |
+           (indicador == "PIB per capita a precios de mercado" &
+              unidad == "$ de 2004 / hab")) 
+  
+pbi_fnys <- pbi_fnys %>% 
+  pivot_wider(id_cols = c(anio, iso3), names_from = indicador, 
+              values_from = valor) %>% 
+  janitor::clean_names()
+
+pbi_fnys <- pbi_fnys %>% 
+  mutate(pib_a_precios_de_mercado = 1000*pib_a_precios_de_mercado,
+         poblacion = pib_a_precios_de_mercado/pib_per_capita_a_precios_de_mercado)
+
 
 # uso los codigos del fmi para renombrar columnas
 # ngdp_r = PIB moneda nacional constante 2004 (esta en miles)
 # ngdprpc = PIB per capita moneda nacional constante 2004
-colnames(cn_arg_fnys) <- c("anio", "ngdp_r", "ngdprpc")
 
-cn_arg_fnys <- cn_arg_fnys %>% 
-  mutate(across(everything(), as.numeric)) %>% 
-  # paso pib de miles a unidades simples y calculo pob como pib/pibpc
-  mutate(
-        ngdp_r = 1000*ngdp_r,
-         poblacion = 1000*ngdp_r/ngdprpc, 
-         iso = "ARG")
+pbi_fnys <- pbi_fnys %>% 
+  rename(ngdp_r = pib_a_precios_de_mercado,
+         ngdprpc = pib_per_capita_a_precios_de_mercado)
+
 
 # combina los datasets
 
 # resto del mundo
 
 # al dataset de imf le agrego las filas y columnas del dataset de maddison
-pib_pibpc_pob_resto <- bind_rows(subset_weo_imf %>% 
-                                   filter(iso != "ARG" &
-                                            iso %in% unique(subset_maddison_db$iso)),
-                                 subset_maddison_db)
+pib_pibpc_pob_resto <- bind_rows(weo_imf %>% 
+                                   filter(iso3 != "ARG" &
+                                            iso3 %in% unique(maddison_db$iso3)),
+                                 maddison_db)
 
 # si no hay duplicaciones deberia dar un df vacio
-pib_pibpc_pob_resto%>% group_by(iso) %>% count(anio) %>% filter(n != 1) %>% nrow == 0
+pib_pibpc_pob_resto%>% group_by(iso3) %>%
+  count(anio) %>% filter(n != 1) %>% nrow == 0
 
 # ordeno por pais y anio
 pib_pibpc_pob_resto <- pib_pibpc_pob_resto %>% 
   ungroup() %>% 
-  arrange(iso, anio)
+  arrange(iso3, anio)
 
 # expando la serie maddison usando las variaciones de imf
-# ver aclaracion de la funcion en scripts/aux_functions.R
 pib_pibpc_pob_resto <- pib_pibpc_pob_resto %>% 
-  group_by(iso) %>% 
-  mutate(ngdp_r = expansor_imf_maddison(ngdp_r, ngdp_r_var),
-         ngdprpc = expansor_imf_maddison(ngdprpc, ngdprpc_var),
-         poblacion = expansor_imf_maddison(poblacion, poblacion_var)
+  group_by(iso3) %>% 
+  mutate(ngdp_r = expansor_xvar(ngdp_r, ngdp_r_var),
+         ngdprpc = expansor_xvar(ngdprpc, ngdprpc_var),
+         poblacion = expansor_xvar(poblacion, poblacion_var)
   ) %>% 
   ungroup()
 
 # calculo los indices base 100 en 1900
 pib_pibpc_pob_resto <- pib_pibpc_pob_resto %>% 
   select(-matches("var")) %>%
-  group_by(iso) %>% 
+  group_by(iso3) %>% 
   mutate(pbi_precios_constantes_base1900 = 100*ngdp_r/ngdp_r[anio==1900],
          pbi_per_capita_precios_constantes_base100 = 100*ngdprpc/ngdprpc[anio==1900],
          poblacion_base1900 = 100*poblacion/poblacion[anio==1900]
   ) %>%
   ungroup() %>% 
   select(-c(ngdp_r, ngdprpc, poblacion)) %>%
-  rename(iso3 = iso) %>% 
   relocate(iso3, .after = anio) 
 
 
@@ -172,9 +188,9 @@ pib_pibpc_pob_resto <- pib_pibpc_pob_resto %>%
 # arg
 
 # combino dataset de fund norte y sur con datos imf para argentina
-pib_pibpc_pob_arg <- bind_rows(subset_weo_imf %>% 
-                                 filter(iso == "ARG"),
-                               cn_arg_fnys)
+pib_pibpc_pob_arg <- bind_rows(weo_imf %>% 
+                                 filter(iso3 == "ARG"),
+                               pbi_fnys)
 
 # ordeno por anio
 pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>% 
@@ -182,9 +198,9 @@ pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>%
 
 # expando la serie de fund norte y sur con las var de imf
 # ver aclaracion de la funcion en scripts/aux_functions.R
-pib_pibpc_pob_arg$ngdp_r <- expansor_imf_maddison(pib_pibpc_pob_arg$ngdp_r, pib_pibpc_pob_arg$ngdp_r_var)
-pib_pibpc_pob_arg$ngdprpc <- expansor_imf_maddison(pib_pibpc_pob_arg$ngdprpc, pib_pibpc_pob_arg$ngdprpc_var)
-pib_pibpc_pob_arg$poblacion <- expansor_imf_maddison(pib_pibpc_pob_arg$poblacion, pib_pibpc_pob_arg$poblacion_var)
+pib_pibpc_pob_arg$ngdp_r <- expansor_xvar(pib_pibpc_pob_arg$ngdp_r, pib_pibpc_pob_arg$ngdp_r_var)
+pib_pibpc_pob_arg$ngdprpc <- expansor_xvar(pib_pibpc_pob_arg$ngdprpc, pib_pibpc_pob_arg$ngdprpc_var)
+pib_pibpc_pob_arg$poblacion <- expansor_xvar(pib_pibpc_pob_arg$poblacion, pib_pibpc_pob_arg$poblacion_var)
 
 # calculo los indices base 100 en 1900
 pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>% 
@@ -193,44 +209,47 @@ pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>%
          pbi_per_capita_precios_constantes_base100 = 100*ngdprpc/ngdprpc[anio==1900],
          poblacion_base1900 = 100*poblacion/poblacion[anio==1900]
   ) %>%
-  select(-c(ngdp_r, ngdprpc, poblacion)) %>%
-  rename(iso3 = iso) %>% 
-  relocate(iso3, .after = anio) 
+  select(-c(ngdp_r, ngdprpc, poblacion))
 
 
 # reuno los datos de arg con los datos del resto del mundo
-pib_pibpc_pob <- bind_rows(pib_pibpc_pob_arg, pib_pibpc_pob_resto)
+output <- bind_rows(pib_pibpc_pob_arg, 
+                           pib_pibpc_pob_resto) %>% 
+  select(-country)
 
 
 # comparo contra output previo -----
 
 # se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
+# out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
+# 
+# out_prev <- out_prev %>% 
+#   mutate(across(-c(pais, iso3), as.numeric))
+# 
+# vs <- out_prev %>% 
+#   left_join(pib_pibpc_pob, by = c("anio", "iso3"))
+# 
+# diff <-  vs %>% 
+#   mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
+#   filter(pbi_precios_constantes_base1900.x !=  pbi_precios_constantes_base1900.y |
+#            pbi_per_capita_precios_constantes_base100.x != pbi_per_capita_precios_constantes_base100.y |
+#            poblacion_base1900.x != poblacion_base1900.y
+#            ) 
+# diff %>% 
+#   as_tibble() %>% 
+#   head(25)
+# 
+# diff %>% 
+#   write_argendata(file_name = "_diff_1_pib_pibpc_pob_arg_esp.csv",
+#                   subtopico =  subtopico)
 
-out_prev <- out_prev %>% 
-  mutate(across(-c(pais, iso3), as.numeric))
-
-vs <- out_prev %>% 
-  left_join(pib_pibpc_pob, by = c("anio", "iso3"))
-
-diff <-  vs %>% 
-  mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
-  filter(pbi_precios_constantes_base1900.x !=  pbi_precios_constantes_base1900.y |
-           pbi_per_capita_precios_constantes_base100.x != pbi_per_capita_precios_constantes_base100.y |
-           poblacion_base1900.x != poblacion_base1900.y
-           ) 
-diff %>% 
-  as_tibble() %>% 
-  head(25)
-
-diff %>% 
-  write_argendata(file_name = "_diff_1_pib_pibpc_pob_arg_esp.csv",
-                  subtopico =  subtopico)
 
 # write output ------
-iso_countrycodes <- get_iso_paises()
 
-pib_pibpc_pob %>%
+
+
+unique(output$iso3[! output$iso3 %in% argendataR::get_nomenclador_geografico()$codigo_fundar])
+  
   left_join(iso_countrycodes) %>% 
   relocate(pais, .after = iso3) %>% 
   write_argendata(file_name = glue::glue("{output_name}.csv"),
