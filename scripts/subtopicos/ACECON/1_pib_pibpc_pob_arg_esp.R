@@ -250,10 +250,8 @@ output <- bind_rows(pib_pibpc_pob_arg,
 
 unique(output$iso3[! output$iso3 %in% argendataR::get_nomenclador_geografico()$codigo_fundar])
   
-  left_join(iso_countrycodes) %>% 
-  relocate(pais, .after = iso3) %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-                  subtopico = subtopico)
+write_output(data = output, output_name = output_name, subtopico = "ACECON",
+             fuentes = )
 
 rm(list = ls())
 
