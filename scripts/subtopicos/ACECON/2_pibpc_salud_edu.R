@@ -10,17 +10,18 @@ output_name <- "2_pibpc_salud_edu"
 # Insumos -------
 
 # anios de expectativa de vida al nacer anio 2018 undp
-le_undp <- jsonlite::fromJSON('https://api.hdrdata.org/CountryIndicators/filter?year=2018&indicator=le')
-
+# R41C0
+le_undp <- read_csv("data/_FUENTES/raw/esperanza_vida_2018_undp.csv")
+  
+  
 # mean schooling years undp anio 2018
-mys_undp <- jsonlite::fromJSON('https://api.hdrdata.org/CountryIndicators/filter?year=2018&indicator=mys')
-
+# R40C0
+mys_undp <-read_csv("data/_FUENTES/raw/media_anios_escolarizacion_undp_2018.csv") 
+  
 # population maddison db 2018
-pop_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"),
-                                      sheet = "Population", skip = 1)
-
 # pibpc maddison db anio 2018
-pibpc_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"), sheet = "GDP pc", skip = 1)
+# R37C1
+mpd2020 <- read_csv("data/_FUENTES/clean/mpd2020.csv")
 
 
 # procesamiento -------------------------------------------------
@@ -62,26 +63,17 @@ mys_undp <- mys_undp %>%
          anio = year)
 
 
-pop_maddison_db <- pop_maddison_db %>% 
-  #  paso a formato largo
-  pivot_longer(cols = -year, names_to = "iso", values_to = "poblacion")
+# maddisn
 
-seleccion_paises <- pop_maddison_db %>% 
-  filter(year == 2018 & poblacion*1e3 >= 2.5e6) %>% 
-  pull(iso) %>% unique()
+mpd2020 <- mpd2020 %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  filter(anio == 2018 & pop >= 2.5e6 & !is.na(gdppc))
 
 
-pibpc_maddison_db <- pibpc_maddison_db %>%
-  #  paso a formato largo
-  pivot_longer(cols = -year, names_to = "iso", values_to = "pbi_per_capita")
+seleccion_paises <- mpd2020 %>% 
+  pull(iso3) %>% unique()
 
-pibpc_maddison_db <- pibpc_maddison_db %>% 
-  filter(year == 2018 & ! is.na(pbi_per_capita) & iso %in% seleccion_paises)
-
-pibpc_maddison_db <- pibpc_maddison_db %>% 
-  rename(iso3 = iso, anio  = year)
-
-pibpc_salud_edu <- pibpc_maddison_db %>% 
+pibpc_salud_edu <- mpd2020 %>% 
   left_join(le_undp) %>% 
   left_join(mys_undp) %>% 
   select(-anio)
@@ -89,39 +81,37 @@ pibpc_salud_edu <- pibpc_maddison_db %>%
 # no dupes por pais
 pibpc_salud_edu %>% count(iso3) %>% filter(n > 1) %>% nrow() == 0
 
-iso_countrycodes <- get_iso_paises()
+iso_countrycodes <- get_nomenclador_geografico()
 
-pibpc_salud_edu <- pibpc_salud_edu %>% 
-  left_join(iso_countrycodes) %>% 
-  relocate(pais, .after = iso3)
+pibpc_salud_edu$iso3[!pibpc_salud_edu$iso3 %in% iso_countrycodes$codigo_fundar]
 
-pibpc_salud_edu <- pibpc_salud_edu %>% 
-  mutate(pbi_per_capita = as.integer(pbi_per_capita),
-         across(c(esperanza_de_vida_al_nacer,
-                  anios_de_educacion), \(x) round(x, digits = 1)))
+# pibpc_salud_edu <- pibpc_salud_edu %>% 
+#   mutate(pbi_per_capita = as.integer(pbi_per_capita),
+#          across(c(esperanza_de_vida_al_nacer,
+#                   anios_de_educacion), \(x) round(x, digits = 1)))
 
 # comparo contra output previo -----
 
 # descargo outout primera entrega del drive
 # se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
-
-out_prev <- out_prev %>% 
-  mutate(across(-c(pais, iso3), as.numeric))
-
-vs <- out_prev %>% 
-  left_join(pibpc_salud_edu, by = c("pais", "iso3"))
-
-diff <-  vs %>% 
-  mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
-  filter(anios_de_educacion.x !=  anios_de_educacion.y |
-           esperanza_de_vida_al_nacer.x  != esperanza_de_vida_al_nacer.y |
-           pbi_per_capita.x != pbi_per_capita.y
-  ) 
-
-diff %>% 
-  write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-                  subtopico =  subtopico)
+# out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
+# 
+# out_prev <- out_prev %>% 
+#   mutate(across(-c(pais, iso3), as.numeric))
+# 
+# vs <- out_prev %>% 
+#   left_join(pibpc_salud_edu, by = c("pais", "iso3"))
+# 
+# diff <-  vs %>% 
+#   mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
+#   filter(anios_de_educacion.x !=  anios_de_educacion.y |
+#            esperanza_de_vida_al_nacer.x  != esperanza_de_vida_al_nacer.y |
+#            pbi_per_capita.x != pbi_per_capita.y
+#   ) 
+# 
+# diff %>% 
+#   write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
+#                   subtopico =  subtopico)
 
 # write output ------
 

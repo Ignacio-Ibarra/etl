@@ -2,7 +2,7 @@
 # Se lee la estructura de carpetas de datasets de subtopicos para replicarla
 
 
-walk(argendataR::subtopicos()$tree$name, function(x) {
+walk(argendataR::subtopicos_dir()$tree$name, function(x) {
   if (!dir.exists(glue::glue("scripts/subtopicos/{x}"))) {
     
     dir.create(glue::glue("scripts/subtopicos/{x}"))
@@ -17,7 +17,7 @@ walk(argendataR::subtopicos()$tree$name, function(x) {
 
 if (!dir.exists("data")) {dir.create("data")}
 
-walk(subtopicos()$tree$name, function(x) {
+walk(subtopicos_dir()$tree$name, function(x) {
   
   
   if (!dir.exists(glue::glue("data/{x}"))) {

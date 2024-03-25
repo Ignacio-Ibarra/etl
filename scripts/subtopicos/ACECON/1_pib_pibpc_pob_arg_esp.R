@@ -6,12 +6,13 @@
 
 
 # maddison database
-
+# R37C1
 maddison_db <- read_csv("data/_FUENTES/clean/mpd2020.csv")
 
 # cuentas nacionales fund norte y sur
 # PIB moneda nacional constante 2004 (esta en miles)
 # PIB per capita moneda nacional constante 2004
+# R36C9
 pbi_fnys <- read_csv("data/_FUENTES/clean/pbi-pbipc-fyns.csv")
 
 # imf weo
@@ -19,8 +20,10 @@ pbi_fnys <- read_csv("data/_FUENTES/clean/pbi-pbipc-fyns.csv")
 # "NGDP_R" (pib) esta en miles de millones de moneda nacional constantes (1e9)
 # "NGDPRPC" (pib per capita) esta en moneda nacional constantes
 # "LP" (poblacion) esta en millones (1e6)
+# R34C2
 
 weo_imf <- read_csv("data/_FUENTES/clean/weo_imf.csv")
+# R34C3
 diccionario_weo <- read_csv("data/_FUENTES/clean/diccionario_weo_imf.csv")
 
 # parametros generales ---------
@@ -217,6 +220,11 @@ output <- bind_rows(pib_pibpc_pob_arg,
                            pib_pibpc_pob_resto) %>% 
   select(-country)
 
+# output %>% 
+#   pivot_longer(cols = -c(anio, iso3),
+#                names_to = "indicador", values_to = "valor") %>% 
+#   mutate(indicador = case_when)
+
 
 # comparo contra output previo -----
 
@@ -250,8 +258,25 @@ output <- bind_rows(pib_pibpc_pob_arg,
 
 unique(output$iso3[! output$iso3 %in% argendataR::get_nomenclador_geografico()$codigo_fundar])
   
-write_output(data = output, output_name = output_name, subtopico = "ACECON",
-             fuentes = )
+write_output(data = output, output_name = output_name,
+             subtopico = "ACECON",
+             fuentes = c("R34C3", "R34C2","R37C1", "R36C9"),
+             analista = "andressalles@hotmail.com",
+             exportar = T, pk = c("iso3", "anio"),
+             columna_indice_tiempo = "anio",
+             es_serie_tiempo = T,
+             etiquetas_indicadores = list("anio" = "Año", 
+                                          "iso3" = "País Código ISO3",
+                                          "pbi_precios_constantes_base1900" = "Producto Bruto Interno, Precios Constantes (1900=100)",
+                                          "pbi_per_capita_precios_constantes_base100" = "Producto Bruto Interno per cápita, Precios Constantes (1900=100)",
+                                          "poblacion_base1900" = "Población (1900=100)"),
+             unidades = list("anio" = "años", 
+                             "pbi_precios_constantes_base1900" = "índice",
+                             "pbi_per_capita_precios_constantes_base100" = "índice",
+                             "poblacion_base1900" = "índice"),
+             columna_geo_referencia = "iso3",
+             nivel_agregacion = "pais")
 
 rm(list = ls())
+
 
