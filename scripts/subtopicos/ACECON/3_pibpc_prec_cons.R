@@ -7,17 +7,17 @@ output_name <- "3_pibpc_prec_cons"
 
 # Insumos -------
 
-
+# R36C9
 cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
                                   sheet = "PBI en US$", col_names = F)
 
 
 # oferta y demanda global trimestral INDEC cuentas nacionales
+# R38C6
+pib_indec <- readxl::read_xls(glue::glue("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls"), sheet = 2, col_names = F)
+pib_indec2 <- read_csv("data/_FUENTES/clean/oferta_demanda_pctes.csv")
 
-pib_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/sh_oferta_demanda_12_23.xls"), sheet = 2, col_names = F)
-
-
-
+# R39C8
 pob_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/c1_proyecciones_nac_2010_2040.xls"), col_names = F) 
 
 

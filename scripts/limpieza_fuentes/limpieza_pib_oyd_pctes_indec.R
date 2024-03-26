@@ -40,6 +40,8 @@ oyd_pctes <- oyd_pctes %>%
 write_csv_fundar(x = oyd_pctes,
                  file = "data/_FUENTES/clean/oferta_demanda_pctes.csv")
 
+# carga fuente limpia en el drive
+
 agregar_fuente_clean(id_fuente_raw = 38,
                      path_clean = "oferta_demanda_pctes.csv",
                      nombre = "Oferta y Demanda Globales trimestrales a precios 2004",

@@ -258,14 +258,17 @@ output <- bind_rows(pib_pibpc_pob_arg,
 
 unique(output$iso3[! output$iso3 %in% argendataR::get_nomenclador_geografico()$codigo_fundar])
   
-write_output(data = output, output_name = output_name,
-             subtopico = "ACECON",
+output %>% 
+  write_output(data = .,
+              output_name = output_name,
+             subtopico = subtopico,
              fuentes = c("R34C3", "R34C2","R37C1", "R36C9"),
-             analista = "andressalles@hotmail.com",
-             exportar = T, pk = c("iso3", "anio"),
+             analista = analista,
+             exportar = T,
+             pk = c("iso3", "anio"),
              columna_indice_tiempo = "anio",
              es_serie_tiempo = T,
-             etiquetas_indicadores = list("anio" = "Año", 
+             etiquetas_indicadores = list(anio = "Año", 
                                           "iso3" = "País Código ISO3",
                                           "pbi_precios_constantes_base1900" = "Producto Bruto Interno, Precios Constantes (1900=100)",
                                           "pbi_per_capita_precios_constantes_base100" = "Producto Bruto Interno per cápita, Precios Constantes (1900=100)",

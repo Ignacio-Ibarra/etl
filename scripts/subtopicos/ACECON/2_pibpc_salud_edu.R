@@ -85,6 +85,11 @@ iso_countrycodes <- get_nomenclador_geografico()
 
 pibpc_salud_edu$iso3[!pibpc_salud_edu$iso3 %in% iso_countrycodes$codigo_fundar]
 
+pibpc_salud_edu <- pibpc_salud_edu %>% 
+  mutate(anio = 2018) %>% 
+  select(-c(pop, country)) %>% 
+  relocate(anio, .after = iso3)
+
 # pibpc_salud_edu <- pibpc_salud_edu %>% 
 #   mutate(pbi_per_capita = as.integer(pbi_per_capita),
 #          across(c(esperanza_de_vida_al_nacer,
@@ -117,7 +122,23 @@ pibpc_salud_edu$iso3[!pibpc_salud_edu$iso3 %in% iso_countrycodes$codigo_fundar]
 
 
 pibpc_salud_edu %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-                  subtopico = subtopico)
-
+  write_output(data = ., output_name = output_name,
+               subtopico = "ACECON",
+               fuentes = c("R40C0", "R41C0", "R37C1"),
+               analista = "andressalles@hotmail.com",
+               exportar = T,
+               pk = c("iso3"),
+               es_serie_tiempo = F,
+               columna_indice_tiempo = "anio",
+               columna_geo_referencia = "iso3", 
+               nivel_agregacion = "pais",
+               etiquetas_indicadores = list(anio = "Año",
+                                            iso3 = "País Código ISO3",
+                                            gdppc = "PBI per cápita PPA", 
+                                            esperanza_de_vida_al_nacer = "Esperanza de vida al nacer",
+                                            anios_de_educacion = "Años de educación promedio"),
+               unidades = list(gdppc = "PPA/habitante",
+                               esperanza_de_vida_al_nacer = "Años",
+                               anios_de_educacion = "Años"))
+ 
 rm(list = ls())
