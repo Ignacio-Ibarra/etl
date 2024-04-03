@@ -2,7 +2,7 @@ dir_clean <- "data/_FUENTES/clean/"
 dir_raw <- "data/_FUENTES/raw/"
 # cuentas nacionales - fundacion norte y sur
 # pbi y pbi pc 
-descargar_fuente_clean(id_fuente = "R36C9", dir =  dir_clean)
+descargar_fuente("R36C9", dir =  dir_clean)
 
 # world economic outlook fmi
 descargar_fuente("R34C2",dir =  dir_clean)
