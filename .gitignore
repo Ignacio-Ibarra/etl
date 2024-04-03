@@ -9,3 +9,4 @@ metadata.csv
 .Rbuildignore
 argendata-etl.Rproj
 data/_FUENTES
+data

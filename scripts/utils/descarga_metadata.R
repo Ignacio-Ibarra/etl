@@ -9,11 +9,11 @@ df <- drive_ls(path = as_id(Sys.getenv("ARGENDATA_DRIVE")))
 id_subtopicos <- df[df$name == "SUBTOPICOS",]$id
 
 # Lista los archivos o carpetas dentro de la carpeta de subtemas utilizando su ID
-paths_subtopicos <- drive_ls(id_subtopicos)
+paths_subtopicos <- drive_ls(googledrive::as_id(id_subtopicos))
 
 # Para cada ID en paths_subtopicos, lista los archivos dentro y los recopila en una lista
-files_subtopicos <- map(paths_subtopicos$id, \(x) {
-  drive_ls(x)
+files_subtopicos <- map(paths_subtopicos$id, function(x) {
+  drive_ls(googledrive::as_id(x))
 })
 
 # Combina los dataframes de archivos de subtemas en uno solo
@@ -25,7 +25,7 @@ metadata_files <- files_subtopicos %>%
   filter(! str_detect(tolower(name), "ejemplo"))
 
 # Para cada archivo de metadatos, lee su contenido saltando las primeras 6 filas y asumiendo que las columnas son tipo texto
-metadata <- map2(metadata_files$id, metadata_files$name, \(x, y) {
+metadata <- map2(metadata_files$id, metadata_files$name, function(x, y) {
   googlesheets4::read_sheet(x, skip = 6, col_types = "c") %>% 
     mutate(subtopico_nombre = gsub("ArgenData - ", "", y))
 })
