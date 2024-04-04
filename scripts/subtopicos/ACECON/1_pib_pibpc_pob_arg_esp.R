@@ -7,13 +7,13 @@
 
 # maddison database
 # R37C1
-maddison_db <- read_csv("data/_FUENTES/clean/mpd2020.csv")
+maddison_db <- read_csv(fuentes_files[grepl("R37C1", fuentes_files)])
 
 # cuentas nacionales fund norte y sur
 # PIB moneda nacional constante 2004 (esta en miles)
 # PIB per capita moneda nacional constante 2004
 # R36C9
-pbi_fnys <- read_csv("data/_FUENTES/clean/pbi-pbipc-fyns.csv")
+pbi_fnys <-  read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
 
 # imf weo
 # unidades 
@@ -21,10 +21,10 @@ pbi_fnys <- read_csv("data/_FUENTES/clean/pbi-pbipc-fyns.csv")
 # "NGDPRPC" (pib per capita) esta en moneda nacional constantes
 # "LP" (poblacion) esta en millones (1e6)
 # R34C2
+weo_imf <- read_csv(fuentes_files[grepl("R34C2", fuentes_files)])
 
-weo_imf <- read_csv("data/_FUENTES/clean/weo_imf.csv")
-# R34C3
-diccionario_weo <- read_csv("data/_FUENTES/clean/diccionario_weo_imf.csv")
+# diccionario weo imf R34C3
+diccionario_weo <- read_csv(fuentes_files[grepl("R34C3", fuentes_files)])
 
 # parametros generales ---------
 
@@ -179,7 +179,7 @@ pib_pibpc_pob_resto <- pib_pibpc_pob_resto %>%
   select(-matches("var")) %>%
   group_by(iso3) %>% 
   mutate(pbi_precios_constantes_base1900 = 100*ngdp_r/ngdp_r[anio==1900],
-         pbi_per_capita_precios_constantes_base100 = 100*ngdprpc/ngdprpc[anio==1900],
+         pbi_per_capita_precios_constantes_base1900 = 100*ngdprpc/ngdprpc[anio==1900],
          poblacion_base1900 = 100*poblacion/poblacion[anio==1900]
   ) %>%
   ungroup() %>% 
@@ -209,7 +209,7 @@ pib_pibpc_pob_arg$poblacion <- expansor_xvar(pib_pibpc_pob_arg$poblacion, pib_pi
 pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>% 
   select(-matches("var")) %>%
   mutate(pbi_precios_constantes_base1900 = 100*ngdp_r/ngdp_r[anio==1900],
-         pbi_per_capita_precios_constantes_base100 = 100*ngdprpc/ngdprpc[anio==1900],
+         pbi_per_capita_precios_constantes_base1900 = 100*ngdprpc/ngdprpc[anio==1900],
          poblacion_base1900 = 100*poblacion/poblacion[anio==1900]
   ) %>%
   select(-c(ngdp_r, ngdprpc, poblacion))
@@ -218,45 +218,48 @@ pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>%
 # reuno los datos de arg con los datos del resto del mundo
 output <- bind_rows(pib_pibpc_pob_arg, 
                            pib_pibpc_pob_resto) %>% 
-  select(-country)
+  select(- country)
 
-# output %>% 
-#   pivot_longer(cols = -c(anio, iso3),
-#                names_to = "indicador", values_to = "valor") %>% 
-#   mutate(indicador = case_when)
+# etiquetas de pais 
+
+unique(output$iso3[! output$iso3 %in% argendataR::get_nomenclador_geografico()$codigo_fundar])
+
+nrow(output)
+
+output <- left_join(output, argendataR::get_nomenclador_geografico() %>% 
+                      select(codigo_fundar, desc_fundar),
+                    by = c("iso3" = "codigo_fundar") )
+
+output <- output %>% 
+  rename(pais = desc_fundar)
+
+output$pais %>% is.na() %>% sum()
+
+nrow(output)
+
+# excluyo paises con datos faltantes en la serie de maddison
+
+incompletos <- output %>% complete(anio = 1900:2018, iso3) %>%
+  group_by(iso3) %>%
+  filter(if_any(everything(), is.na)) %>% 
+  pull(iso3) %>% unique()
+
+output <- output %>% 
+  filter(! iso3 %in% incompletos)
 
 
 # comparo contra output previo -----
 
-# se puede leer outoput del drive directo desde la url
-# out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
-# 
-# out_prev <- out_prev %>% 
-#   mutate(across(-c(pais, iso3), as.numeric))
-# 
-# vs <- out_prev %>% 
-#   left_join(pib_pibpc_pob, by = c("anio", "iso3"))
-# 
-# diff <-  vs %>% 
-#   mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
-#   filter(pbi_precios_constantes_base1900.x !=  pbi_precios_constantes_base1900.y |
-#            pbi_per_capita_precios_constantes_base100.x != pbi_per_capita_precios_constantes_base100.y |
-#            poblacion_base1900.x != poblacion_base1900.y
-#            ) 
-# diff %>% 
-#   as_tibble() %>% 
-#   head(25)
-# 
-# diff %>% 
-#   write_argendata(file_name = "_diff_1_pib_pibpc_pob_arg_esp.csv",
-#                   subtopico =  subtopico)
-
+comparacion <- comparar_outputs(df = output %>% 
+                                  mutate(pais = textclean::replace_non_ascii(pais)),
+                                nombre = output_name,
+                                subtopico = subtopico, pk = c("anio", "iso3"),
+                                drop_output_drive = F)
 
 # write output ------
 
 
 
-unique(output$iso3[! output$iso3 %in% argendataR::get_nomenclador_geografico()$codigo_fundar])
   
 output %>% 
   write_output(data = .,
@@ -271,11 +274,11 @@ output %>%
              etiquetas_indicadores = list(anio = "Año", 
                                           "iso3" = "País Código ISO3",
                                           "pbi_precios_constantes_base1900" = "Producto Bruto Interno, Precios Constantes (1900=100)",
-                                          "pbi_per_capita_precios_constantes_base100" = "Producto Bruto Interno per cápita, Precios Constantes (1900=100)",
+                                          "pbi_per_capita_precios_constantes_base1900" = "Producto Bruto Interno per cápita, Precios Constantes (1900=100)",
                                           "poblacion_base1900" = "Población (1900=100)"),
              unidades = list("anio" = "años", 
                              "pbi_precios_constantes_base1900" = "índice",
-                             "pbi_per_capita_precios_constantes_base100" = "índice",
+                             "pbi_per_capita_precios_constantes_base1900" = "índice",
                              "poblacion_base1900" = "índice"),
              columna_geo_referencia = "iso3",
              nivel_agregacion = "pais")
