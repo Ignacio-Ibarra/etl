@@ -7,48 +7,31 @@ output_name <- "4_pibpc_prop_eeuu"
 
 # Insumos -------
 
-# maddison db
-
-pibpc_maddison_db <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/mpd2020.xlsx"),
-                                        sheet = "GDP pc", skip = 1)
+# maddison db R37C1
+# gpdpc 
+pibpc_maddison_db <- read_csv(fuentes_files[grepl("R37C1", fuentes_files)]) 
 
 # imf weo db
-weo_imf <- read_tsv(glue::glue("data/{subtopico}/datasets/raw/WEOOct2023all.xls"))
+weo_imf <- read_csv(fuentes_files[grepl("R34C2", fuentes_files)])
 
 # Procesamiento -------
 
 # datos de world economic outlook fmi
 
 
-weo_imf <- weo_imf %>% 
-  # limpio nombres de columnas: pasar a minusculas, remove non-ascii chars y cambia " " por "_"
-  janitor::clean_names()
-
-
 # proceso weo_imf
 
 subset_weo_imf <- weo_imf %>% 
   # selecciono vars de interes
-  filter(weo_subject_code %in% c("NGDPRPPPPC")) %>% 
-  select(-c(weo_country_code,country, subject_descriptor, subject_notes, units,
-            scale, country_series_specific_notes, estimates_start_after))
-
-# le doy formato longer adecuado
-subset_weo_imf <- subset_weo_imf %>% 
-  pivot_longer(cols = -c(iso, weo_subject_code), names_to = "anio")
+  filter(weo_subject_code %in% c("NGDPRPPPPC")) 
 
 # una columna por indicador
 subset_weo_imf <- subset_weo_imf %>% 
-  pivot_wider(names_from = weo_subject_code, values_from = value) 
+  pivot_wider(names_from = weo_subject_code, values_from = valor) 
 
 # limpio nombres de columnas (nombre de indicadores)
 subset_weo_imf <- janitor::clean_names(subset_weo_imf )
 
-
-# datos char a numericos con limpieza de "," y pasan a unidades simples 
-subset_weo_imf <- subset_weo_imf %>% 
-  mutate(anio = as.integer(gsub(pattern = "\\D", "",anio)),
-         ngdprppppc = as.numeric(gsub(",", "", ngdprppppc)))
 
 # filtro anios de interes
 subset_weo_imf <- subset_weo_imf %>% 
@@ -58,7 +41,7 @@ subset_weo_imf <- subset_weo_imf %>%
 
 subset_weo_imf <- subset_weo_imf %>%
   # agrupa por pais
-  group_by(iso) %>% 
+  group_by(iso3) %>% 
   # excluyo filas con NA en alguna variabl
   filter(if_all(everything(), \(x) !is.na(x))) %>%
   # cuento filas por pais
@@ -72,28 +55,21 @@ subset_weo_imf <- subset_weo_imf %>%
   mutate(across(-c(anio),
                 \(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
   ungroup() %>% 
-  select(anio, iso, matches("var")) %>%
+  select(anio, iso3, matches("var")) %>%
   filter(anio != 2018) # excluyo el 
 
 # datos de maddison
 
 pibpc_maddison_db <- pibpc_maddison_db %>% 
-  filter(year %in% 1900:2018)
+  filter(anio %in% 1900:2018 & indicador == "gdppc")
 
 pibpc_maddison_db <- pibpc_maddison_db %>% 
-  # excluyo columnas que solo tienen NA
-  select(where(\(x){all(!is.na(x))}))
-
-pibpc_maddison_db <- pibpc_maddison_db %>%
-  #  paso a formato largo
-  pivot_longer(cols = -year, names_to = "iso", values_to = "ngdprppppc")
-
-pibpc_maddison_db <- pibpc_maddison_db %>%
-  rename(anio = year)
+  rename(ngdprppppc = valor)
 
 subset_weo_imf <- subset_weo_imf %>% 
-  filter(iso %in% unique(pibpc_maddison_db$iso))
+  filter(iso3 %in% unique(pibpc_maddison_db$iso3))
 
+ 
 # junto los dataframes
 
 df_output <- bind_rows(pibpc_maddison_db, subset_weo_imf) %>% 
@@ -101,26 +77,42 @@ df_output <- bind_rows(pibpc_maddison_db, subset_weo_imf) %>%
 
 # ordeno por pais y anio
 df_output <- df_output %>% 
-  arrange(iso, anio) %>% 
+  arrange(iso3, anio) %>% 
   ungroup()
 
 # expando la serie maddison usando las variaciones de imf
 # ver aclaracion de la funcion en scripts/aux_functions.R
 df_output <- df_output %>% 
-  group_by(iso) %>% 
-  mutate(ngdprppppc  = expansor_imf_maddison(ngdprppppc , ngdprppppc_var) ) %>% 
+  group_by(iso3) %>% 
+  mutate(ngdprppppc  = expansor_xvar(ngdprppppc , ngdprppppc_var) ) %>% 
   ungroup()
 
 df_output <- df_output %>%
   group_by(anio) %>% 
-  mutate(pib_per_capita_ppa_porcentaje_eeuu = 100*ngdprppppc/ngdprppppc[iso == "USA"]) %>% 
+  mutate(pib_per_capita_ppa_porcentaje_eeuu = 100*ngdprppppc/ngdprppppc[iso3 == "USA"]) %>% 
   ungroup()
 
-df_output <- df_output %>%
-  rename(iso3 = iso)
+df_output <- df_output %>% 
+  select(-c(country, indicador, ngdprppppc_var, ngdprppppc))
 
-df_output <- df_output %>%
-  left_join(get_iso_paises())
+df_output <- df_output %>% 
+  complete(anio = 1900:2022, iso3)
+
+incompletos <- df_output %>% 
+  filter(is.na(pib_per_capita_ppa_porcentaje_eeuu)) %>% 
+  pull(iso3) %>% unique()
+  
+df_output <- df_output %>% 
+  filter(!iso3 %in% incompletos)
+
+
+unique(df_output$iso3 [! df_output$iso3 %in% get_nomenclador_geografico()[["codigo_fundar"]]])
+
+nrow(df_output)
+
+df_output <-left_join(df_output, get_nomenclador_geografico() %>% 
+                        select(codigo_fundar, pais = desc_fundar), by = c("iso3" = "codigo_fundar"))
+nrow(df_output)
 
 df_output <- df_output %>%
   select(anio, pais, iso3, pib_per_capita_ppa_porcentaje_eeuu)
@@ -129,25 +121,24 @@ df_output <- df_output %>%
 
 # descargo outout primera entrega del drive
 # se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
 
-out_prev <- out_prev %>% 
-mutate(across(c(pib_per_capita_ppa_porcentaje_eeuu), as.numeric))
-
-vs <- out_prev %>% 
-  left_join(df_output, by = c("anio", "iso3", "pais"))
-
-diff <-  vs %>% 
-  mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
-  filter(pib_per_capita_ppa_porcentaje_eeuu.x !=  pib_per_capita_ppa_porcentaje_eeuu.y ) 
-
-diff %>% 
-  write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-  subtopico =  subtopico)
+comparacion <- comparar_outputs(df = df_output %>% 
+                                  mutate(pais = textclean::replace_non_ascii(pais)),
+                                nombre = output_name,
+                                pk = c("iso3", "anio"), drop_output_drive = F)
 
 # Write output ------
 
-
-df_output %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-  subtopico = subtopico)
+write_output(
+  data = df_output,
+  output_name = output_name,subtopico = subtopico,
+  fuentes = c("R37C1", "R34C2"),
+  analista = analista,
+  pk = c("anio", "iso3"),
+  es_serie_tiempo = T,
+  columna_indice_tiempo = "anio",
+  columna_geo_referencia = "iso3",
+  nivel_agregacion = "pais",
+  etiquetas_indicadores = list("pib_per_capita_ppa_porcentaje_eeuu" = "PBI per capita PPA como porcentaje respecto de EE.UU."),
+  unidades = list("pib_per_capita_ppa_porcentaje_eeuu" = "Porcentaje")
+)

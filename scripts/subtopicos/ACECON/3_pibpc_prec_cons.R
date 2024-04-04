@@ -8,111 +8,73 @@ output_name <- "3_pibpc_prec_cons"
 # Insumos -------
 
 # R36C9
-cn_arg_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                                  sheet = "PBI en US$", col_names = F)
+cn_arg_fnys <- read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
 
 
 # oferta y demanda global trimestral INDEC cuentas nacionales
 # R38C6
-pib_indec <- readxl::read_xls(glue::glue("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls"), sheet = 2, col_names = F)
-pib_indec2 <- read_csv("data/_FUENTES/clean/oferta_demanda_pctes.csv")
+pib_indec <- read_csv(fuentes_files[grepl("R38C6", fuentes_files)])
 
 # R39C8
-pob_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/c1_proyecciones_nac_2010_2040.xls"), col_names = F) 
-
+pob_indec <- read_csv(fuentes_files[grepl("R39C8", fuentes_files)])
 
 # Procesamiento -------
 
 
 # proceso cuentas nacionales fund norte y sur (orlando ferreres)
 
-cn_arg_fnys <- cn_arg_fnys %>% 
-  select(1, 11) %>% .[107:225,] # definicion del analista de datos a usar
-
 # pibpc = PIB per capita moneda nacional constante 2004
-colnames(cn_arg_fnys) <- c("anio", "pibpc")
-
 cn_arg_fnys <- cn_arg_fnys %>% 
-  mutate(across(everything(), as.numeric))
+  filter(indicador == "PIB per capita a precios de mercado" &
+           unidad == "$ de 2004 / hab") %>% 
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  janitor::clean_names()
 
 # pib indec
 # pib en millones de pesos a precios de 2004
 
 # selecciono filas de anio, pib y trimestre y traspongo
-pib_indec <- pib_indec[c(4,5,7),] %>%
-  t() %>%
-  as_tibble()
-
-# renombro columnas
-pib_indec <- pib_indec %>% 
-  rename(anio = V1, trim = V2, pib_cons = V3)
-
-# completo valores faltantes en anio up to down
-pib_indec <- pib_indec %>% 
-  fill(anio) %>% 
-  filter(!is.na(trim))
-
-# limpio numeros de anio
-pib_indec <- pib_indec %>% 
-  mutate(anio = as.numeric(gsub("\\(.*", "", anio)))
-
-# me quedo con filas de total anual y anios 2018 a 2022
-pib_indec <- pib_indec %>% 
-  filter(trim == "Total" & anio %in% 2019:2022)
+pib_indec <- pib_indec  %>% 
+  filter(indicador == "producto_interno_bruto" & trim == "Total" & anio %in% 2019:2022)
 
 pib_indec <- pib_indec %>%
-  mutate(pib_cons = as.numeric(pib_cons))
+  pivot_wider(names_from = indicador, 
+              values_from = valor )
 
 # datos de poblacion indec
 pob_indec <- pob_indec %>% 
-  rename(anio = ...1, pob = ...2)
-
-pob_indec <- pob_indec %>%
-  select(1,2) %>% 
-  mutate(across(everything(), as.numeric)) %>% 
-  filter(anio %in% 2019:2022)
+  filter(anio %in% 2019:2022 & indicador == "total") %>% 
+  rename(pob = valor)
 
 # calculo pib per capita
 df_indec <- left_join(pib_indec, pob_indec)
 
 df_indec <- df_indec %>% 
-  mutate(pibpc = pib_cons*1e6/pob)
+  mutate(pibpc = producto_interno_bruto/pob)
 
-#
 df_indec <- df_indec %>% 
-  select(-c(trim, pib_cons, pob))
+  select(anio, pib_per_capita_a_precios_de_mercado  = pibpc)
 
 df_output <- bind_rows(cn_arg_fnys, df_indec) 
 
 df_output <- df_output %>% 
-  rename(pbi_per_capita_pconst2004= pibpc)
+  select(-iso3, -unidad)
+
+df_output <- df_output %>% 
+  rename(pbi_per_capita_pconst2004 = pib_per_capita_a_precios_de_mercado)
+
+sum(is.na(df_output$pbi_per_capita_pconst2004))
 
 # Control vs output previo -------
 
-# descargo outout primera entrega del drive
-
-# se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
-
-out_prev <- out_prev %>% 
-  mutate(across(everything(), as.numeric))
-
-vs <- out_prev %>% 
-  left_join(df_output, by = "anio")
-
-diff <-  vs %>% 
-  mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
-  filter(pbi_per_capita_pconst2004.x !=  pbi_per_capita_pconst2004.y ) 
-
-diff %>% 
-  write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-                  subtopico =  subtopico)
+comparacion <- comparar_outputs(df = df_output, nombre = output_name,
+                                pk = "anio", drop_output_drive = F)
 
 
 # Write output ------
 
-df_output %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-  subtopico = subtopico)
+write_output(data = df_output, output_name = output_name, subtopico = subtopico, analista = analista,
+             fuentes = c("R36C9", "R38C6", "R39C8"),pk = "anio", es_serie_tiempo = T, columna_indice_tiempo = "anio", nivel_agregacion = "pais", etiquetas_indicadores = list("pbi_per_capita_pconst2004" = "PBI per capita"),
+             unidades = list("pbi_per_capita_pconst2004" = "pesos constantes 2004 / habitante"))
 
 rm(list = ls())
