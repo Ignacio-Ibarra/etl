@@ -1,4 +1,3 @@
-dir <- tempdir()
 
 # cuentas nacionales - fundacion norte y sur
 # pbi y pbi pc 
@@ -17,5 +16,4 @@ descargar_fuente( "R41C0", dir = dir)
 # escolaridad media 2018 - undp
 descargar_fuente( "R40C0", dir = dir)
 
-fuentes_files <- c(list.files(dir, full.names = T))
 

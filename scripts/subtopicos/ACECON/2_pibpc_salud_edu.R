@@ -11,17 +11,17 @@ output_name <- "2_pibpc_salud_edu"
 
 # anios de expectativa de vida al nacer anio 2018 undp
 # R41C0
-le_undp <- read_csv("data/_FUENTES/raw/esperanza_vida_2018_undp.csv")
+le_undp <- read_csv(fuentes_files[grepl("R41C0", fuentes_files)])
   
   
 # mean schooling years undp anio 2018
 # R40C0
-mys_undp <-read_csv("data/_FUENTES/raw/media_anios_escolarizacion_undp_2018.csv") 
+mys_undp <- read_csv(fuentes_files[grepl("R40C0", fuentes_files)])
   
 # population maddison db 2018
 # pibpc maddison db anio 2018
 # R37C1
-mpd2020 <- read_csv("data/_FUENTES/clean/mpd2020.csv")
+mpd2020 <- read_csv(fuentes_files[grepl("R37C1", fuentes_files)])
 
 
 # procesamiento -------------------------------------------------
@@ -75,48 +75,40 @@ seleccion_paises <- mpd2020 %>%
 
 pibpc_salud_edu <- mpd2020 %>% 
   left_join(le_undp) %>% 
-  left_join(mys_undp) %>% 
-  select(-anio)
+  left_join(mys_undp) #%>% 
+  # select(-anio)
 
 # no dupes por pais
 pibpc_salud_edu %>% count(iso3) %>% filter(n > 1) %>% nrow() == 0
 
-iso_countrycodes <- get_nomenclador_geografico()
+iso_countrycodes <- get_nomenclador_geografico() %>% 
+  select(codigo_fundar, pais = desc_fundar)
 
 pibpc_salud_edu$iso3[!pibpc_salud_edu$iso3 %in% iso_countrycodes$codigo_fundar]
 
 pibpc_salud_edu <- pibpc_salud_edu %>% 
-  mutate(anio = 2018) %>% 
-  select(-c(pop, country)) %>% 
-  relocate(anio, .after = iso3)
+  select(-country)
 
-# pibpc_salud_edu <- pibpc_salud_edu %>% 
-#   mutate(pbi_per_capita = as.integer(pbi_per_capita),
-#          across(c(esperanza_de_vida_al_nacer,
-#                   anios_de_educacion), \(x) round(x, digits = 1)))
+nrow(pibpc_salud_edu)
+
+pibpc_salud_edu <- left_join(pibpc_salud_edu, iso_countrycodes, by = c("iso3" = "codigo_fundar"))
+
+nrow(pibpc_salud_edu)
+
+sum(is.na(pibpc_salud_edu$pais))
+
+output <- pibpc_salud_edu %>% 
+  select(-c(pop, anio)) %>%
+  rename(pbi_per_capita = gdppc) %>% 
+  filter(if_all(everything(), function(x) !is.na(x)))
+
+
 
 # comparo contra output previo -----
 
-# descargo outout primera entrega del drive
-# se puede leer outoput del drive directo desde la url
-# out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
-# 
-# out_prev <- out_prev %>% 
-#   mutate(across(-c(pais, iso3), as.numeric))
-# 
-# vs <- out_prev %>% 
-#   left_join(pibpc_salud_edu, by = c("pais", "iso3"))
-# 
-# diff <-  vs %>% 
-#   mutate(across(where(is.numeric), \(x) round(x, 2))) %>% 
-#   filter(anios_de_educacion.x !=  anios_de_educacion.y |
-#            esperanza_de_vida_al_nacer.x  != esperanza_de_vida_al_nacer.y |
-#            pbi_per_capita.x != pbi_per_capita.y
-#   ) 
-# 
-# diff %>% 
-#   write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-#                   subtopico =  subtopico)
+comparacion <- comparar_outputs(df = output %>% 
+                                  mutate(pais = textclean::replace_non_ascii(pais)), nombre = output_name,
+                                pk = c("iso3"), drop_output_drive = F)
 
 # write output ------
 
