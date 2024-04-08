@@ -123,7 +123,7 @@ df_output <- df_output %>%
 # se puede leer outoput del drive directo desde la url
 
 comparacion <- comparar_outputs(df = df_output %>% 
-                                  mutate(pais = textclean::replace_non_ascii(pais)),
+                                  mutate(pais = replace_non_ascii(pais)),
                                 nombre = output_name,
                                 pk = c("iso3", "anio"), drop_output_drive = F)
 

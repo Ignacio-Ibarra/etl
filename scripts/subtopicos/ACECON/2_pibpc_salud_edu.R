@@ -107,7 +107,7 @@ output <- pibpc_salud_edu %>%
 # comparo contra output previo -----
 
 comparacion <- comparar_outputs(df = output %>% 
-                                  mutate(pais = textclean::replace_non_ascii(pais)), nombre = output_name,
+                                  mutate(pais = replace_non_ascii(pais)), nombre = output_name,
                                 pk = c("iso3"), drop_output_drive = F)
 
 # write output ------

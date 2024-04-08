@@ -251,7 +251,7 @@ output <- output %>%
 # comparo contra output previo -----
 
 comparacion <- comparar_outputs(df = output %>% 
-                                  mutate(pais = textclean::replace_non_ascii(pais)),
+                                  mutate(pais = replace_non_ascii(pais)),
                                 nombre = output_name,
                                 subtopico = subtopico, pk = c("anio", "iso3"),
                                 drop_output_drive = F)
