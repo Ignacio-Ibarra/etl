@@ -152,13 +152,15 @@ data <- data[-4,] %>%
 
 # pivot longer los datos
 data <- data %>% 
-  mutate(across(everything(), function(x) replace(x, x=="...", "0"))) %>%
+  mutate(across(everything(), function(x) replace(x, x=="...", NA))) %>%
   mutate(across(everything(), as.character)) %>% 
   pivot_longer(cols = -anio,
                names_to = "indicador", values_to = "valor")
 
 data <- data %>% 
-  mutate(valor = 100*as.numeric(valor))
+  mutate(valor = ifelse(as.numeric(anio) < 1935,
+                        100*as.numeric(valor),
+                        as.numeric(valor)))
 
 # unidad
 data <- data %>% 
@@ -242,7 +244,7 @@ data <- data %>%
                names_to = "indicador", values_to = "valor")
 
 data <- data %>% 
-  mutate(valor = replace(valor, valor == "...", 0))
+  mutate(valor = replace(valor, valor == "...", NA))
   
 data <- data %>% 
   mutate(unidad = "% del PBI a precios corrientes")

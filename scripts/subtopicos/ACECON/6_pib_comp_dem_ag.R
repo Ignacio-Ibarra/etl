@@ -7,34 +7,38 @@ output_name <- "6_pib_comp_dem_ag"
 
 # Insumos -------
 
-oyd_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                                  sheet = "OyD %PIB, Precios corr. ", col_names = T, skip = 1)
+# oferta y demanda en precios corrientes R36C10
+oyd_fnys <-  read_csv(fuentes_files[grepl("R36C10", fuentes_files)]) 
 
-cei_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                               sheet = "CeI %PIB, Precios corr. ", col_names = T, skip = 2)
+# consumo e inversion en precios corrientes R36C11
+cei_fnys <- read_csv(fuentes_files[grepl("R36C11", fuentes_files)]) 
 
-# pib en usd “PIB a precios de mercado, en miles de $” 2017
-pbiusd_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                               sheet = "PBI en US$", range = "B224", col_names = F) %>% 
-  rename(pib = ...1) %>% mutate(anio = 2017)
+# pib en usd “PIB a precios de mercado, en miles de $” 2017 -R36C9 
+pbiusd_fnys <- read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
+  
 
-oyd_globales_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/sh_oferta_demanda_12_23.xls"),
-                                       sheet = "cuadro 8", col_names = F)
+# oferta y demanda R38C6
+oyd_globales_indec <- read_csv(fuentes_files[grepl("R38C6", fuentes_files)])
 
 
 # Procesamiento -------
 
-cei_fnys <- cei_fnys %>% 
-  janitor::clean_names()
+pbiusd_fnys <- pbiusd_fnys %>% 
+  filter(anio == 2017 & unidad == "miles de US$") %>% 
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  janitor::clean_names() %>% 
+  select(-unidad)
 
-cei_fnys <- cei_fnys %>% 
-  select(anio = x1, consumo_total, consumo_privado, consumo_publico)
-
-cei_fnys <- cei_fnys %>%
-  mutate(across(everything(), as.numeric))
 
 cei_fnys <- cei_fnys %>%
-  filter(anio %in% 1935:2017)
+  filter(anio %in% 1935:2017 & grepl("Consumo Total|Consumo Privado|Consumo Público", indicador))
+
+
+cei_fnys <- cei_fnys %>% 
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  select(-unidad) %>% 
+  janitor::clean_names() %>% 
+  rename_with(.cols = matches("consumo_"), function(x) {gsub("consumo_consumo", "consumo",x)})
 
 cei_fnys <- cei_fnys %>%
   mutate(ratio_publico = consumo_publico/consumo_total,
@@ -51,30 +55,39 @@ cei_fnys <- cei_fnys %>%
   select(-matches("ratio"))
 
 # oferta y demanda fundacion norte y sur
-# limpia nombres variables
-oyd_fnys <- oyd_fnys %>% 
-  janitor::clean_names()
 
 # seleccion columnas
 oyd_fnys <- oyd_fnys %>% 
-  select(anio = ano, importaciones_de_bienes_y_servicios_reales, exportaciones_de_bienes_y_servicios_reales, formacion_bruta_de_capital, variacion_de_existencias)
+  filter(
+    indicador %in% c("Importaciones de bienes y servicios reales",
+                     "Exportaciones de bienes y servicios reales",
+                     "Formación Bruta de Capital",
+                     "Variación de Existencias"
+                     )
+  )
+
 
 # filtra años
 oyd_fnys <- oyd_fnys %>% 
   filter(anio %in% 1935:2017)
 
 oyd_fnys <- oyd_fnys %>% 
-  mutate(across(everything(), as.numeric))
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  select(-unidad)
+
+oyd_fnys <- oyd_fnys %>% 
+  janitor::clean_names()
 
 df_fnys <- left_join(oyd_fnys, cei_fnys) 
 
 df_fnys_extrapolacion <- df_fnys %>% 
   filter(anio == 2017) %>% 
   left_join(pbiusd_fnys) %>% 
-  mutate(across(-c(anio, pib), \(x) {x/100*pib}))
+  mutate(across(-c(anio, iso3, pib_a_precios_de_mercado), \(x) {x/100*pib_a_precios_de_mercado}))
 
 
-oyd_globales_indec <- oyd_globales_indec %>% 
+oyd_globales_indec <- 
+  %>% 
   .[c(4,5,7:8,12:16),] %>% 
   t() %>% 
   as_tibble(.name_repair = "unique")

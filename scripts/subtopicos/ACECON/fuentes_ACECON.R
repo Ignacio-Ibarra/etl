@@ -22,3 +22,9 @@ descargar_fuente("R38C6", dir = dir)
 
 # poblacion total pais - R39C8
 descargar_fuente("R39C8", dir)
+
+# oferta y demanda a precios corrientes fnys  - R36C10
+descargar_fuente("R36C10", dir = dir)
+
+# Consumo e inversion precios corrientes fyns  - R36C11
+descargar_fuente("R36C11", dir = dir)
