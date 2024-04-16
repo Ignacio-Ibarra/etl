@@ -99,4 +99,52 @@ agregar_fuente_clean(id_fuente_raw = 38,
 
 actualizar_fuente_clean(id_fuente_clean = 7)
 
+# cuadro 8 ---------------------------------------------------------------
 
+
+oyd_pcorr <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
+                                sheet = "cuadro 8")
+
+oyd_pcorr <- oyd_pcorr[-c(1:2),] |>
+  t() |>
+  tibble::as_tibble(.name_repair = "unique")
+
+names(oyd_pcorr) <- oyd_pcorr[1,] |>
+  janitor::make_clean_names()
+
+oyd_pcorr <- oyd_pcorr |>
+  dplyr::rename(anio = na, trim = na_2)
+
+oyd_pcorr <- oyd_pcorr |>
+  dplyr::mutate(anio = as.numeric(gsub(" .*", "", anio )))
+
+oyd_pcorr <- oyd_pcorr |>
+  tidyr::fill(anio)
+
+oyd_pcorr <- oyd_pcorr |>
+  dplyr::filter(!is.na(trim))
+
+oyd_pcorr <- oyd_pcorr[,!sapply(oyd_pcorr, function(x) {sum(is.na(x)) == length(x)})]
+
+
+colnames(oyd_pcorr) <- gsub("_\\d$","",colnames(oyd_pcorr))
+
+oyd_pcorr <- oyd_pcorr %>% 
+  pivot_longer(-c(anio, trim), values_to = "valor", names_to = "indicador") %>% 
+  mutate(valor = 1E6*as.numeric(valor),
+         unidad = "pesos corrientes")
+
+write_csv_fundar(x = oyd_pcorr,
+                 file = "data/_FUENTES/clean/oferta_demanda_pcorr.csv")
+
+# carga fuente limpia en el drive
+
+cargar_fuente_clean(id_fuente_raw = 38,
+                     path_clean = "oferta_demanda_pcorr.csv",
+                     nombre = "Oferta y Demanda Globales trimestrales a precios corrientes",
+                     script = "limpieza_pib_oyd_pctes_indec.R",
+                    actualizar = 12)
+
+actualizar_fuente_clean(id_fuente_clean = 6)
+
+rm(oyd_pctes)

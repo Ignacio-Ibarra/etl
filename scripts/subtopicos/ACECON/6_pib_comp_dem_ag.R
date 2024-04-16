@@ -8,17 +8,17 @@ output_name <- "6_pib_comp_dem_ag"
 # Insumos -------
 
 # oferta y demanda en precios corrientes R36C10
-oyd_fnys <-  read_csv(fuentes_files[grepl("R36C10", fuentes_files)]) 
+oyd_fnys <-  read_csv(get_temp_path("R36C10")) 
 
 # consumo e inversion en precios corrientes R36C11
-cei_fnys <- read_csv(fuentes_files[grepl("R36C11", fuentes_files)]) 
+cei_fnys <- read_csv(get_temp_path("R36C11")) 
 
 # pib en usd “PIB a precios de mercado, en miles de $” 2017 -R36C9 
-pbiusd_fnys <- read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
+pbiusd_fnys <- read_csv(get_temp_path("R36C9"))
   
 
 # oferta y demanda R38C6
-oyd_globales_indec <- read_csv(fuentes_files[grepl("R38C6", fuentes_files)])
+oyd_globales_indec <- read_csv(get_temp_path("R38C12"))
 
 
 # Procesamiento -------
@@ -83,27 +83,25 @@ df_fnys <- left_join(oyd_fnys, cei_fnys)
 df_fnys_extrapolacion <- df_fnys %>% 
   filter(anio == 2017) %>% 
   left_join(pbiusd_fnys) %>% 
-  mutate(across(-c(anio, iso3, pib_a_precios_de_mercado), \(x) {x/100*pib_a_precios_de_mercado}))
+  mutate(across(-c(anio, iso3, pib_a_precios_de_mercado),
+                function(x) {x/100*pib_a_precios_de_mercado}))
 
-
-oyd_globales_indec <- 
-  %>% 
-  .[c(4,5,7:8,12:16),] %>% 
-  t() %>% 
-  as_tibble(.name_repair = "unique")
-
-names(oyd_globales_indec) <- oyd_globales_indec[1,] %>%
-  janitor::make_clean_names()
 
 oyd_globales_indec <- oyd_globales_indec %>% 
-  rename(anio = na, trim = na_2)
+  filter(indicador %in% c("producto_interno_bruto",
+                          "importaciones_fob_bienes_y_servicios_reales",
+                          "consumo_privado",
+                          "consumo_publico",
+                          "exportaciones_fob_bienes_y_servicios_reales",
+                          "formacion_bruta_de_capital_fijo",
+                          "variacion_de_existencias") &
+           anio %in% 2017:2022 &
+           trim == "Total")
+ 
 
 oyd_globales_indec <- oyd_globales_indec %>% 
-  fill(anio)
-
-oyd_globales_indec <- oyd_globales_indec %>% 
-  filter(trim == "Total") %>% 
-  select(-trim)
+  select(-trim) %>% 
+  pivot_wider(names_from = indicador, values_from = valor)
 
 oyd_globales_indec <- oyd_globales_indec %>% 
   mutate(across(everything(), \(x) {as.numeric(gsub(" .*", "", x))}))
