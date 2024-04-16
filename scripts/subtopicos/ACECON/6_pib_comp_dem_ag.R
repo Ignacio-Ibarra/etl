@@ -17,7 +17,7 @@ cei_fnys <- read_csv(get_temp_path("R36C11"))
 pbiusd_fnys <- read_csv(get_temp_path("R36C9"))
   
 
-# oferta y demanda R38C6
+# oferta y demanda R38C12
 oyd_globales_indec <- read_csv(get_temp_path("R38C12"))
 
 
@@ -104,10 +104,10 @@ oyd_globales_indec <- oyd_globales_indec %>%
   pivot_wider(names_from = indicador, values_from = valor)
 
 oyd_globales_indec <- oyd_globales_indec %>% 
-  mutate(across(everything(), \(x) {as.numeric(gsub(" .*", "", x))}))
+  select(-c(unidad))
 
 oyd_globales_indec <- oyd_globales_indec %>% 
-  mutate(across(-anio, \(x) {x/lag(x)}, .names = "var_{.col}"))
+  mutate(across(-anio, function(x) {x/lag(x)}, .names = "var_{.col}"))
 
 oyd_globales_indec <- oyd_globales_indec %>% 
   filter(anio > 2017)
@@ -119,7 +119,7 @@ df_fnys_extrapolacion <-df_fnys_extrapolacion %>%
   bind_rows(oyd_globales_indec)
 
 df_fnys_extrapolacion <- df_fnys_extrapolacion %>% 
-  mutate(pib = expansor_xvar(pib, var_producto_interno_bruto),
+  mutate(pib = expansor_xvar(pib_a_precios_de_mercado, var_producto_interno_bruto),
          importaciones_de_bienes_y_servicios_reales = expansor_xvar(importaciones_de_bienes_y_servicios_reales,
                                                                     var_importaciones_fob_bienes_y_servicios_reales),
          exportaciones_de_bienes_y_servicios_reales = expansor_xvar(exportaciones_de_bienes_y_servicios_reales,
@@ -127,11 +127,11 @@ df_fnys_extrapolacion <- df_fnys_extrapolacion %>%
          formacion_bruta_de_capital = expansor_xvar(formacion_bruta_de_capital,
                                                                     var_formacion_bruta_de_capital_fijo),
          variacion_de_existencias = expansor_xvar(variacion_de_existencias,
-                                                    var_variacion_de_existencias_3),
+                                                    var_variacion_de_existencias),
          consumo_privado = expansor_xvar(consumo_privado,
-                                                  var_consumo_privado_5),
+                                                  var_consumo_privado),
          consumo_publico = expansor_xvar(consumo_publico,
-                                         var_consumo_publico_5)
+                                         var_consumo_publico)
          )
 
 df_fnys_extrapolacion <- df_fnys_extrapolacion %>% 
@@ -141,11 +141,14 @@ df_fnys_extrapolacion <- df_fnys_extrapolacion %>%
          formacion_bruta_de_capital)
 
 df_fnys_extrapolacion <- df_fnys_extrapolacion %>% 
-  mutate(across(-anio, \(x) {x/pib*100}))
+  mutate(across(-anio, function(x) {x/pib*100}))
 
 df_fnys_extrapolacion <- df_fnys_extrapolacion %>% 
   select(-pib)
-  
+
+df_fnys_extrapolacion <- df_fnys_extrapolacion %>% 
+  filter(anio > 2017)
+
 
 df_output <- bind_rows(df_fnys, df_fnys_extrapolacion)
 
@@ -163,32 +166,38 @@ df_output <- df_output %>%
 df_output <- df_output %>% 
   mutate(variacion_de_existencias = replace_na(variacion_de_existencias, 0))
 
+
+df_output <- df_output %>% 
+  pivot_longer(cols = -anio, names_to = "comp_dem_ag", values_to = "valor")
+
+df_output <- df_output %>% 
+  mutate(comp_dem_ag = gsub("_", " ", comp_dem_ag) %>% 
+           str_to_sentence() %>% 
+           gsub(" De "," de ", .)
+  )
+
 # Control vs output previo -------
 
-# descargo outout primera entrega del drive
-# se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
-
-out_prev <- out_prev %>% 
-  mutate(across(everything(), as.numeric))
-
-vs <- out_prev %>% 
-  left_join(df_output, by = c("anio"))
-
-vs <-  vs %>% 
-  mutate(across(where(is.numeric), \(x) round(x, 2))) 
-
-
-diff <- comparar_cols(vs) %>% 
-  filter(if_any(-anio,\(x) x != 0))
-  
-diff %>% 
-  write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-  subtopico =  subtopico)
+comparacion <- comparar_outputs(df_output, nombre = output_name,
+                                subtopico = "ACECON", pk = c("anio", "comp_dem_ag"), drop_output_drive = F)
 
 # Write output ------
 
 
 df_output %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-  subtopico = subtopico)
+  # rename(indicador = comp_dem_ag) %>% 
+  mutate(unidad = "porcentaje del PBI") %>% 
+  write_output(output_name = output_name,subtopico = "ACECON",
+               fuentes = c("R36C10",
+                           "R36C11",
+                           "R36C9",
+                           "R38C12"),
+               analista = "",
+               pk = c("anio", "comp_dem_ag"),
+               aclaraciones = unique(meta$titulo_grafico[grepl(output_name,meta$dataset_nombre)]),
+               es_serie_tiempo = T,columna_indice_tiempo = "anio",
+               nivel_agregacion = "pais",
+               unidades = list("comp_dem_ag" = "porcentaje del PBI"),
+               etiquetas_indicadores = list("comp_dem_ag" = "Componentes de la demanda agregada"))
+
+

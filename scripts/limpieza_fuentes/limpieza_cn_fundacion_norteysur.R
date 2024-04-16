@@ -1,6 +1,6 @@
 # descargar fuente raw desde drive
 
-descargar_fuente_raw(36, dir = "data/_FUENTES/raw/")
+descargar_fuente("R36C0")
 
 
 
@@ -9,7 +9,7 @@ descargar_fuente_raw(36, dir = "data/_FUENTES/raw/")
 
 # carga
 
-data <- readxl::read_excel("data/_FUENTES/raw/cuentas-nacionales-fundacion-norte-y-sur.xlsx",
+data <- readxl::read_excel(get_temp_path("R36C0"),
                            sheet = 1, skip = 1)
 
 # rename anio
@@ -60,7 +60,7 @@ write_csv_fundar(data,
 
 # carga en sheet fuentes clean
 # agregar_fuente_clean(id_fuente_raw = 36,path_clean = "oferta-demanda-pctes-fnys.csv",
-#                      nombre = "Oferta y Demanda precios ctes - Cuentas Nacionales",
+#                      nombre = "Oferta y Demanda Global - Precios Constantes",
 #                      script = "limpieza_cn_fundacion_norteysur.R")
 
 actualizar_fuente_clean(id_fuente_clean = 4)
@@ -71,7 +71,7 @@ actualizar_fuente_clean(id_fuente_clean = 4)
 
 # carga
 
-data <- readxl::read_excel("data/_FUENTES/raw/cuentas-nacionales-fundacion-norte-y-sur.xlsx",
+data <- readxl::read_excel(get_temp_path("R36C0"),
                            sheet = "PBI en US$", skip = 1)
 
 # rename anio
@@ -134,7 +134,7 @@ actualizar_fuente_clean(id_fuente_clean = 9)
 
 # carga
 
-data <- readxl::read_excel("data/_FUENTES/raw/cuentas-nacionales-fundacion-norte-y-sur.xlsx",
+data <- readxl::read_excel(get_temp_path("R36C0"),
                            sheet = "OyD %PIB, Precios corr. ",
                            skip = 1)
 
@@ -194,7 +194,7 @@ actualizar_fuente_clean(10)
 
 # carga
 
-data <- readxl::read_excel("data/_FUENTES/raw/cuentas-nacionales-fundacion-norte-y-sur.xlsx",
+data <- readxl::read_excel(get_temp_path("R36C0"),
                            sheet = "CeI %PIB, Precios corr. ", skip = 1)
 
 # rename anio
@@ -274,3 +274,68 @@ write_csv_fundar(data,
 
 actualizar_fuente_clean(id_fuente_clean = 11)
 
+
+# PBI por sectores % ------------------------------------------------------
+
+data <- readxl::read_excel(get_temp_path("R36C0"),
+                                   sheet = "PBI por sectores %", skip = 1)
+
+data <- data %>% 
+  rename(anio  = Año)
+
+# armo diccionario de nombres de variables limpios
+diccionario_vars <- data[1:2,-1] %>% 
+  select(-where(function(x) all(is.na(x)))) %>% 
+  filter(!if_all(everything(), is.na)) %>% 
+  pivot_longer(everything()) %>% 
+  filter(!is.na(value)) %>% 
+  mutate(name_fixed = str_replace_all(name, "\\.{2}\\d{1,2}", NA_character_)) %>% 
+  fill(name_fixed) %>% 
+  select(-name)
+
+diccionario_vars <- diccionario_vars %>% 
+  mutate(
+    etiqueta = paste(name_fixed, value, sep = " - "))
+
+diccionario_vars <- diccionario_vars %>% 
+  mutate(etiqueta  = gsub(" - $|^ - ", "", etiqueta))
+
+diccionario_vars$etiqueta
+
+# pivot longer los datos
+data <- data %>% 
+  select(where(function(x) !all(is.na(x))))
+
+data <- data %>% 
+  select(-15)
+
+colnames(data) <- c(colnames(data)[1:11], diccionario_vars$etiqueta)
+
+data <- data %>% 
+  filter(!is.na(anio))
+
+data <- data %>% 
+  filter(!if_all(-anio, is.na))
+
+data <- data %>% 
+  pivot_longer(cols = -anio,
+               names_to = "indicador", values_to = "valor")
+
+data <- data %>% 
+  mutate(valor = replace(valor, valor %in% c("...", "#DIV/0!"), NA))
+
+data <- data %>% 
+  filter(anio >= 1900)
+
+
+# guardar como csv
+write_csv_fundar(data,
+                 file = "data/_FUENTES/clean/pbi_va_sectores_porcentual.csv")  
+
+# carga en sheet fuentes clean
+cargar_fuente_clean(id_fuente_raw = 36,
+                     path_clean = "pbi_va_sectores_porcentual.csv",
+                     nombre = "PBI por sectores - Composicion % a precios corrientes - Cuentas Nacionales",
+                     script = "limpieza_cn_fundacion_norteysur.R")
+
+actualizar_fuente_clean(id_fuente_clean = 13)

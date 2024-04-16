@@ -8,23 +8,15 @@ output_name <- "7_pib_comp_va"
 # Insumos -------
 
 # sectores a precios basicos como % del pib a precio de mercado y PIB a precio de basicos como % respecto a precio de mercado
-pbisectores_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                               sheet = "PBI por sectores %"
-                               )
+pbisectores_fnys <- read_csv(get_temp_path("R36C13"))
 
 # pib en usd “PIB a precios de mercado, en miles de $ 2018
-pbiusd_fnys <- readxl::read_excel(path = glue::glue("data/{subtopico}/datasets/raw/cuentas-nacionales-fund-norte-y-sur.xlsx"),
-                                  sheet = "PBI en US$", range = "B225", col_names = F) %>% 
-  rename(pib = ...1) %>% mutate(anio = 2018)
+pbiusd_fnys <- read_csv(get_temp_path("R36C9"))
 
 # vab por sectores a precios corrientes en millones de pesos corrientes 
-pbisectores_indec <- readxl::read_xls(glue::glue("data/{subtopico}/datasets/raw/sh_oferta_demanda_12_23.xls"),
-                                       sheet = "cuadro 12", col_names = F)
+pbisectores_indec <- read_csv(get_temp_path("R38C7"))
 
 # Procesamiento -------
-
-#1 paso a formato longer la serie de oyd
-pbisectores_indec <- tidy_indec(pbisectores_indec, tabla = "sh_oferta_demanda")
 
 #2 me quedo solo con los datos de total anual
 pbisectores_indec <- pbisectores_indec %>% 

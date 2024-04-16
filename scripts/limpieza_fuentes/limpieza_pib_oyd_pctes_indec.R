@@ -8,23 +8,23 @@ descargar_fuente_raw(id_fuente = 38, dir = "data/_FUENTES/raw/")
 oyd_pctes <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
                    sheet = 2)
 
-oyd_pctes <- oyd_pctes[-c(1:2),] |>
-  t() |>
+oyd_pctes <- oyd_pctes[-c(1:2),] %>%
+  t() %>%
   tibble::as_tibble(.name_repair = "unique")
 
-names(oyd_pctes) <- oyd_pctes[1,] |>
+names(oyd_pctes) <- oyd_pctes[1,] %>%
   janitor::make_clean_names()
 
-oyd_pctes <- oyd_pctes |>
+oyd_pctes <- oyd_pctes %>%
   dplyr::rename(anio = na, trim = na_2)
 
-oyd_pctes <- oyd_pctes |>
+oyd_pctes <- oyd_pctes %>%
   dplyr::mutate(anio = as.numeric(gsub(" .*", "", anio )))
 
-oyd_pctes <- oyd_pctes |>
+oyd_pctes <- oyd_pctes %>%
   tidyr::fill(anio)
 
-oyd_pctes <- oyd_pctes |>
+oyd_pctes <- oyd_pctes %>%
   dplyr::filter(!is.na(trim))
 
 oyd_pctes <- oyd_pctes[,!sapply(oyd_pctes, function(x) {sum(is.na(x)) == length(x)})]
@@ -56,23 +56,23 @@ rm(oyd_pctes)
 pib_categoria_pcorr <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
                                 sheet = 13)
 
-pib_categoria_pcorr <- pib_categoria_pcorr[-c(1:2),] |>
-  t() |>
+pib_categoria_pcorr <- pib_categoria_pcorr[-c(1:2),] %>%
+  t() %>%
   tibble::as_tibble(.name_repair = "unique")
 
-names(pib_categoria_pcorr) <- pib_categoria_pcorr[1,] |>
+names(pib_categoria_pcorr) <- pib_categoria_pcorr[1,] %>%
   janitor::make_clean_names()
 
-pib_categoria_pcorr <- pib_categoria_pcorr |>
+pib_categoria_pcorr <- pib_categoria_pcorr %>%
   dplyr::rename(anio = na, trim = na_2)
 
-pib_categoria_pcorr <- pib_categoria_pcorr |>
+pib_categoria_pcorr <- pib_categoria_pcorr %>%
   dplyr::mutate(anio = as.numeric(gsub(" .*", "", anio )))
 
-pib_categoria_pcorr <- pib_categoria_pcorr |>
+pib_categoria_pcorr <- pib_categoria_pcorr %>%
   tidyr::fill(anio)
 
-pib_categoria_pcorr <- pib_categoria_pcorr |>
+pib_categoria_pcorr <- pib_categoria_pcorr %>%
   dplyr::filter(!is.na(trim))
 
 pib_categoria_pcorr <- pib_categoria_pcorr[,!sapply(pib_categoria_pcorr,
@@ -94,7 +94,7 @@ write_csv_fundar(x = pib_categoria_pcorr,
 
 agregar_fuente_clean(id_fuente_raw = 38,
                      path_clean = "pib_categoria_pcorr.csv",
-                     nombre = "PIB por categoria de tabulacion a precios corientes",
+                     nombre = "PIB por categoria de tabulacion a precios corrientes",
                      script = "limpieza_pib_oyd_pctes_indec.R")
 
 actualizar_fuente_clean(id_fuente_clean = 7)
@@ -105,23 +105,23 @@ actualizar_fuente_clean(id_fuente_clean = 7)
 oyd_pcorr <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
                                 sheet = "cuadro 8")
 
-oyd_pcorr <- oyd_pcorr[-c(1:2),] |>
-  t() |>
-  tibble::as_tibble(.name_repair = "unique")
+oyd_pcorr <- oyd_pcorr[-c(1:2),] %>%
+  t() %>%
+  tibble::as_tibble(., .name_repair = "unique")
 
-names(oyd_pcorr) <- oyd_pcorr[1,] |>
+names(oyd_pcorr) <- oyd_pcorr[1,] %>%
   janitor::make_clean_names()
 
-oyd_pcorr <- oyd_pcorr |>
+oyd_pcorr <- oyd_pcorr %>%
   dplyr::rename(anio = na, trim = na_2)
 
-oyd_pcorr <- oyd_pcorr |>
+oyd_pcorr <- oyd_pcorr %>%
   dplyr::mutate(anio = as.numeric(gsub(" .*", "", anio )))
 
-oyd_pcorr <- oyd_pcorr |>
+oyd_pcorr <- oyd_pcorr %>%
   tidyr::fill(anio)
 
-oyd_pcorr <- oyd_pcorr |>
+oyd_pcorr <- oyd_pcorr %>%
   dplyr::filter(!is.na(trim))
 
 oyd_pcorr <- oyd_pcorr[,!sapply(oyd_pcorr, function(x) {sum(is.na(x)) == length(x)})]
@@ -143,8 +143,8 @@ cargar_fuente_clean(id_fuente_raw = 38,
                      path_clean = "oferta_demanda_pcorr.csv",
                      nombre = "Oferta y Demanda Globales trimestrales a precios corrientes",
                      script = "limpieza_pib_oyd_pctes_indec.R",
-                    actualizar = 12)
+                    actualizar = T)
 
-actualizar_fuente_clean(id_fuente_clean = 6)
+actualizar_fuente_clean(id_fuente_clean = 12)
 
-rm(oyd_pctes)
+rm(oyd_pcorr)
