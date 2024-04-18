@@ -29,6 +29,7 @@ pbisectores_indec <- pbisectores_indec %>%
 
 #4 seleccion de variables de interes
 pbisectores_indec <- pbisectores_indec %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
   select(anio, producto_interno_bruto, a_agricultura_ganaderia_caza_y_silvicultura,
          b_pesca, c_explotacion_de_minas_y_canteras, d_industria_manufacturera,
          e_electricidad_gas_y_agua, f_construccion,
@@ -38,9 +39,7 @@ pbisectores_indec <- pbisectores_indec %>%
          m_ensenanza, n_servicios_sociales_y_de_salud,
          o_otras_actividades_de_servicios_comunitarias_sociales_y_personales, p_hogares_privados_con_servicio_domestico)
 
-#5 paso a numerico los datos
-pbisectores_indec <- pbisectores_indec %>% 
-  mutate(across(everything(), as.numeric))
+
 
 #6 se agrupan subsectores en sectores que coinciden con la serie de fund norte y sur
 pbisectores_indec <- pbisectores_indec %>% 
@@ -63,50 +62,52 @@ pbisectores_indec <- pbisectores_indec %>%
 
 #8 calculo de proporciones de vab por sector respecto al pib
 pbisectores_indec <- pbisectores_indec %>%
-  mutate(across(-anio, \(x) 100*x/producto_interno_bruto,
+  mutate(across(-anio, function(x) 100*x/producto_interno_bruto,
                 .names = "prop_{.col}"))
 
 #9 calculo las variaciones interanuales de las prop
 pbisectores_indec <- pbisectores_indec %>%
-  mutate(across(-c(anio, matches("prop_")), \(x) x/lag(x), .names = "var_{.col}"))
+  mutate(across(-c(anio, matches("prop_")), function(x) x/lag(x), .names = "var_{.col}"))
 
 # pib bruto 2018
-#10 se pasa la unidad de miles de pesos a millones de pesos
+#10 se pasa la unidad de miles de pesos a pesos
 pbiusd_fnys <- pbiusd_fnys %>% 
-  mutate(pib = pib/1000)
+  filter(anio == 2018  & indicador == "PIB a precios de mercado" &
+           unidad == "miles de US$") %>% 
+  select(anio, iso3, pib = valor) %>% 
+  mutate(pib = pib*1000)
 
 #11 seleccion de variables de interes
 pbisectores_fnys <- pbisectores_fnys %>% 
-  select(1,3:12,16)
+  filter(indicador %in% c(
+    "PIB a costo de factores / precios básicos",
+    "Agricultura, caza y silvicultura",
+    "Pesca",
+    "Explotación de minas y canteras",
+    "Industrias Manufactureras",
+    "Electricidad, Gas y Agua",
+    "Construcción",
+    "Comercio al por mayor y menor, y hoteles y restaurantes",
+    "Transporte, almacenamiento y comunicaciones",
+    "Intermediación financiera y actividades inmobiliarias - Total",
+    "Administrac. pública y defensa y servicios sociales, comunales y personales - Total"
+  ))
 
-#12 nombro columnas
-colnames(pbisectores_fnys) <- c("anio",
-                                "pib_pbpm",
-                                "Agricultura, caza y silvicultura",
-                                "Pesca",
-                                "Explotación de minas y canteras",
-                                "Industrias Manufactureras",
-                                "Electricidad, Gas y Agua",
-                                "Construcción",
-                                "Comercio al por mayor y menor y hoteles y restaurantes",
-                                "Transporte, almacenamiento y comunicaciones",
-                                "Intermediación financiera y actividades inmobiliarias",
-                                "Administrac. pública y defensa y serv. soc.") %>% 
-  janitor::make_clean_names()
-
-#13 paso dato a numerico
-pbisectores_fnys <- pbisectores_fnys %>% 
-  mutate(across(everything(), as.numeric))
 
 #14 filtro anios de interes (la serie llega a 2018)
 pbisectores_fnys <- pbisectores_fnys %>%
   filter(anio %in% 1935:2018)
+
+pbisectores_fnys <- pbisectores_fnys %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  janitor::clean_names()
 
 #15 completo valores faltantes en pib_pmpb
 # los años de 1970 a 1979 no tienen datos en la columna PIBpm%pb.
 # Entiendo que esto es porque para esos años PIBpb%pm = 100,
 # según se deduce de que la suma de los %pm de los sectores para esos años da igual a 100%
 pbisectores_fnys <- pbisectores_fnys %>%
+  rename(pib_pbpm = pib_a_costo_de_factores_precios_basicos) %>% 
   group_by(anio) %>% 
   mutate(pib_pbpm = ifelse(is.na(pib_pbpm), sum(c_across(-c(pib_pbpm)), na.rm = T ),
                            pib_pbpm)) %>% 
@@ -119,8 +120,8 @@ pbisectores_fnys <- pbisectores_fnys %>%
          construccion_y_ega = sum(c(construccion,electricidad_gas_y_agua), na.rm = T),
          comercio_y_servicios = sum(c(comercio_al_por_mayor_y_menor_y_hoteles_y_restaurantes, 
                                       transporte_almacenamiento_y_comunicaciones,
-                                      intermediacion_financiera_y_actividades_inmobiliarias,
-                                      administrac_publica_y_defensa_y_serv_soc), na.rm = T)) %>% 
+                                      intermediacion_financiera_y_actividades_inmobiliarias_total,
+                                      administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total), na.rm = T)) %>% 
   select(anio, pib_pbpm, agricultura_caza_silvicultura_y_pesca,
          explotacion_minas_y_canteras = explotacion_de_minas_y_canteras,
          industria_manufacturera = industrias_manufactureras,
@@ -133,7 +134,7 @@ pbisectores_fnys <- left_join(pbisectores_fnys, pbiusd_fnys)
 #18 calculo para anio 2018 el vab en millones de pesos como  % de sector a pb/pm /100 * valor pib pm bruto 
 pbisectores_fnys <- pbisectores_fnys %>% 
   ungroup() %>% 
-  mutate(across(-c(anio, pib), \(x) {x/100*pib},
+  mutate(across(-c(anio, iso3,  pib), function(x) {x/100*pib},
                 .names = "bruto_{.col}"))
 
 #19 reuno dataset fnys 1935:2018 con dataset de variaciones ia de indec 2019:2022
@@ -194,39 +195,36 @@ pbisectores_fnys <- pbisectores_fnys %>%
 
 #23 transformo los % de sector pb respecto pib pm a % sector pb respecto pib pb
 df_output <- pbisectores_fnys %>%
-  mutate(across(-c(anio, pib_pbpm), \(x) x/pib_pbpm*100)) %>% 
+  mutate(across(-c(anio, pib_pbpm), function(x) x/pib_pbpm*100)) %>% 
   ungroup() 
 
 
 
 # Control vs output previo -------
 
-# descargo outout primera entrega del drive
-# se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
 
-out_prev <- out_prev %>% 
-  mutate(across(-c(), as.numeric))
+df_output <- df_output %>% 
+  pivot_longer(cols = -c(anio), names_to = "sector", values_to = "valor") %>% 
+  mutate(sector = case_when(
+    grepl("agricultura", sector) ~ "Agricultura caza silvicultura y pesca",
+    grepl("cantera", sector) ~ "Explotacion minas y canteras",
+    grepl("construccion", sector) ~ "Construccion y ega",
+    grepl("comercio", sector) ~ "Comercio y servicios",
+    grepl("industria", sector) ~ "Industria manufacturera",
+    T ~ NA_character_
+  ))
 
-vs <- out_prev %>% 
-  left_join(df_output, by = c("anio"))
-
-
-vs <-  vs %>% 
-  mutate(across(where(is.numeric), \(x) round(x, 2))) 
-
-diff <- comparar_cols(vs) 
-
-diff <- diff %>% 
-  filter(if_any(-anio, \(x) x != 0))
-
-diff %>% 
-  write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-  subtopico =  subtopico)
+comparacion <- df_output %>% 
+  comparar_outputs(nombre = output_name,pk = c("anio", "sector"),
+                   drop_output_drive = F)
 
 # Write output ------
 
 
 df_output %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-  subtopico = subtopico)
+  write_output(output_name = output_name, fuentes = c("R36C13", "R36C9", "R38C7"),
+               subtopico = "ACECON",
+               analista = "",
+               pk = c("anio", "sector"),es_serie_tiempo = T, columna_indice_tiempo = "anio", nivel_agregacion = "pais",
+               etiquetas_indicadores =  list("sector" = "Sector"),
+               unidades = list("valor"="Porcentaje del PIB a precios básicos") )
