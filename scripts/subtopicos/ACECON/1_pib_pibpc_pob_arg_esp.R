@@ -7,13 +7,13 @@
 
 # maddison database
 # R37C1
-maddison_db <- read_csv(fuentes_files[grepl("R37C1", fuentes_files)])
+maddison_db <- read_csv(get_temp_path("R37C1"))
 
 # cuentas nacionales fund norte y sur
 # PIB moneda nacional constante 2004 (esta en miles)
 # PIB per capita moneda nacional constante 2004
 # R36C9
-pbi_fnys <-  read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
+pbi_fnys <-  read_csv(get_temp_path("R36C9"))
 
 # imf weo
 # unidades 
@@ -21,10 +21,10 @@ pbi_fnys <-  read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
 # "NGDPRPC" (pib per capita) esta en moneda nacional constantes
 # "LP" (poblacion) esta en millones (1e6)
 # R34C2
-weo_imf <- read_csv(fuentes_files[grepl("R34C2", fuentes_files)])
+weo_imf <- read_csv(get_temp_path("R34C2"))
 
 # diccionario weo imf R34C3
-diccionario_weo <- read_csv(fuentes_files[grepl("R34C3", fuentes_files)])
+diccionario_weo <- read_csv(get_temp_path("R34C3"))
 
 # parametros generales ---------
 
