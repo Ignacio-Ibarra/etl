@@ -10,3 +10,4 @@ metadata.csv
 argendata-etl.Rproj
 data/_FUENTES
 data
+*.html
