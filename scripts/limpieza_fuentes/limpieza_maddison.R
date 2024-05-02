@@ -2,12 +2,12 @@
 
 
 descargar_fuente_raw(id_fuente = 37,
-                      dir = "data/_FUENTES/raw/")
+                      dir = tempdir())
 
 
 # carga
 
-data <- readxl::read_excel("data/_FUENTES/raw/mpd2020.xlsx",
+data <- readxl::read_excel(get_temp_path("R37C0"),
                            sheet = "Full data")
 
 # rename columns
@@ -29,7 +29,12 @@ data <- data %>%
   filter(!is.na(valor))
 
 
-ultimo_dato <- data %>% pull(anio) %>% last()
+data %>% 
+  mutate(unidad = case_when(
+    indicador == "pop" ~ "unidades",
+    indicador == "gdppc" ~ ""
+  ))
+
 # guardar
 write_csv_fundar(data, file = "data/_FUENTES/clean/mpd2020.csv")  
 

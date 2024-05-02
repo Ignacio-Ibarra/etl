@@ -1,23 +1,23 @@
-descargar_fuente_raw(id_fuente = 39, dir  = "data/_FUENTES/raw/") 
+descargar_fuente_raw(id_fuente = 39, dir  = tempdir()) 
 
 
-pob_indec <- readxl::read_excel("data/_FUENTES/raw/c1_proyecciones_nac_2010_2040.xls")
+pob_indec <- readxl::read_excel(get_temp_path("R39C0"))
 
 
 pob_indec <- pob_indec[-c(1:4),]
   
 
-names(pob_indec) <- pob_indec[1,] |>
+names(pob_indec) <- pob_indec[1,] %>%
   janitor::make_clean_names()
 
-pob_indec <- pob_indec |>
+pob_indec <- pob_indec %>%
   dplyr::rename(anio = na)
 
-pob_indec <- pob_indec |>
+pob_indec <- pob_indec %>%
   dplyr::mutate(anio = as.numeric(gsub(" .*", "", anio )))
 
 
-pib_categoria_pcorr <- pib_categoria_pcorr |>
+pib_categoria_pcorr <- pib_categoria_pcorr %>%
   dplyr::filter(!is.na(anio))
 
 pob_indec <- pob_indec[,!sapply(pob_indec,

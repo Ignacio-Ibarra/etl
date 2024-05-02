@@ -1,11 +1,11 @@
 
-descargar_fuente_raw(id_fuente = 38, dir = "data/_FUENTES/raw/")
+descargar_fuente_raw(id_fuente = 38, dir = tempdir())
 
 
 # cuadro 1 ----------------------------------------------------------------
 
 
-oyd_pctes <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
+oyd_pctes <- readxl::read_excel(get_temp_path("R38C0"),
                    sheet = 2)
 
 oyd_pctes <- oyd_pctes[-c(1:2),] %>%
@@ -53,7 +53,7 @@ rm(oyd_pctes)
 
 # cuadro 12 ---------------------------------------------------------------
 
-pib_categoria_pcorr <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
+pib_categoria_pcorr <- readxl::read_excel(get_temp_path("R38C0"),
                                 sheet = 13)
 
 pib_categoria_pcorr <- pib_categoria_pcorr[-c(1:2),] %>%
@@ -102,7 +102,7 @@ actualizar_fuente_clean(id_fuente_clean = 7)
 # cuadro 8 ---------------------------------------------------------------
 
 
-oyd_pcorr <- readxl::read_excel("data/_FUENTES/raw/sh_oferta_demanda_12_23.xls",
+oyd_pcorr <- readxl::read_excel(get_temp_path("R38C0"),
                                 sheet = "cuadro 8")
 
 oyd_pcorr <- oyd_pcorr[-c(1:2),] %>%

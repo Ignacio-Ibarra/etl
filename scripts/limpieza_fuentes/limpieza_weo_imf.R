@@ -2,9 +2,9 @@
 # weo imf -----------------------------------------------------------------
 
 descargar_fuente_raw(id_fuente = 34,
-                     dir = "data/_FUENTES/raw/")
+                     dir = tempdir())
 
-data <- readr::read_tsv("data/_FUENTES/raw/weo-imf.xls")
+data <- readr::read_tsv(get_temp_path("R34C0"))
 
 data <- data %>% 
   mutate(across(everything(), as.character))
