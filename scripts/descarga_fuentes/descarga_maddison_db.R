@@ -6,9 +6,20 @@ content <- httr2::req_perform(httr2::request(link))
 
 download.file(url = link, 
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/_FUENTES/raw/maddisondatabase.xlsx"))
+              destfile = normalizePath(glue::glue("{tempdir()}/maddisondatabase.xlsx")))
 
-agregar_fuente_raw(
+# agregar_fuente_raw(
+#   url = link,
+#   nombre = "Maddison Project Database",
+#   institucion = "University of Groningen",
+#   actualizable = T,
+#   script = "descarga_maddison_db.R",
+#   path_raw = "maddisondatabase.xlsx",
+#   fecha_descarga = Sys.Date()
+# )
+
+actualizar_fuente_raw(
+  id = 37,
   url = link,
   nombre = "Maddison Project Database",
   institucion = "University of Groningen",
@@ -17,5 +28,3 @@ agregar_fuente_raw(
   path_raw = "maddisondatabase.xlsx",
   fecha_descarga = Sys.Date()
 )
-
-actualizar_fuente(id = 37, fecha_descarga = Sys.Date())

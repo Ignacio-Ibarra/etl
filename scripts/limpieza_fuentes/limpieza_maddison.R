@@ -29,17 +29,20 @@ data <- data %>%
   filter(!is.na(valor))
 
 
-data %>% 
+data <- data %>% 
   mutate(unidad = case_when(
-    indicador == "pop" ~ "unidades",
-    indicador == "gdppc" ~ ""
+    indicador == "pop" ~ "habitantes",
+    indicador == "gdppc" ~ "2011 PPP/habitante"
   ))
 
-# guardar
-write_csv_fundar(data, file = "data/_FUENTES/clean/mpd2020.csv")  
+data <- data %>% 
+  select(iso3, country, region, anio, indicador, unidad, valor)
 
-# agregar_fuente_clean(id_fuente_raw = 37, path_clean = "mpd2020.csv",
-#                      nombre = "Maddison Project Database 2020",
+# guardar
+write_csv_fundar(data, file = armar_ruta("{tempdir()}/maddisondatabaseproject.csv"))
+
+# agregar_fuente_clean(id_fuente_raw = 37, path_clean = "maddisondatabaseproject.csv",
+#                      nombre = "Maddison Project Database",
 #                      script = "limpieza_maddison.R")
 
 actualizar_fuente_clean(id_fuente_clean = 1)

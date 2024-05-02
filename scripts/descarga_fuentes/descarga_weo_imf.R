@@ -9,9 +9,9 @@
 
 
 
-download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx",
+download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2024/April/WEOApr2024all.ashx",
               mode = "wb",
-              destfile = glue::glue("data/_FUENTES/raw/weo-imf.xls"))
+              destfile = glue::glue("{tempdir()}/weo-imf.xls"))
 
 # agregar_fuente_raw(
 #   url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx",
@@ -24,4 +24,5 @@ download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Data
 #   script = "descarga_weo_imf.R"
 # )
 
-actualizar_fuente_raw(id_fuente = 34)
+actualizar_fuente_raw(id_fuente = 34,
+                      url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2024/April/WEOApr2024all.ashx", dir = tempdir())
