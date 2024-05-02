@@ -66,6 +66,7 @@ mys_undp <- mys_undp %>%
 # maddisn
 
 mpd2020 <- mpd2020 %>%
+  select(-c(country, region, unidad)) %>% 
   pivot_wider(names_from = indicador, values_from = valor) %>% 
   filter(anio == 2018 & pop >= 2.5e6 & !is.na(gdppc))
 
@@ -86,8 +87,7 @@ iso_countrycodes <- get_nomenclador_geografico() %>%
 
 pibpc_salud_edu$iso3[!pibpc_salud_edu$iso3 %in% iso_countrycodes$codigo_fundar]
 
-pibpc_salud_edu <- pibpc_salud_edu %>% 
-  select(-country)
+
 
 nrow(pibpc_salud_edu)
 
@@ -108,6 +108,7 @@ output <- pibpc_salud_edu %>%
 
 comparacion <- comparar_outputs(df = output %>% 
                                   mutate(pais = replace_non_ascii(pais)), nombre = output_name,
+                                subtopico = "ACECON",
                                 pk = c("iso3"), drop_output_drive = F)
 
 # write output ------
