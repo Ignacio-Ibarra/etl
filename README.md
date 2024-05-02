@@ -7,11 +7,11 @@ Este proyecto busca sistematizar en scripts de R o Python los procesos de genera
 0. instalar el paquete [argendataR](https://github.com/argendata/argendataR)
 1. configurar variables de entorno
 2. ejecutar `scripts/main.R`
-3. crear los scripts de descarga de fuente y limpieza de fuentes necesarios para el subtopico (si es que no existen ya)
-4. ir a la carpeta del subtopico dentro de scripts
-5. completar el script de fuentes_*.R del subtopico con las funciones `descargar_fuente_clean()` o `descargar_fuente_raw()` que corresponda
-6. crear los scripts para cada output dentro de la carpeta del subtopico (recomienddo usar  `script_subtopico()`)
-7. pushear los scripts y los outputs generados
+3. Si vas a comnezar un subtopico nuevo ejecuta `init_subtopico()` para crear los scripts y md de guia del subtopico
+4. Identificá las fuentes que necesitás, si no existen en `fuentes()`. Tenés que cargarlas al drive del proyecto siguiendo las instrucciones para fuentes.
+5. Ya con las fuentes disponibles, andá a la carpeta del subtopico en scripts y completá el script de fuentes_*.R del subtopico con las funciones `descargar_fuente()` para disponibilizar esas fuentes al flujo de tu subtopico.
+6. Trabajá con los scripts para cada output dentro de la carpeta del subtopico.
+8. pushear los scripts y los outputs generados
 
 ### main.R
 
