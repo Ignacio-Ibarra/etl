@@ -9,11 +9,11 @@ output_name <- "5_pibpc_prop_arg"
 
 # maddison db
 
-pibpc_maddison_db <- read_csv(fuentes_files[grepl("R37C1", fuentes_files)]) 
+pibpc_maddison_db <- read_csv(get_temp_path("R37C1"))
 
 
 # imf weo db
-weo_imf <- read_csv(fuentes_files[grepl("R34C2", fuentes_files)])
+weo_imf <- read_csv(get_temp_path("R34C2"))
 
 # Procesamiento -------
 

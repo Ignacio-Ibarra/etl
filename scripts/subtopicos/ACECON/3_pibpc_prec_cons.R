@@ -8,15 +8,15 @@ output_name <- "3_pibpc_prec_cons"
 # Insumos -------
 
 # R36C9
-cn_arg_fnys <- read_csv(fuentes_files[grepl("R36C9", fuentes_files)])
+cn_arg_fnys <- read_csv(get_temp_path("R36C9"))
 
 
 # oferta y demanda global trimestral INDEC cuentas nacionales
 # R38C6
-pib_indec <- read_csv(fuentes_files[grepl("R38C6", fuentes_files)])
+pib_indec <- read_csv(get_temp_path("R38C6"))
 
 # R39C8
-pob_indec <- read_csv(fuentes_files[grepl("R39C8", fuentes_files)])
+pob_indec <- read_csv(get_temp_path("R39C8"))
 
 # Procesamiento -------
 

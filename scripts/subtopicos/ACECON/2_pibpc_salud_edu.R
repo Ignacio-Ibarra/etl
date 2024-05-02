@@ -11,17 +11,17 @@ output_name <- "2_pibpc_salud_edu"
 
 # anios de expectativa de vida al nacer anio 2018 undp
 # R41C0
-le_undp <- read_csv(fuentes_files[grepl("R41C0", fuentes_files)])
+le_undp <- read_csv(get_temp_path("R41C0"))
   
   
 # mean schooling years undp anio 2018
 # R40C0
-mys_undp <- read_csv(fuentes_files[grepl("R40C0", fuentes_files)])
+mys_undp <- read_csv(get_temp_path("R40C0"))
   
 # population maddison db 2018
 # pibpc maddison db anio 2018
 # R37C1
-mpd2020 <- read_csv(fuentes_files[grepl("R37C1", fuentes_files)])
+mpd2020 <- read_csv(get_temp_path("R37C1"))
 
 
 # procesamiento -------------------------------------------------
