@@ -4,7 +4,6 @@
 
 # lectura de datos --------------------------------------------------------
 
-
 # maddison database
 # R37C1
 maddison_db <- read_csv(get_temp_path("R37C1"))
@@ -27,8 +26,10 @@ weo_imf <- read_csv(get_temp_path("R34C2"))
 diccionario_weo <- read_csv(get_temp_path("R34C3"))
 
 # parametros generales ---------
+anio_corte <- 2023
+max_maddison_db <- max(maddison_db$anio)
 
-periodo_weo <- 2018:2022
+periodo_weo <- max(maddison_db$anio):anio_corte
 output_name <- "1_pib_pibpc_pob_arg_esp"
 
 
@@ -87,20 +88,21 @@ weo_imf <- weo_imf %>%
                 function(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
   ungroup() %>% 
   select(anio, iso3, matches("var")) %>%
-  filter(anio != 2018) 
+  filter(anio > max_maddison_db) 
 
 
 #  proceso maddison database pibpc
 
 maddison_db <- maddison_db %>% 
-  complete(anio, iso3, indicador)
+  complete(anio, iso3, indicador) %>% 
+  select(-c(unidad, region))
 
 paises_excluidos <- maddison_db %>% 
   filter(is.na(valor) & anio == 1900) %>% 
   pull(iso3) %>% unique()
 
 maddison_db <- maddison_db %>% 
-  filter(anio %in% 1900:2018 & indicador %in% c("gdppc", "pop") & 
+  filter(anio >= 1900 & indicador %in% c("gdppc", "pop") & 
            ! iso3 %in% paises_excluidos)
 
 
@@ -239,7 +241,7 @@ nrow(output)
 
 # excluyo paises con datos faltantes en la serie de maddison
 
-incompletos <- output %>% complete(anio = 1900:2018, iso3) %>%
+incompletos <- output %>% complete(anio = 1900:anio_corte, iso3) %>%
   group_by(iso3) %>%
   filter(if_any(everything(), is.na)) %>% 
   pull(iso3) %>% unique()
@@ -253,7 +255,7 @@ output <- output %>%
 comparacion <- comparar_outputs(df = output %>% 
                                   mutate(pais = replace_non_ascii(pais)),
                                 nombre = output_name,
-                                subtopico = subtopico, pk = c("anio", "iso3"),
+                                subtopico = "ACECON", pk = c("anio", "iso3"),
                                 drop_output_drive = F)
 
 # write output ------
