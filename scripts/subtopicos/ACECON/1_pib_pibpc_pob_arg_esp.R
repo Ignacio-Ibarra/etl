@@ -29,14 +29,15 @@ diccionario_weo <- read_csv(get_temp_path("R34C3"))
 anio_corte <- 2023
 max_maddison_db <- max(maddison_db$anio)
 
-periodo_weo <- max(maddison_db$anio):anio_corte
+periodo_weo_mundo <- max(maddison_db$anio):anio_corte
+periodo_weo_arg <- max(pbi_fnys$anio):anio_corte
 output_name <- "1_pib_pibpc_pob_arg_esp"
 
 
 # procesamiento -----------
 
 
-# proceso weo_imf
+# proceso weo_imf  -----
 
 weo_imf <- weo_imf %>% 
   # selecciono vars de interes
@@ -53,13 +54,13 @@ weo_imf <- janitor::clean_names(weo_imf )
 
 weo_imf <- weo_imf %>% rename(poblacion = lp)
 
-
+# base weo para expandir mundo -----
 # filtro anios de interes
-weo_imf <- weo_imf %>% 
-  filter(anio %in% periodo_weo)
+weo_imf_mundo <- weo_imf %>% 
+  filter(anio %in% periodo_weo_mundo)
 
 
-weo_imf <- weo_imf %>%
+weo_imf_mundo <- weo_imf_mundo %>%
   # completo gdp a partir de gdp per capita y pob
   mutate(ngdp_r = ifelse(is.na(ngdp_r) & !is.na(ngdprpc) & !is.na(poblacion), 
                          ngdprpc*poblacion,
@@ -71,7 +72,7 @@ weo_imf <- weo_imf %>%
                    ngdprpc
   ))
 
-weo_imf <- weo_imf %>%
+weo_imf_mundo <- weo_imf_mundo %>%
   # agrupa por pais
   group_by(iso3) %>% 
   # excluyo filas con NA en alguna variabl
@@ -80,22 +81,60 @@ weo_imf <- weo_imf %>%
   mutate(filas = n()) %>%
   # deberia haber tantas filas por pais como anios en estudio
   # paises que no tengan dato para algun anio quedan excluidos
-  filter(filas == length(periodo_weo)) %>%
+  filter(filas == length(periodo_weo_mundo)) %>%
   select(-filas) %>%
   arrange(anio) %>% 
   # calculo las variaciones interanuales para pib, pibpc y pob
   mutate(across(-c(anio),
                 function(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
   ungroup() %>% 
-  select(anio, iso3, matches("var")) %>%
-  filter(anio > max_maddison_db) 
+  select(anio, iso3, matches("var")) %>% 
+  filter(anio > min(anio))
+
+# base weo para expandir arg -----
+# filtro anios de interes
+weo_imf_arg <- weo_imf %>% 
+  filter(anio %in% periodo_weo_arg & iso3 == "ARG")
+
+
+weo_imf_arg <- weo_imf_arg %>%
+  # completo gdp a partir de gdp per capita y pob
+  mutate(ngdp_r = ifelse(is.na(ngdp_r) & !is.na(ngdprpc) & !is.na(poblacion), 
+                         ngdprpc*poblacion,
+                         ngdp_r
+  ),
+  # completo gdp per cap a partir de gdp y pob
+  ngdprpc = ifelse(is.na(ngdprpc) & !is.na(ngdp_r) & !is.na(poblacion),
+                   ngdp_r/poblacion,
+                   ngdprpc
+  ))
+
+weo_imf_arg <- weo_imf_arg %>%
+  # agrupa por pais
+  group_by(iso3) %>% 
+  # excluyo filas con NA en alguna variabl
+  filter(if_all(everything(), function(x) !is.na(x))) %>%
+  # cuento filas por pais
+  mutate(filas = n()) %>%
+  # deberia haber tantas filas por pais como anios en estudio
+  # paises que no tengan dato para algun anio quedan excluidos
+  filter(filas == length(periodo_weo_arg)) %>%
+  select(-filas) %>%
+  arrange(anio) %>% 
+  # calculo las variaciones interanuales para pib, pibpc y pob
+  mutate(across(-c(anio),
+                function(x) {(x/lag(x))}, .names = "{.col}_var")) %>% 
+  ungroup() %>% 
+  select(anio, iso3, matches("var")) %>% 
+  filter(anio > min(anio))
+
 
 
 #  proceso maddison database pibpc
 
 maddison_db <- maddison_db %>% 
-  complete(anio, iso3, indicador) %>% 
-  select(-c(unidad, region))
+  select(-c(unidad, region, country, unidad)) %>% 
+  complete(anio, iso3, indicador) 
 
 paises_excluidos <- maddison_db %>% 
   filter(is.na(valor) & anio == 1900) %>% 
@@ -153,7 +192,7 @@ pbi_fnys <- pbi_fnys %>%
 # resto del mundo
 
 # al dataset de imf le agrego las filas y columnas del dataset de maddison
-pib_pibpc_pob_resto <- bind_rows(weo_imf %>% 
+pib_pibpc_pob_resto <- bind_rows(weo_imf_mundo %>% 
                                    filter(iso3 != "ARG" &
                                             iso3 %in% unique(maddison_db$iso3)),
                                  maddison_db)
@@ -193,7 +232,7 @@ pib_pibpc_pob_resto <- pib_pibpc_pob_resto %>%
 # arg
 
 # combino dataset de fund norte y sur con datos imf para argentina
-pib_pibpc_pob_arg <- bind_rows(weo_imf %>% 
+pib_pibpc_pob_arg <- bind_rows(weo_imf_arg %>% 
                                  filter(iso3 == "ARG"),
                                pbi_fnys)
 
@@ -219,8 +258,7 @@ pib_pibpc_pob_arg <- pib_pibpc_pob_arg %>%
 
 # reuno los datos de arg con los datos del resto del mundo
 output <- bind_rows(pib_pibpc_pob_arg, 
-                           pib_pibpc_pob_resto) %>% 
-  select(- country)
+                           pib_pibpc_pob_resto) 
 
 # etiquetas de pais 
 
@@ -266,9 +304,9 @@ comparacion <- comparar_outputs(df = output %>%
 output %>% 
   write_output(data = .,
               output_name = output_name,
-             subtopico = subtopico,
+             subtopico = "ACECON",
              fuentes = c("R34C3", "R34C2","R37C1", "R36C9"),
-             analista = analista,
+             analista = "",
              exportar = T,
              pk = c("iso3", "anio"),
              columna_indice_tiempo = "anio",
