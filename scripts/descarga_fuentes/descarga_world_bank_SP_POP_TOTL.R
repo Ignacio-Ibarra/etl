@@ -2,7 +2,7 @@ library(sjlabelled)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
-url <- "https://data.worldbank.org/indicator/SL.TLF.CACT.FM.NE.ZS"
+url <- "https://data.worldbank.org/indicator/SP.POP.TOTL"
 indicator_code <- str_split_1(url, "/") %>% tail(.,1)
 
 
@@ -11,6 +11,7 @@ data <- WDI(indicator=indicator_code, country = 'all')
 
 # Me quedo con el nombre del indicador 
 ind_label <- get_label(data[, c(indicator_code)])
+
 
 make_filename <- function(database_abb, indicator_label){
   indicator_label <- str_to_lower(indicator_label)
@@ -39,5 +40,4 @@ data %>% write_csv_fundar(sprintf("data/_FUENTES/raw/%s",download_filename))
 #                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 42, actualizable = T, dir = "data/_FUENTES/raw/")
-
+actualizar_fuente_raw(id_fuente = 46, actualizable = T, dir = "data/_FUENTES/raw/")
