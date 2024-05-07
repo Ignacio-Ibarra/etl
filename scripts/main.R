@@ -2,6 +2,7 @@ library(tidyverse)
 library(googledrive)
 library(googlesheets4)
 library(argendataR)
+library(WDI)
 
 # reutuliza la auth drive cacheada para el mail guardado como var de environ de R
 googledrive::drive_auth(email = Sys.getenv("USER_GMAIL"))
