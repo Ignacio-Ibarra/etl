@@ -3,25 +3,19 @@
 ## Lista de datasets
 
 
-- [ ] 1_matriz_prim_mundo_historic_larga
-- [ ] 2_matriz_prim_mundo_historic
-- [ ] 3_matriz_prim_mundo_historic
-- [ ] 4_energia_baja_carbono
-- [ ] 5_matriz_prim_mundo_historic
+- [x] 1_matriz_prim_mundo_historic_larga
+- [x] 3_matriz_prim_mundo_historic
+- [x] 4_energia_baja_carbono
 - [ ] 6_generacion_hidro_twh
 - [ ] 7_generacion_nuclear_twh
 - [ ] 8_capacidad_instalada_fv_gw
 - [ ] 9_capacidad_instalada_eolica_gw
 - [ ] 10_produccion_biocomb
 - [ ] 11_produc_electricidad_fuente_mundo_twh
-- [ ] 12_produc_electricidad_fuente_mundo_twh
-- [ ] 13_produc_electricidad_fuente_mundo_twh
 - [ ] 14_potencia_instalada_renov_regional
 - [ ] 15_identidad_kaya_mundo
-- [ ] 16_identidad_kaya_mundo
 - [ ] 17_intensidad_energ_mundo
 - [ ] 18_intensidad_carbono_electri_mundo
-- [ ] 19_intensidad_carbono_electri_mundo
 
 
 ## Referencias datasets
