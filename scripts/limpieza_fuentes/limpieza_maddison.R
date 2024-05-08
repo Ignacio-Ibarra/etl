@@ -39,7 +39,7 @@ data <- data %>%
   select(iso3, country, region, anio, indicador, unidad, valor)
 
 # guardar
-write_csv_fundar(data, file = armar_ruta("{tempdir()}/maddisondatabaseproject.csv"))
+write_csv_fundar(data, file = normalizePath(glue::glue("{tempdir()}/maddisondatabaseproject.csv")))
 
 # agregar_fuente_clean(id_fuente_raw = 37, path_clean = "maddisondatabaseproject.csv",
 #                      nombre = "Maddison Project Database",
