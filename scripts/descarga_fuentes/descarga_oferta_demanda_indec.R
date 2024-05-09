@@ -3,7 +3,7 @@ oyd_cn_indec_url <- "https://www.indec.gob.ar/ftp/cuadros/economia/sh_oferta_dem
 
 download.file(url = oyd_cn_indec_url, 
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/_FUENTES/raw/sh_oferta_demanda.xls"))
+              destfile = glue::glue("{tempdir()}/sh_oferta_demanda.xls"))
 
 
 agregar_fuente_raw(url = oyd_cn_indec_url,institucion = "INDEC", actualizable = T,
