@@ -1,12 +1,20 @@
 ################################################################################
-##                              Dataset: nombre                               ##
+##     Dataset: Media Movil de 5 años de la tasa de actividad, según la edad  ##
 ################################################################################
 
 #-- Descripcion ----
-#' Breve descripcion de output creado
+#' Media Movil de 5 años de la tasa de actividad, según la edad
 #'
 
-output_name <- "nombre del archivo de salida"
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
+
+subtopico <- "MERTRA"
+output_name <- "media_movil_por_edad_de_tasa_actividad"
+fuente1 <- "R49C16"   
+# fuente2 <- "R84C14"
 
 #-- Librerias ----
 
@@ -14,16 +22,40 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
+# ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
 
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+ephtu_df <- ephtu_df %>% mutate(
+  activo = case_when(
+    estado == 1 | estado == 2 ~ 1,
+    TRUE ~ 0
+  ),
+  # ocupado = case_when(
+  #   estado == 1 ~ 1,
+  #   TRUE ~ 0
+  # )
+)
+
+# ephtu_df <- ephtu_df %>%
+#   left_join(codigos, by = c('aglomerado', 'provincia'))
+
+
+df_output <- ephtu_df %>% 
+  select(anio = ano4, activo, edad = ch06, pondera) %>% 
+  group_by(anio, edad, activo) %>% 
+  summarize(pondera = sum(pondera)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = activo, values_from = pondera, values_fill = 0) %>% 
+  rename(activo = `1`, no_activo = `0`) %>% 
+  mutate(activo = rollsum(activo, 5, align="right", fill = 0),
+         no_activo = rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
+  mutate(tasa_actividad = activo / (no_activo + activo)) %>% 
+  filter(edad >= 10 & edad <= 90) %>% 
+  select(anio, edad, tasa_actividad)
+  
 
 #-- Controlar Output ----
 
@@ -34,9 +66,10 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("anio", "edad"),
   drop_output_drive = F
 )
+
 
 #-- Exportar Output ----
 
@@ -47,14 +80,14 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = c(fuente1),
+    analista = "",
+    pk = c("anio", "edad"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("tasa_actividad" = "Ratio entre la cantidad de personas pertenecientes a la población económicamente activa y la población total, por grupo etario (media movil cada 5 años de edad)."),
+    unidades = list("tasa_actividad" = "porcentaje")
   )
+
+
 
