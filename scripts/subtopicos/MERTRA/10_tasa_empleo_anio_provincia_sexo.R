@@ -13,7 +13,7 @@ gc()   #Garbage Collection
 
 subtopico <- "MERTRA"
 output_name <- "tasa_empleo_anio_provincia_sexo"
-fuente1 <- "R49C0"  # Cambiar luego por la fuente clean. 
+fuente1 <- "R49C16" 
 fuente2 <- "R84C14"
 
 
