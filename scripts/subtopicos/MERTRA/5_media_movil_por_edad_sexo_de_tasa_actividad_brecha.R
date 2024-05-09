@@ -13,7 +13,7 @@ gc()   #Garbage Collection
 
 subtopico <- "MERTRA"
 output_name <- "media_movil_por_edad_sexo_de_tasa_actividad_brecha"
-fuente1 <- "R49C0"  # Cambiar luego por la fuente clean. 
+fuente1 <- "R49C16"  
 # fuente2 <- "R84C14"
 
 #-- Librerias ----
@@ -23,7 +23,7 @@ fuente1 <- "R49C0"  # Cambiar luego por la fuente clean.
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
-ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
+# ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
 
 #-- Procesamiento ----
 
