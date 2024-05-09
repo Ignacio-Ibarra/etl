@@ -1,0 +1,62 @@
+################################################################################
+##            Dataset: 1_indice_cantidad_exportaciones_argentina              ##
+################################################################################
+
+#-- Descripcion ----
+#' Breve descripcion de output creado
+#'
+
+output_name <- "1_indice_cantidad_exportaciones_argentina.csv"
+
+#-- Librerias ----
+
+
+#-- Lectura de Datos ----
+
+# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
+# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
+readxl::read_xlsx(argendataR::get_temp_path("R43C0"), skip = ) %>% 
+  print(n = 50)
+
+
+#-- Parametros Generales ----
+
+# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+
+#-- Procesamiento ----
+
+df_outoput <- proceso
+
+#-- Controlar Output ----
+
+# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
+# Cambiar los parametros de la siguiente funcion segun su caso
+
+
+comparacion <- argendataR::comparar_outputs(
+  df_output,
+  nombre = output_name,
+  pk = c("anio", "iso3"),
+  drop_output_drive = F
+)
+
+#-- Exportar Output ----
+
+# Usar write_output con exportar = T para generar la salida
+# Cambiar los parametros de la siguiente funcion segun su caso
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = c("R37C1", "R34C2"),
+    analista = analista,
+    pk = c("anio", "iso3"),
+    es_serie_tiempo = T,
+    columna_indice_tiempo = "anio",
+    columna_geo_referencia = "iso3",
+    nivel_agregacion = "pais",
+    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
+    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+  )
+
