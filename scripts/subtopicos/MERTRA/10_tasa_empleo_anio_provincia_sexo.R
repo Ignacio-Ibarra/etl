@@ -1,5 +1,5 @@
 ################################################################################
-##                Dataset: Tasa de empleo por provincia y sexo                ##
+##    Dataset: Tasa de empleo por género y provincia (franja etaria 18-65 años) ##
 ################################################################################
 
 #-- Descripcion ----
