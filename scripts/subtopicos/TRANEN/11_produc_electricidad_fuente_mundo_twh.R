@@ -5,8 +5,9 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+limpiar_temps()
 
-output_name <- "nombre del archivo de salida"
+output_name <- "produc_electricidad_fuente_mundo_twh"
 
 #-- Librerias ----
 
@@ -14,16 +15,60 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+data <- readr::read_csv(argendataR::get_temp_path("R77C0"))
 
 
-#-- Parametros Generales ----
+data <- data %>% 
+  filter(!is.na(entities_code))
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+data <- data %>% 
+  mutate(tipo_energia = case_when(
+    name == "Other renewables excluding bioenergy - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Otras renovables",
+    name == "Electricity from bioenergy - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Bioenergia",
+    name == "Electricity from solar - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Solar",
+    name == "Electricity from coal - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Carbon",
+    name == "Electricity from gas - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Gas natural",
+    name == "Electricity from oil - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Petroleo",
+    name == "Electricity from wind - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Eolica",
+    name == "Electricity from nuclear - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Nuclear",
+    name == "Electricity from hydro - TWh (adapted for visualization of chart electricity-prod-source-stacked)" ~ "Hidro"
+  )) %>% 
+  rename(valor_en_twh = valor,
+         iso3 = entities_code)
 
-#-- Procesamiento ----
+total <- data %>% 
+  group_by(anio, iso3) %>% 
+  summarise(tipo_energia = "Total",
+            valor_en_twh = sum(valor_en_twh, na.rm = T)) %>%
+  ungroup()
 
-df_outoput <- proceso
+data <- data %>% 
+  select(anio, iso3, tipo_energia, valor_en_twh) %>% 
+  bind_rows(total)
+
+data <- data %>% 
+  group_by(anio, iso3) %>% 
+  mutate(porcentaje = 100*valor_en_twh/valor_en_twh[tipo_energia == "Total"]) %>% 
+  ungroup()
+
+data <- data %>% 
+  mutate(porcentaje = replace_na(porcentaje, 0))
+
+# data <- data %>% 
+#   mutate(tipo_energia = case_when(
+#     fuente_energia %in% c("Gas natural", "Carbon", "Petroleo") ~ "Sucias",
+#     fuente_energia == "Total" ~ "Total",
+#     T ~ "Limpias"
+#   ))
+# 
+# data <- data %>% 
+#   group_by(iso3) %>% 
+#   complete(anio, fuente_energia = "Biocombustibles", tipo_energia = "Limpias" ) %>% 
+#   mutate(porcentaje = replace_na(porcentaje, 0)) %>% 
+#   ungroup()
+
+df_output <- data
+
 
 #-- Controlar Output ----
 
@@ -34,9 +79,14 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  subtopico = "TRANEN",
+  entrega_subtopico = "datasets_segunda_entrega",
+  pk = c("anio", "iso3", "tipo_energia"),
   drop_output_drive = F
 )
+
+
+
 
 #-- Exportar Output ----
 
@@ -46,15 +96,17 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    subtopico = "TRANEN",
+    fuentes = c("R77C0"),
+    analista = "",
+    pk = c("anio", "iso3", "tipo_energia"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("tipo_energia" = "Tipo de energía",
+                                 "valor_en_twh" = "Producción de energía en Terawatts hora"),
+    unidades = list("valor_en_twh" = "TWh")
   )
 
+rm(list = ls())
