@@ -5,8 +5,11 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+#'
 
-output_name <- "nombre del archivo de salida"
+limpiar_temps()
+
+output_name <- "intensidad_carbono_electri_mundo"
 
 #-- Librerias ----
 
@@ -14,7 +17,7 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+data <- readr::read_csv(argendataR::get_temp_path("R80C0"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +26,15 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+
+data <- data %>% 
+  select(anio,iso3 = entities_code, valor_en_gco2_por_kwh = valor )
+
+
+data <- data %>% 
+  filter(!is.na(iso3))
+
+df_output <- data
 
 #-- Controlar Output ----
 
@@ -31,9 +42,12 @@ df_outoput <- proceso
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
+  subtopico = "TRANEN",
+  entrega_subtopico = "datasets_segunda_entrega",
   pk = c("anio", "iso3"),
   drop_output_drive = F
 )
@@ -43,18 +57,20 @@ comparacion <- argendataR::comparar_outputs(
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
+    subtopico = "TRANEN",
+    fuentes = c("R80C0"),
+    analista = "",
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("valor_en_gco2_por_kwh" = "Intensidad de carbono de la electricidad (por kWh)"),
+    unidades = list("valor_en_gco2_por_kwh" = "grams of CO₂ equivalents per kilowatt-hour")
   )
 
+rm(list = ls())

@@ -5,6 +5,7 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+limpiar_temps()
 
 output_name <- "matriz_prim_mundo_historic.csv"
 
@@ -57,11 +58,19 @@ data <- data %>%
   ungroup()
 
 data <- data %>% 
+  mutate(porcentaje = replace_na(porcentaje, 0))
+
+data <- data %>% 
   mutate(tipo_energia = case_when(
     fuente_energia %in% c("Gas natural", "Carbon", "Petroleo") ~ "Sucias",
     fuente_energia == "Total" ~ "Total",
     T ~ "Limpias"
   ))
+
+data <- data %>% 
+  group_by(iso3,) %>% 
+  complete(anio, fuente_energia = "Biocombustibles", tipo_energia = "Limpias" ) %>% 
+  mutate(porcentaje = replace_na(porcentaje, 0))
 
 df_output <- data
 
@@ -69,7 +78,6 @@ df_output <- data
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
-
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
@@ -79,6 +87,12 @@ comparacion <- argendataR::comparar_outputs(
   pk = c("anio", "iso3", "tipo_energia", "fuente_energia"),
   drop_output_drive = F
 )
+
+
+
+# check filas nuevas
+# df_output %>% 
+#   anti_join(comparacion$output_drive) %>% view
 
 #-- Exportar Output ----
 
@@ -103,3 +117,4 @@ df_output %>%
     unidades = list("valor_en_twh" = "TWh", "porcentaje" = "porcentaje")
   )
 
+rm(list = ls())

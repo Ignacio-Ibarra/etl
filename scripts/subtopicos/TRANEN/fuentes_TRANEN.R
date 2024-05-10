@@ -34,6 +34,9 @@ descargar_fuente("R75C0")
 # Biofuels production -----------------------------------------------------
 descargar_fuente("R76C0")
 
+#Electricity production by source  -----------------------------------------------------
+descargar_fuente("R77C0")
+
 
 # Potencia instalada por region 2022, Argentina ---------------------------
 descargar_fuente("R81C0")

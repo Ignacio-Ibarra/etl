@@ -5,6 +5,7 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+limpiar_temps()
 
 output_name <- "energia_baja_carbono.csv"
 
@@ -66,3 +67,4 @@ df_output %>%
     unidades = list("valor_en_porcentaje" = "porcentaje")
   )
 
+rm(list = ls())

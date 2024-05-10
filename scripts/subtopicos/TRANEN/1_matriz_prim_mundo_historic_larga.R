@@ -5,6 +5,7 @@
 #-- Descripcion ----
 #' Consumo energético por fuente a nivel global, 1800-2022. (En TWh Y %)
 #'
+limpiar_temps()
 
 output_name <- "matriz_prim_mundo_historic_larga"
 
@@ -74,7 +75,7 @@ comparacion$output_drive$tipo_energia <- comparacion$output_drive$tipo_energia %
 
 # comparacion manual
 x <- left_join(comparacion$output_drive, df_output, by = c("anio", "tipo_energia"))
-sum(is.na(x$valor_en_twh.x))
+sum(is.na(x$valor_en_twh.y))
 cor(x$valor_en_twh.x, x$valor_en_twh.y) > 0.99
 
 #-- Exportar Output ----
@@ -98,3 +99,4 @@ df_output %>%
     unidades = list("valor_en_twh" = "TWh", "porcentaje" = "porcentaje")
   )
 
+rm(list = ls())
