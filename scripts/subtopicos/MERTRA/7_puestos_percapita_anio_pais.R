@@ -1,12 +1,14 @@
 ################################################################################
-##                              Dataset: nombre                               ##
+##          Dataset: Puestos per cápita por año y país                        ##
 ################################################################################
 
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "MERTRA"
+output_name <- "puestos_percapita_anio_pais"
+fuente1 <- "R92C15"
 
 #-- Librerias ----
 
@@ -14,16 +16,15 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+pwt_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
 
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- pwt_df %>% 
+  select(iso3 = countrycode, anio = year, emp, pop) %>% 
+  mutate(puestos_per_capita = emp/pop) %>% 
+  select(iso3, anio, puestos_per_capita)
 
 #-- Controlar Output ----
 
@@ -47,14 +48,14 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
+    fuentes = c(fuente1),
+    analista = "",
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("puestos_per_capita" = "Cantidad de puestos de trabajo sobre el total de la poblacion"),
+    unidades = list("puestos_per_capita" = "porcentaje")
   )
 
