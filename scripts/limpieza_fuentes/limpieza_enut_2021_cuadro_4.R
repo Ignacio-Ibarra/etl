@@ -1,4 +1,4 @@
-# Codigo de limpieza de datos de Encuesta Nacional de Uso del Tiempo 2021 Cuadro 3
+# Codigo de limpieza de datos de Encuesta Nacional de Uso del Tiempo 2021 Cuadro 4
 
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
@@ -39,11 +39,15 @@ norm_string <- function(string){
 col_names <- get_column_names(cell_range_str = cell_range)
 
 
-enut_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = sheet, range = cell_range, col_names = col_names, col_types = col_character() )
+enut_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), 
+                              sheet = sheet, 
+                              range = cell_range, 
+                              col_names = col_names,
+                              col_types = "text")
 
 enut_df <- enut_df[(seq(1, nrow(enut_df), by = 2)), ]
 
-enut_df <- enut_df %>% 
+enut_df_clean <- enut_df %>% 
   mutate(sexo = case_when( 
     A %in% c("Total", "Mujeres", "Varones") ~ A
   ),
@@ -55,8 +59,8 @@ enut_df <- enut_df %>%
   fill(sexo) %>% 
   select(sexo, grupo_edad, `Trabajo total` = B, `En la ocupación` = C, `No remunerado` = D) %>% 
   type_convert(. ) %>% 
-  pivot_longer(., !any_of(c("sexo", "grupo_edad")), names_to = "tipo_trabajo", values_to = "participacion") %>% 
-  mutate(participacion = participacion / 100)
+  pivot_longer(., !any_of(c("sexo", "grupo_edad")), names_to = "tipo_trabajo", values_to = "proporcion_dia") %>% 
+  mutate(minutos_dia = proporcion_dia *24*60)
 
 norm_sheet <- str_to_lower(sheet) %>% str_replace(., " ", "_")
 
@@ -64,7 +68,7 @@ clean_filename <- glue::glue("{norm_sheet}_{nombre_archivo_raw}_CLEAN.csv")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
-enut_df %>% write_csv_fundar(., file = path_clean)
+enut_df_clean %>% write_csv_fundar(., file = path_clean)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
@@ -74,5 +78,5 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      nombre = sprintf("Encuesta Nacional de Uso del Tiempo 2021 (%s)",sheet),
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 17,
+actualizar_fuente_clean(id_fuente_clean = 18,
                         dir = tempdir())
