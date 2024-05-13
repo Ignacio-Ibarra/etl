@@ -19,4 +19,7 @@ descargar_fuente("R92C15")
 # Encuesta Nacional de Uso del Tiempo 2021 Cuadro 3
 descargar_fuente("R93C17")
 
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 3
+descargar_fuente("R93C18")
+
 
