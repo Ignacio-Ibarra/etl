@@ -15,3 +15,8 @@ descargar_fuente("R84C14")
 
 # Penn World Tables 10.01
 descargar_fuente("R92C15")
+
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 3
+descargar_fuente("R93C17")
+
+
