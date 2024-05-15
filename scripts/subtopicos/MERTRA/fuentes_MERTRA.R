@@ -34,3 +34,5 @@ descargar_fuente("R93C21")
 # Jacques Charmes (2020) Uso del Tiempo por País, Sexo, Actividad y Subtipo de Actividad, ultimo año disponible
 descargar_fuente("R96C24")
 
+# Censo 2022 - Resultados Provisionales (Cuadro 1)
+descarga_fuente("R99C25")
