@@ -89,18 +89,84 @@ jcharm_women <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_n
   mutate(sexo = "Mujeres")
 
 jcharm_women <- bind_cols(countries_years_df, jcharm_women) %>% 
-  pivot_longer(!any_of(c("country", "anio_inicio", "anio_fin", "sexo")), names_to = "actividad", values_to = "minutos") 
+  pivot_longer(!any_of(c("country", "anio_inicio", "anio_fin", "sexo")), names_to = "subtipo_actividad", values_to = "minutos") 
 
-men_range <- "W1:AE:87"
+men_range <- "W1:AE87"
 jcharm_men <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_names = T, range = women_range)  %>% 
   rename(traduccion) %>% 
   mutate(sexo = "Varones")
 
 
 jcharm_men <- bind_cols(countries_years_df, jcharm_men) %>% 
-  pivot_longer(!any_of(c("country", "anio_inicio", "anio_fin", "sexo")), names_to = "actividad", values_to = "minutos") 
+  pivot_longer(!any_of(c("country", "anio_inicio", "anio_fin", "sexo")), names_to = "subtipo_actividad", values_to = "minutos") 
 
 jcharm <- bind_rows(jcharm_men, jcharm_women)
 
-# Dejo acá falta terminar desarrollar. 
-country_codes_en <- readxl::read_excel("https://www.ars.usda.gov/ARSUserFiles/50620500/Bibliographies/country_code_web.xls")
+# Descargo Country Code de USDA para tenerlo en inglés
+library(curl)
+url <- "https://www.ars.usda.gov/ARSUserFiles/50620500/Bibliographies/country_code_web.xls"
+destfile <- glue::glue("{tempdir()}/country_code_web.xls")
+
+h <- new_handle()
+handle_setheaders(h,
+                  "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                  "Accept" = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                  "Accept-Language" = "en-US,en;q=0.5",
+                  "Accept-Encoding" = "gzip, deflate, br",
+                  "Connection" = "keep-alive",
+                  "Upgrade-Insecure-Requests" = "1")
+
+curl_download(url, destfile, handle = h)
+
+#########################################################
+
+#Leo country codes y me traigo los codigos. 
+country_codes_en <- readxl::read_xls(destfile, col_names = c("country","iso3"), skip = 3)
+jcharm <- jcharm %>% left_join(country_codes_en, by = join_by(country) )
+
+
+# Los que no encontró se los imputo a mano. 
+imputaciones <- jcharm %>% filter(is.na(iso3)) %>% select(country) %>% distinct()
+imputaciones$iso3_imput <- c("IRN", "KOR", "LUX", "MKD", "PSE", "PAN", "TWN", "TZA", "GBR", "USA", NA)
+
+jcharm <- jcharm %>% left_join(imputaciones, by = join_by(country)) %>% 
+  mutate(iso3 = case_when(
+    is.na(iso3_imput) & is.na(iso3) ~ NA,
+    is.na(iso3) ~ iso3_imput,
+    TRUE ~ iso3)
+  ) %>% 
+  select(-iso3_imput)
+
+
+
+geonomenclador.fundar <- argendataR::get_nomenclador_geografico() %>% select(iso3 = codigo_fundar, pais_desc = desc_fundar, continente_fundar )
+
+# Agrego nombre en castellano de los países
+jcharm_cleaned <- jcharm %>% left_join(geonomenclador.fundar, by = join_by(iso3)) %>% select(-country) %>% filter(!is.na(iso3))
+jcharm_cleaned <- jcharm_cleaned %>% 
+  mutate(tipo_actividad = ifelse(grepl("Trabajo", subtipo_actividad), "Trabajo", "No trabajo")) %>% 
+  filter(!(subtipo_actividad %in% c("Trabajo total", "Tiempo total"))) %>% 
+  mutate(anios_observados = purrr::map2_chr(anio_inicio, anio_fin, ~ paste0(c(.x, .y), collapse = "-"))) %>%
+  select(iso3, pais_desc, continente_fundar, anios_observados, sexo, tipo_actividad, subtipo_actividad, minutos)
+
+nombre_archivo_raw <- nombre_archivo_raw %>% tolower() %>% str_replace_all(" ", "_")
+
+clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.csv")
+
+path_clean <- glue::glue("{tempdir()}/{clean_filename}")
+
+jcharm_cleaned %>% write_csv_fundar(., file = path_clean)
+
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+
+agregar_fuente_clean(id_fuente_raw = id_fuente,
+                     path_clean = clean_filename,
+                     directorio = tempdir(),
+                     nombre = "Uso del tiempo por país, sexo, tipo y subtipo de actividad, ultimo año disponible (Fundar en base a Jacques Charmes (2022)",
+                     script = code_name,
+                     descripcion = "Normalización de sheet de excel, traduccion de nombres de columnas, pivoteo de filas y columnas, normalizacion de nombres de países")
+
+# actualizar_fuente_clean(id_fuente_clean = 21,
+#                         dir = tempdir())
+
