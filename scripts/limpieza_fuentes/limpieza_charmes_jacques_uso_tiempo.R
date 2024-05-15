@@ -13,7 +13,7 @@ fuente_raw1 <- sprintf("R%sC0",id_fuente)
 descargar_fuente_raw(id_fuente = id_fuente, tempdir())
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw1) %>% 
+                                    dplyr::filter(codigo == fuente_raw1) %>% 
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
@@ -92,7 +92,7 @@ jcharm_women <- bind_cols(countries_years_df, jcharm_women) %>%
   pivot_longer(!any_of(c("country", "anio_inicio", "anio_fin", "sexo")), names_to = "subtipo_actividad", values_to = "minutos") 
 
 men_range <- "W1:AE87"
-jcharm_men <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_names = T, range = women_range)  %>% 
+jcharm_men <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_names = T, range = men_range)  %>% 
   rename(traduccion) %>% 
   mutate(sexo = "Varones")
 
@@ -126,7 +126,7 @@ jcharm <- jcharm %>% left_join(country_codes_en, by = join_by(country) )
 
 
 # Los que no encontró se los imputo a mano. 
-imputaciones <- jcharm %>% filter(is.na(iso3)) %>% select(country) %>% distinct()
+imputaciones <- jcharm %>% dplyr::filter(is.na(iso3)) %>% select(country) %>% distinct()
 imputaciones$iso3_imput <- c("IRN", "KOR", "LUX", "MKD", "PSE", "PAN", "TWN", "TZA", "GBR", "USA", NA)
 
 jcharm <- jcharm %>% left_join(imputaciones, by = join_by(country)) %>% 
@@ -142,11 +142,11 @@ jcharm <- jcharm %>% left_join(imputaciones, by = join_by(country)) %>%
 geonomenclador.fundar <- argendataR::get_nomenclador_geografico() %>% select(iso3 = codigo_fundar, pais_desc = desc_fundar, continente_fundar )
 
 # Agrego nombre en castellano de los países
-jcharm_cleaned <- jcharm %>% left_join(geonomenclador.fundar, by = join_by(iso3)) %>% select(-country) %>% filter(!is.na(iso3))
+jcharm_cleaned <- jcharm %>% left_join(geonomenclador.fundar, by = join_by(iso3)) %>% select(-country) %>% dplyr::filter(!is.na(iso3))
 jcharm_cleaned <- jcharm_cleaned %>% 
   mutate(tipo_actividad = ifelse(grepl("Trabajo", subtipo_actividad), "Trabajo", "No trabajo")) %>% 
-  filter(!(subtipo_actividad %in% c("Trabajo total", "Tiempo total"))) %>% 
-  mutate(anios_observados = purrr::map2_chr(anio_inicio, anio_fin, ~ paste0(c(.x, .y), collapse = "-"))) %>%
+  dplyr::filter(!(subtipo_actividad %in% c("Trabajo total", "Tiempo total"))) %>% 
+  mutate(anios_observados = purrr::map2_chr(anio_inicio, anio_fin, ~ paste0(c(.x, .y), collapse = " - "))) %>%
   select(iso3, pais_desc, continente_fundar, anios_observados, sexo, tipo_actividad, subtipo_actividad, minutos)
 
 nombre_archivo_raw <- nombre_archivo_raw %>% tolower() %>% str_replace_all(" ", "_")
@@ -160,13 +160,13 @@ jcharm_cleaned %>% write_csv_fundar(., file = path_clean)
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 
-agregar_fuente_clean(id_fuente_raw = id_fuente,
-                     path_clean = clean_filename,
-                     directorio = tempdir(),
-                     nombre = "Uso del tiempo por país, sexo, tipo y subtipo de actividad, ultimo año disponible (Fundar en base a Jacques Charmes (2022)",
-                     script = code_name,
-                     descripcion = "Normalización de sheet de excel, traduccion de nombres de columnas, pivoteo de filas y columnas, normalizacion de nombres de países")
+# agregar_fuente_clean(id_fuente_raw = id_fuente,
+#                      path_clean = clean_filename,
+#                      directorio = tempdir(),
+#                      nombre = "Uso del tiempo por país, sexo, tipo y subtipo de actividad, ultimo año disponible (Fundar en base a Jacques Charmes (2022)",
+#                      script = code_name,
+#                      descripcion = "Normalización de sheet de excel, traduccion de nombres de columnas, pivoteo de filas y columnas, normalizacion de nombres de países")
 
-# actualizar_fuente_clean(id_fuente_clean = 21,
-#                         dir = tempdir())
+actualizar_fuente_clean(id_fuente_clean = 24,
+                        dir = tempdir())
 
