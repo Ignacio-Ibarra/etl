@@ -31,3 +31,8 @@ descargar_fuente("R93C20")
 # Encuesta Nacional de Uso del Tiempo 2021 Cuadro 14
 descargar_fuente("R93C21")
 
+# Jacques Charmes (2020) Uso del Tiempo por País, Sexo, Actividad y Subtipo de Actividad, ultimo año disponible
+descargar_fuente("R96C24")
+
+# Censo 2022 - Resultados Provisionales (Cuadro 1)
+descarga_fuente("R99C25")
