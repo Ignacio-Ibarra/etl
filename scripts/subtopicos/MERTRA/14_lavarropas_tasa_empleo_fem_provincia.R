@@ -124,4 +124,4 @@ df_output %>%
                                  "prop_usa_lavarropas_201718" = "Proporción de hogares donde usan lavarropas"),
     unidades = list("tasa_empleo_18_65_mujeres" = "unidades",
                     "prop_usa_lavarropas_201718" = "unidades")
-  )
+ )
