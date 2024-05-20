@@ -5,25 +5,87 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+subtopico <- "MERTRA"
+output_name <- "lavarropas_tasa_empleo_fem_provincia"
+fuente1 <- "R49C16" 
+fuente2 <- "R84C14"
 
-output_name <- "nombre del archivo de salida"
+
 
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+nombre <- "engho2018_equipamiento"
+url <- glue::glue("https://www.indec.gob.ar/ftp/cuadros/menusuperior/engho/{nombre}.zip")
+destfile <- glue::glue("{tempdir()}/{nombre}.zip")
 
 
-#-- Parametros Generales ----
+# Descargar el archivo
+download.file(url, destfile, mode = "wb")
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+# Descomprimir el archivo
+unzip(destfile, exdir = tempdir())
 
-#-- Procesamiento ----
+unzipped_path <- glue::glue("{tempdir()}/{nombre}.txt")
 
-df_outoput <- proceso
+# ENGHO 2017-2018. Equipamientos
+engho_equip <- readr::read_delim(unzipped_path, delim="|")
+
+# EPHTU
+ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
+
+
+# EPH Total Urbano Diccionario Alomerados, Provincias, Regiones
+codigos <- readr::read_csv(argendataR::get_temp_path(fuente2))
+codigos <- codigos %>% select(aglomerado = aglom_cod_indec, provincia = prov_cod, prov_desc)
+
+#-- Procesamiento 1----
+
+df_lavarropas <- engho_equip %>% 
+  dplyr::filter(articulo == 541110) %>% 
+  dplyr::filter(cg44 != 99) %>% 
+  mutate(utilizacion = ifelse(cg44 == 1, "utiliza", "no_utiliza")) %>% 
+  group_by(provincia, utilizacion) %>% 
+  summarize(pondera = sum(pondera)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = utilizacion, values_from = pondera, values_fill = 0) %>% 
+  mutate(prop_usa_lavarropas_201718 = utiliza / (no_utiliza + utiliza)) %>% 
+  select(prov_cod = provincia, prop_usa_lavarropas_201718)
+
+#-- Procesamiento 2----
+
+ephtu_df <- ephtu_df %>% 
+  left_join(codigos, by = join_by(aglomerado, provincia)) # Joineo así por los casos en que hay mismo aglomerado pero distinta provincia e.g. San Nicolás-Villa Constitucion
+
+ephtu_df <- ephtu_df %>% mutate(
+  # activo = case_when(
+  #   estado == 1 | estado == 2 ~ 'activo',
+  #   TRUE ~ 'no_activo'
+  # ),
+  ocupado = case_when(
+    estado == 1 ~ 'ocupado',
+    TRUE ~ 'no_ocupado'
+  )
+)
+
+
+ultimo_anio <- max(ephtu_df$ano4)
+
+df_empleo <- ephtu_df %>% 
+  dplyr::filter(ano4 == ultimo_anio) %>% 
+  dplyr::filter(ch06>17 & ch06<66) %>% 
+  dplyr::filter(ch04 == 2) %>% 
+  group_by(provincia, prov_desc, ocupado) %>% 
+  summarize(pondera = sum(pondera)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = ocupado, values_from = pondera, values_fill = 0) %>% 
+  mutate(tasa_empleo_18_65_mujeres_2022 = ocupado / (no_ocupado + ocupado)) %>%   # La variable se guarda con este nombre pero los datos corresponden al ultimo año disponible. 
+  select(prov_cod = provincia, prov_desc, tasa_empleo_18_65_mujeres_2022)
+
+
+df_output <- left_join(df_empleo, df_lavarropas, by = join_by(prov_cod))
+
 
 #-- Controlar Output ----
 
@@ -34,12 +96,19 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("prov_cod"),
   drop_output_drive = F
 )
 
 #-- Exportar Output ----
 
+# cambio nombre archivo
+
+output_final <- df_output %>% rename(c("tasa_empleo_18_65_mujeres" = "tasa_empleo_18_65_mujeres_2022"))
+
+path <- glue::glue("{tempdir()}/{output_name}.csv")
+
+output_final %>% write_csv_fundar(.,path)
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
@@ -47,14 +116,12 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    fuentes = c(fuente1, fuente2, fuente3), # fuente3 debería ser la de la ENGHO
+    analista = "",
+    pk = c("prov_cod"),
+    es_serie_tiempo = F,
+    etiquetas_indicadores = list("tasa_empleo_18_65_mujeres" = "Ratio entre la cantidad de personas ocupadas y la cantidad de personas pertenecientes a la población económicamente activa, femenina, en la franja de los 18 a los 65 años",
+                                 "prop_usa_lavarropas_201718" = "Proporción de hogares donde usan lavarropas"),
+    unidades = list("tasa_empleo_18_65_mujeres" = "unidades",
+                    "prop_usa_lavarropas_201718" = "unidades")
   )
-
