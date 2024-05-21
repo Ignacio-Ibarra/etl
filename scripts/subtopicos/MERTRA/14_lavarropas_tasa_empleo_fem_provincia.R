@@ -5,6 +5,13 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+
+
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
+
 subtopico <- "MERTRA"
 output_name <- "lavarropas_tasa_empleo_fem_provincia"
 fuente1 <- "R49C16" 
