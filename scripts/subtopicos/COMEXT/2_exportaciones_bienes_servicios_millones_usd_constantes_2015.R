@@ -6,14 +6,17 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "exportaciones_bienes_servicios_millones_usd_constantes_2015"
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+
+output_name <- stringr::str_sub(string = code_name, start = 3, end = -3)
 
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
+## Consolidado WDI para COMEXT
 wdi_comext <- readr::read_csv(argendataR::get_temp_path("R98C0"))
 
 
