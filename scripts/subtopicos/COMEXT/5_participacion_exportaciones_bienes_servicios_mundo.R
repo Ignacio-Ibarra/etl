@@ -6,15 +6,32 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+
+output_name <- stringr::str_sub(string = code_name, start = 3, end = -3)
 
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
+## Location
+
+
+location <- read_csv(get_temp_path("location.csv")) %>% 
+            mutate(location_name_short_en = ifelse(location_code == 'SXM', "St Maarten", location_name_short_en ))
+
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+# Join base complexity con location
+
+
+complexity <- readr::read_csv(glue::glue("{tempdir()}/country_sitcproductsection_year.csv")) %>% 
+  select("year",  "location_id", "location_code", "export_value")
+
+
+complexity <- complexity %>% 
+  left_join(location, by = c("location_id","location_code"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +40,15 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <-   complexity %>% 
+  mutate(export_value = export_value/1000000) %>% 
+  group_by(year, location_code,  location_name_short_en ) %>% 
+  summarise(export_value = sum(export_value)) %>% 
+  rename(x_tt = export_value, 
+         iso3 = location_code) %>% 
+  group_by(year) %>% 
+  mutate(x_tt_pc = x_tt/sum(x_tt)*100) %>% 
+  select(-x_tt)
 
 #-- Controlar Output ----
 
@@ -34,7 +59,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("year", "iso3"),
   drop_output_drive = F
 )
 
@@ -43,18 +68,18 @@ comparacion <- argendataR::comparar_outputs(
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c("/srv/server_data/argendata/atlas_economic_complexity/"),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("year", "iso3"),
     es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
+    columna_indice_tiempo = "year",
     columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    nivel_agregacion = "pais/region",
+    etiquetas_indicadores = list("x_tt_pc" = "Exportaciones de Bienes y Servicios (% del Mundo)"),
+    unidades = list("x_tt_pc" = "porcentaje")
   )
-
