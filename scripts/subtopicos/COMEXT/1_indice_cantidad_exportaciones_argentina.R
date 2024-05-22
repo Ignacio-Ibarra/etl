@@ -6,26 +6,30 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "1_indice_cantidad_exportaciones_argentina.csv"
+output_name <- "indice_cantidad_exportaciones_argentina"
 
 #-- Librerias ----
-
+library(janitor) # Simple Tools for Examining and Cleaning Dirty Data CRAN v2.2.0 
 
 #-- Lectura de Datos ----
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
+# Los datos a cargar deben figurar en el script "fuentes_COMEXT.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readxl::read_xlsx(argendataR::get_temp_path("R43C0"), skip = ) %>% 
-  print(n = 50)
 
+limpiar_temps()
 
-#-- Parametros Generales ----
+ferreres <- readr::read_csv(argendataR::get_temp_path("R43C22")) %>%
+  dplyr::rename(cantidades_exportacion_ferreres = cantidades_de_exportacion) 
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+indec <-read_csv(argendataR::get_temp_path("R44C23")) %>%
+  dplyr::rename(cantidades_exportacion_indec = cantidades_de_exportacion) 
+
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <-  ferreres %>% 
+  dplyr::full_join(indec, by = 'anio')
+
 
 #-- Controlar Output ----
 
@@ -34,9 +38,9 @@ df_outoput <- proceso
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
+  subtopico = 'COMEXT', df = df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("anio"),
   drop_output_drive = F
 )
 
@@ -49,14 +53,17 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c("R43C22", "R44C23"),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("cantidades_exportacion_ferreres" = "Cantidades de Exportacion ARG (Serie Ferreres - Fundacion Norte y Sur)",
+                                 "cantidades_exportacion_indec" = "Cantidades de Exportacion ARG (Serie INDEC)"),
+    unidades = list("cantidades_exportacion_ferreres" = "Indice (base 2004)",
+                    "cantidades_exportacion_indec" = "Indice (base 2004)")
   )
+
+
 
