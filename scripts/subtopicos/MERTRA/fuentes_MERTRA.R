@@ -15,3 +15,24 @@ descargar_fuente("R84C14")
 
 # Penn World Tables 10.01
 descargar_fuente("R92C15")
+
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 3
+descargar_fuente("R93C17")
+
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 4
+descargar_fuente("R93C18")
+
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 5
+descargar_fuente("R93C19")
+
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 6
+descargar_fuente("R93C20")
+
+# Encuesta Nacional de Uso del Tiempo 2021 Cuadro 14
+descargar_fuente("R93C21")
+
+# Jacques Charmes (2020) Uso del Tiempo por País, Sexo, Actividad y Subtipo de Actividad, ultimo año disponible
+descargar_fuente("R96C24")
+
+# Censo 2022 - Resultados Provisionales (Cuadro 1)
+descarga_fuente("R99C25")

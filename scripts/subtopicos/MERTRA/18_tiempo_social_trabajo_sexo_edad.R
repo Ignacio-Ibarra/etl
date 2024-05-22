@@ -1,12 +1,23 @@
 ################################################################################
-##                              Dataset: nombre                               ##
+##        Dataset: Tiempo social diario (en minutos) dedicado                 ##
+##        al trabajo no remunerado por sexo y grupo de edad,                  ##
+##        14 años y más, 2021                                                 ##
 ################################################################################
+
+limpiar_temps()
+
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "MERTRA"
+output_name <- "tiempo_social_trabajo_sexo_edad"
+fuente1 <- "R93C17"
+fuente2 <- "R93C18"
 
 #-- Librerias ----
 
@@ -14,16 +25,16 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
-
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+enut_df_c3 <- readr::read_csv(argendataR::get_temp_path(fuente1))
+enut_df_c4 <- readr::read_csv(argendataR::get_temp_path(fuente2))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- enut_df_c3 %>% 
+  left_join(enut_df_c4, by=join_by(sexo, grupo_edad, tipo_trabajo)) %>% 
+  mutate(minutos = participacion * minutos_dia) %>%
+  filter(tipo_trabajo == "No remunerado") %>% 
+  select(sexo, grupo_edad,minutos) 
 
 #-- Controlar Output ----
 
@@ -34,7 +45,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("sexo", "grupo_edad"),
   drop_output_drive = F
 )
 
@@ -47,14 +58,11 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    fuentes = c(fuente1, fuente2),
+    analista = "",
+    pk =  c("sexo", "grupo_edad"),
+    es_serie_tiempo = F,
+    etiquetas_indicadores = list("minutos" = "Promedio de minutos diarios dedicados al trabajo"),
+    unidades = list("minutos" = "unidades")
   )
 

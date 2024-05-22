@@ -2,11 +2,21 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+limpiar_temps()
+
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "MERTRA"
+output_name <- "trabajo_no_remunerado_sexo_internacional"
+fuente1 <- "R96C24"
+
+
 
 #-- Librerias ----
 
@@ -14,7 +24,7 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+jcharm_cleaned <- readr::read_csv(argendataR::get_temp_path(fuente1))
 
 
 #-- Parametros Generales ----
@@ -23,7 +33,12 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- jcharm_cleaned %>% 
+  dplyr::filter(subtipo_actividad == "Trabajo no remunerado") %>% 
+  group_by(iso3, pais_desc, anios_observados, continente_fundar) %>% 
+  mutate(share_trabajo_no_remun = minutos / sum(minutos, na.rm = T)) %>% 
+  dplyr::filter(sexo == "Mujeres") %>% 
+  select(iso3, pais_desc, continente_fundar, anios_observados, share_trabajo_no_remun)
 
 #-- Controlar Output ----
 
@@ -34,7 +49,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("iso3"),
   drop_output_drive = F
 )
 
@@ -47,14 +62,14 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
+    directorio = tempdir(),
+    fuentes = c(fuente1),
+    analista = "",
+    pk = c("iso3"),
+    es_serie_tiempo = F,
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("share_trabajo_no_remun" = "Proporción del tiempo social dedicado al trabajo no remunerado que es realizado por mujeres"),
+    unidades = list("share_trabajo_no_remun" = "unidades")
   )
 
