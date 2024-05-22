@@ -3,11 +3,11 @@
 ## Lista de datasets
 
 
-- [ ] 1_indice_cantidad_exportaciones_argentina
-- [ ] 2_exportaciones_bienes_servicios_millones_usd_constantes_2015
-- [ ] 3_participacion_exportaciones_servicios_porcentaje_exportaciones
-- [ ] 4_participacion_exportaciones_bienes_servicios_porcentaje_pib
-- [ ] 5_participacion_exportaciones_bienes_servicios_mundo
+- [X] 1_indice_cantidad_exportaciones_argentina
+- [X] 2_exportaciones_bienes_servicios_millones_usd_constantes_2015
+- [X] 3_participacion_exportaciones_servicios_porcentaje_exportaciones
+- [X] 4_participacion_exportaciones_bienes_servicios_porcentaje_pib
+- [X] 5_participacion_exportaciones_bienes_servicios_mundo
 - [ ] 6_participacion_exportaciones_bienes_servicios_mundo
 - [ ] 7_indice_valores_unitarios_exportacion_bienes_2000
 - [ ] 8_indice_volumen_exportaciones_bienes_2000

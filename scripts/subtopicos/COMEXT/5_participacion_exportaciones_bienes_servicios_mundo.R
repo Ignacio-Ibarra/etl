@@ -70,14 +70,15 @@ comparacion <- argendataR::comparar_outputs(
 
 
 df_output %>%
-  argendataR::write_output(
+  rename(anio = year) %>% 
+  argendataR::write_output(directorio = "data/COMEXT/",
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("/srv/server_data/argendata/atlas_economic_complexity/"),
+    fuentes = c("R102C0"),
     analista = analista,
-    pk = c("year", "iso3"),
+    pk = c("anio", "iso3"),
     es_serie_tiempo = T,
-    columna_indice_tiempo = "year",
+    columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais/region",
     etiquetas_indicadores = list("x_tt_pc" = "Exportaciones de Bienes y Servicios (% del Mundo)"),
