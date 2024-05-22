@@ -17,7 +17,6 @@ argendataR::descargar_fuente(codigo = "R98C0") ## WDI_wdi_bm_comext.csv R98C0 (C
 ## BACI ----
 
 
-
 argendataR::descargar_fuente(codigo = "R94C0") ## wto_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado.csv R94C0 ----
 
 argendataR::descargar_fuente(codigo = "R95C0") ## indec_estimacion_experimental_servicios_internacionales_CABPS.csv R95C0 ----
@@ -27,22 +26,40 @@ argendataR::descargar_fuente(codigo = "R95C0") ## indec_estimacion_experimental_
 
 ## Harvard Atlas Economic Complexity (from server) ----
 
-read_csv("/srv/server_data/argendata/atlas_economic_complexity/country_partner_sitcproductsection_year.csv") %>% 
-  write_csv_fundar(file = glue::glue("{tempdir()}/country_partner_sitcproductsection_year.csv")) # country_partner_sitcproductsection_year.csv
 
-read_csv("/srv/server_data/argendata/atlas_economic_complexity/country_sitcproductsection_year.csv") %>% 
-  write_csv_fundar(file = glue::glue("{tempdir()}/country_sitcproductsection_year.csv")) # country_sitcproductsection_year.csv
-
-read_csv("/srv/server_data/argendata/atlas_economic_complexity/sitc_product-dta.csv") %>% 
-  write_csv_fundar(file = glue::glue("{tempdir()}/sitc_product-dta.csv")) # sitc_product-dta.csv
-
-
-# LOCATION # 
-
-read_csv("/srv/server_data/argendata/atlas_economic_complexity/location.csv") %>%  # Origin .tab (1)
-  write_csv_fundar(file = glue::glue("{tempdir()}/location.csv"))
-
-read_csv("/srv/server_data/argendata/atlas_economic_complexity/location-dta.csv") %>% 
-  dplyr::filter(level == "region") %>% 
-  write_csv_fundar(file = glue::glue("{tempdir()}/location-dta_region.csv")) # File para corregir base location.csv (1)
-
+        ### country_partner_sitcproductsection_year.csv ----
+        
+        raw_file <- "country_partner_sitcproductsection_year.csv"
+        
+        
+        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+        to_path <- glue::glue("{tempdir()}/{raw_file}")
+        file.copy(from = from_path, to = to_path ) 
+        
+        ### country_sitcproductsection_year.csv ----
+        
+        raw_file <- "country_sitcproductsection_year.csv"
+        
+        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+        to_path <- glue::glue("{tempdir()}/{raw_file}")
+        file.copy(from = from_path, to = to_path ) 
+        
+        ### sitc_product-dta.csv ----
+        
+        raw_file <- "sitc_product-dta.csv"
+        
+        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+        to_path <- glue::glue("{tempdir()}/{raw_file}")
+        file.copy(from = from_path, to = to_path ) 
+        
+        ### location.csv ----
+        
+        raw_file <- "location.csv"
+        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+        to_path <- glue::glue("{tempdir()}/{raw_file}")
+        file.copy(from = from_path, to = to_path ) 
+        
