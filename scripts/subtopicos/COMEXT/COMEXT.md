@@ -8,8 +8,8 @@
 - [X] 3_participacion_exportaciones_servicios_porcentaje_exportaciones
 - [X] 4_participacion_exportaciones_bienes_servicios_porcentaje_pib
 - [X] 5_participacion_exportaciones_bienes_servicios_mundo
-- [ ] 6_participacion_exportaciones_bienes_servicios_mundo
-- [ ] 7_indice_valores_unitarios_exportacion_bienes_2000
+- [X] 6_participacion_exportaciones_bienes_servicios_mundo (no se genero script. Mismo dataset que #5)
+- [X] 7_indice_valores_unitarios_exportacion_bienes_2000
 - [ ] 8_indice_volumen_exportaciones_bienes_2000
 - [ ] 9_indice_apertura_comercial
 - [ ] 10_composicion_exportaciones_bienes_sitc_seccion
