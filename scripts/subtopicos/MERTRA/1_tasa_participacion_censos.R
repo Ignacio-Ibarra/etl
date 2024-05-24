@@ -6,7 +6,14 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
+
+subtopico <- "MERTRA"
+output_name <- "tasa_participacion_censos"
 
 #-- Librerias ----
 
@@ -14,16 +21,18 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
-
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+empalme_censos <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1s-fNXGKqC2yqFxZHbPdFPOlzN86vskV4UR6ifaZqYRA/edit#gid=680584765", sheet="empalme")
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- empalme_censos %>% 
+  select(-`participacion_total_10+`) %>% 
+  pivot_longer(starts_with("partici"), names_to = "sexo", values_to = "tasa_participacion") %>% 
+  mutate(sexo = case_when(
+    sexo == "participacion_hombres_14+" ~ "Varones",
+    sexo == "participacion_mujeres_14+" ~ "Mujeres",
+    TRUE ~ "Ambos"
+  ))
 
 #-- Controlar Output ----
 
@@ -34,7 +43,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("anio", "sexo"),
   drop_output_drive = F
 )
 

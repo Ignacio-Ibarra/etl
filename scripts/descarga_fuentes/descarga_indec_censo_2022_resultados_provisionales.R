@@ -1,5 +1,7 @@
-# Encuesta Nacional de Uso del Tiempo 2021
-
+# Censo Nacional 2022 - Resultados provisionales
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 limpiar_temps()
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)

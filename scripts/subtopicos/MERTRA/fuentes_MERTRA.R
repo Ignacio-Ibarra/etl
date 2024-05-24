@@ -35,4 +35,4 @@ descargar_fuente("R93C21")
 descargar_fuente("R96C24")
 
 # Censo 2022 - Resultados Provisionales (Cuadro 1)
-descarga_fuente("R99C25")
+descargar_fuente("R99C25")
