@@ -12,7 +12,7 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
 
 raw_file <- "EVS_WVS_Joint_csv_v4_0.csv"
-# from_path <- glue::glue("./data/_FUENTES/raw/{raw_file}")
+# from_path <- glue::glue("./data/_FUENTES/raw/fuentes_sin_source/{raw_file}")
 from_path <- glue::glue("{Sys.getenv('FUENTE_SIN_SOURCE_PATH')}/{raw_file}")
 to_path <- glue::glue("{tempdir()}/{raw_file}")
 
