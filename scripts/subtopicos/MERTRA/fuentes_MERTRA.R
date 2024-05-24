@@ -36,3 +36,15 @@ descargar_fuente("R96C24")
 
 # Censo 2022 - Resultados Provisionales (Cuadro 1)
 descargar_fuente("R99C25")
+
+# World Values Survey (2017 - 2022)
+descargar_fuente("R105C0")
+
+# ENGHO (2017 - 2018). Equipamientos
+descargar_fuente("R106C0")
+
+# CEPXXI - Distribución de establecimientos productivos
+descargar_fuente("R107C0")
+
+"Participación Laboral según sexo, en los Censos (1869 - 2022)"
+descargar_fuente("R108C27")

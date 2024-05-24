@@ -13,8 +13,8 @@ gc()   #Garbage Collection
 
 
 subtopico <- "MERTRA"
-output_name <- "establecimientos_tasa_empleo_provincia_2021_22"
-fuente1 <- "./data/_FUENTES/raw/distribucion_establecimientos_productivos_sexo.csv" # corregir esto cuando se pueda cargar la data raw en fuentes_raw 
+output_name <- "establecimientos_tasa_empleo_provincia"
+fuente1 <- "R107C0" 
 fuente2 <- "R99C25"
 fuente3 <- "R49C16" 
 fuente4 <- "R84C14"
@@ -23,10 +23,11 @@ fuente4 <- "R84C14"
 #-- Lectura de Datos ----
 
 # fuente CEP
-establ_df <- readr::read_csv(fuente1) # corregir esto. 
+establ_df <- readr::read_csv(argendataR::get_temp_path(fuente1)) # corregir esto. 
 
 # Fuente Censo
-censo_df <- readr::read_csv(argendataR::get_temp_path(fuente2)) %>% select(jurisdiccion, total_de_poblacion) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
+censo_df <- readr::read_csv(argendataR::get_temp_path(fuente2)) %>% 
+  select(jurisdiccion, total_de_poblacion) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
 censo_df$jurisdiccion[25]<- "Tierra del Fuego, Antártida e Islas del Atlántico Sur"
 
 # Diccionario Provincias CEP
@@ -59,9 +60,9 @@ censo_df <- censo_df %>%
   select(provincia_geoar, pob = total_de_poblacion)
 
 
-# Cuento la cantidad de establecimientos por provincias para anio == 2022
+# Cuento la cantidad de establecimientos por provincias para anio == max(anio)
 establ_df_gr <- establ_df %>% 
-  dplyr::filter(anio == 2022) %>% 
+  dplyr::filter(anio == max(anio, na.rm = T)) %>% 
   group_by(provincia_id) %>% 
   summarise(cantidad_establecimientos = n()) %>%
   left_join(., prov_dicc, by=join_by(provincia_id)) %>% 
@@ -70,7 +71,7 @@ establ_df_gr <- establ_df %>%
 # Me traigo la población de cada provincia y hago el cociente. 
 establ_df_gr <- establ_df_gr %>%
   left_join(., censo_df, by=join_by(provincia_geoar)) %>% 
-  mutate(establecimientos_cada_1000_hab_2021_22 = 1000 * cantidad_establecimientos / pob)
+  mutate(establecimientos_cada_1000_hab = 1000 * cantidad_establecimientos / pob)
 
 
 # Calculo la tasa de empleo  
@@ -96,12 +97,12 @@ data_prov <- ephtu_df %>%
   summarize(pondera = sum(pondera)) %>% 
   ungroup() %>% 
   pivot_wider(names_from = ocupado, values_from = pondera, values_fill = 0) %>%
-  mutate(tasa_empleo_18_65_2022 = ocupado / (no_ocupado + ocupado)) %>% 
-  select(prov_cod, prov_desc, tasa_empleo_18_65_2022)
+  mutate(tasa_empleo_18_65 = ocupado / (no_ocupado + ocupado)) %>% 
+  select(prov_cod, prov_desc, tasa_empleo_18_65)
 
 
 df_output <- left_join(establ_df_gr, data_prov, by=join_by(provincia_id == prov_cod)) %>% 
-  select(provincia_id, provincia_desc = prov_desc, establecimientos_cada_1000_hab_2021_22, tasa_empleo_18_65_2022)
+  select(provincia_id, provincia_desc = prov_desc, establecimientos_cada_1000_hab, tasa_empleo_18_65)
 
 
 #-- Controlar Output ----
@@ -120,18 +121,16 @@ comparacion <- argendataR::comparar_outputs(
 #-- Exportar Output ---- (OJO MODIFICO NOMBRES DE OUTPUTSSS)
 
 # cambio nombre archivo
-output_name_nuevo <- "establecimientos_tasa_empleo_provincia"
-output_final <- df_output %>% rename(c("tasa_empleo_18_65" = "tasa_empleo_18_65_2022", "establecimientos_cada_1000_hab"="establecimientos_cada_1000_hab_2021_22"))
 
-path <- glue::glue("{tempdir()}/{output_name_nuevo}.csv")
+path <- glue::glue("{tempdir()}/{output_name}.csv")
 
-output_final %>% write_csv_fundar(.,path)
+df_output %>% write_csv_fundar(.,path)
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
   argendataR::write_output(
-    output_name = output_name_nuevo,
+    output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2, fuente3, fuente4),
     analista = "",

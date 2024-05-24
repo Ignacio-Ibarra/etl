@@ -11,9 +11,10 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-
 subtopico <- "MERTRA"
 output_name <- "tasa_participacion_censos"
+fuente1 <- "R108C27"
+
 
 #-- Librerias ----
 
@@ -21,18 +22,7 @@ output_name <- "tasa_participacion_censos"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-empalme_censos <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1s-fNXGKqC2yqFxZHbPdFPOlzN86vskV4UR6ifaZqYRA/edit#gid=680584765", sheet="empalme")
-
-#-- Procesamiento ----
-
-df_output <- empalme_censos %>% 
-  select(-`participacion_total_10+`) %>% 
-  pivot_longer(starts_with("partici"), names_to = "sexo", values_to = "tasa_participacion") %>% 
-  mutate(sexo = case_when(
-    sexo == "participacion_hombres_14+" ~ "Varones",
-    sexo == "participacion_mujeres_14+" ~ "Mujeres",
-    TRUE ~ "Ambos"
-  ))
+df_output <- readr::read_csv(argendataR::get_temp_path(fuente1))
 
 #-- Controlar Output ----
 
@@ -56,14 +46,13 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = c(fuente1),
+    analista = "",
+    pk = c("anio", "sexo"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    nivel_agregacion = "nacional",
+    etiquetas_indicadores = list("tasa_participacion" = "Tasa de participación laboral"),
+    unidades = list("tasa_participacion" = "unidades")
   )
 

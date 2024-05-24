@@ -28,12 +28,15 @@ unzip(destfile, exdir = outfolder)
 path_raw <- glue::glue("{nombre}.txt")
 
 nombre_fuente <- "Encuesta Nacional de Gastos de los Hogares 2017-2018. Equipamiento"
-agregar_fuente_raw(url = url,
-                   nombre = nombre_fuente,
-                   institucion = "INDEC",
-                   actualizable = T,
-                   fecha_descarga = Sys.Date(),
-                   directorio = tempdir(),
-                   path_raw = path_raw,
-                   script = code_name
-)
+
+# agregar_fuente_raw(url = url,
+#                    nombre = nombre_fuente,
+#                    institucion = "INDEC",
+#                    actualizable = T,
+#                    fecha_descarga = Sys.Date(),
+#                    directorio = tempdir(),
+#                    path_raw = path_raw,
+#                    script = code_name
+# )
+
+actualizar_fuente_raw(id_fuente = 106, dir = tempdir())

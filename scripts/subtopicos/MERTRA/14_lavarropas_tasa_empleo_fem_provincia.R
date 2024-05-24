@@ -14,30 +14,13 @@ gc()   #Garbage Collection
 
 subtopico <- "MERTRA"
 output_name <- "lavarropas_tasa_empleo_fem_provincia"
+fuente0 <- "R106C0"
 fuente1 <- "R49C16" 
 fuente2 <- "R84C14"
 
 
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-nombre <- "engho2018_equipamiento"
-url <- glue::glue("https://www.indec.gob.ar/ftp/cuadros/menusuperior/engho/{nombre}.zip")
-destfile <- glue::glue("{tempdir()}/{nombre}.zip")
-
-
-# Descargar el archivo
-download.file(url, destfile, mode = "wb")
-
-# Descomprimir el archivo
-unzip(destfile, exdir = tempdir())
-
-unzipped_path <- glue::glue("{tempdir()}/{nombre}.txt")
-
 # ENGHO 2017-2018. Equipamientos
-engho_equip <- readr::read_delim(unzipped_path, delim="|")
+engho_equip <- readr::read_delim(argendataR::get_temp_path(fuente0), delim="|")
 
 # EPHTU
 ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
@@ -57,8 +40,8 @@ df_lavarropas <- engho_equip %>%
   summarize(pondera = sum(pondera)) %>% 
   ungroup() %>% 
   pivot_wider(names_from = utilizacion, values_from = pondera, values_fill = 0) %>% 
-  mutate(prop_usa_lavarropas_201718 = utiliza / (no_utiliza + utiliza)) %>% 
-  select(prov_cod = provincia, prop_usa_lavarropas_201718)
+  mutate(prop_usa_lavarropas = utiliza / (no_utiliza + utiliza)) %>% 
+  select(prov_cod = provincia, prop_usa_lavarropas)
 
 #-- Procesamiento 2----
 
@@ -87,8 +70,8 @@ df_empleo <- ephtu_df %>%
   summarize(pondera = sum(pondera)) %>% 
   ungroup() %>% 
   pivot_wider(names_from = ocupado, values_from = pondera, values_fill = 0) %>% 
-  mutate(tasa_empleo_18_65_mujeres_2022 = ocupado / (no_ocupado + ocupado)) %>%   # La variable se guarda con este nombre pero los datos corresponden al ultimo año disponible. 
-  select(prov_cod = provincia, prov_desc, tasa_empleo_18_65_mujeres_2022)
+  mutate(tasa_empleo_18_65_mujeres = ocupado / (no_ocupado + ocupado)) %>%   # La variable se guarda con este nombre pero los datos corresponden al ultimo año disponible. 
+  select(prov_cod = provincia, prov_desc, tasa_empleo_18_65_mujeres)
 
 
 df_output <- left_join(df_empleo, df_lavarropas, by = join_by(prov_cod))
@@ -111,11 +94,9 @@ comparacion <- argendataR::comparar_outputs(
 
 # cambio nombre archivo
 
-output_final <- df_output %>% rename(c("tasa_empleo_18_65_mujeres" = "tasa_empleo_18_65_mujeres_2022"))
-
 path <- glue::glue("{tempdir()}/{output_name}.csv")
 
-output_final %>% write_csv_fundar(.,path)
+df_output %>% write_csv_fundar(.,path)
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
@@ -128,7 +109,7 @@ df_output %>%
     pk = c("prov_cod"),
     es_serie_tiempo = F,
     etiquetas_indicadores = list("tasa_empleo_18_65_mujeres" = "Ratio entre la cantidad de personas ocupadas y la cantidad de personas pertenecientes a la población económicamente activa, femenina, en la franja de los 18 a los 65 años",
-                                 "prop_usa_lavarropas_201718" = "Proporción de hogares donde usan lavarropas"),
+                                 "prop_usa_lavarropas" = "Proporción de hogares donde usan lavarropas"),
     unidades = list("tasa_empleo_18_65_mujeres" = "unidades",
-                    "prop_usa_lavarropas_201718" = "unidades")
+                    "prop_usa_lavarropas" = "unidades")
  )

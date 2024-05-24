@@ -12,11 +12,11 @@ gc()   #Garbage Collection
 
 subtopico <- "MERTRA"
 output_name <- "share_acuerdo_varones_empleo_region"
-fuente1 <- "./data/_FUENTES/raw/EVS_WVS_Joint_csv_v4_0.csv"
+fuente1 <- "R105C0"
 
 #-- Lectura de Datos ----
 
-wvs_df <- readr::read_csv(fuente1)
+wvs_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
 
 #-- Parametros Generales ----
 
@@ -74,14 +74,12 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    fuentes = fuente1,
+    analista = "",
+    es_serie_tiempo = F,
+    pk = c("region_wvs_code","nivel_acuerdo" ),
+    nivel_agregacion = "nacional",
+    etiquetas_indicadores = list("valor" = "Proporción de personas que tienen determinado nivel de acuerdo, por región"),
+    unidades = list("valor" = "unidades")
   )
 
