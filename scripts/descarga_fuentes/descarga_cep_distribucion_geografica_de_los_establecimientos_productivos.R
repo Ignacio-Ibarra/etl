@@ -18,20 +18,14 @@ destfile <- glue::glue("{tempdir()}/distribucion_establecimientos_productivos_se
 
 download.file(url, destfile = destfile, mode = "wb")
 
-agregar_fuente_raw(url = url,
-                   nombre = "Distribución geográfica de establecimientos productivos por sexo",
-                   institucion = "CEP",
-                   actualizable = T,
-                   fecha_descarga = Sys.Date(),
-                   directorio = tempdir(),
-                   path_raw = "distribucion_establecimientos_productivos_sexo.csv",
-                   script = code_name
-)
-
-# actualizar_fuente_raw(
-#   id = "R99C0",
-#   url = url,
-#   actualizable = T,
-#   path_raw = "cnphv2022_resultados_provisionales.xlsx",
-#   fecha_descarga = Sys.Date()
+# agregar_fuente_raw(url = url,
+#                    nombre = "Distribución geográfica de establecimientos productivos por sexo",
+#                    institucion = "CEP",
+#                    actualizable = T,
+#                    fecha_descarga = Sys.Date(),
+#                    directorio = tempdir(),
+#                    path_raw = "distribucion_establecimientos_productivos_sexo.csv",
+#                    script = code_name
 # )
+
+actualizar_fuente_raw(id_fuente = 107, dir = tempdir())
