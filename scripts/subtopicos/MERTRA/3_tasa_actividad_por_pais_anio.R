@@ -33,12 +33,26 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Procesamiento ----
 
-df_lab_force <- df_lab_force %>% select(iso3 = iso3c, anio = year,  lab_force = SL.TLF.TOTL.IN) %>% filter(!is.na(iso3))
-df_pop <- df_pop %>% select(iso3 = iso3c, anio = year,  total_pop = SP.POP.TOTL) %>% filter(!is.na(iso3))
+df_lab_force <- df_lab_force %>% 
+  select(iso3 = iso3c, anio = year,  lab_force = SL.TLF.TOTL.IN) %>% 
+  dplyr::filter(!is.na(iso3))
+
+df_pop <- df_pop %>% 
+  select(iso3 = iso3c, anio = year,  total_pop = SP.POP.TOTL) %>% 
+  dplyr::filter(!is.na(iso3))
+
 df <- inner_join(df_lab_force, df_pop) 
-df <- df %>% mutate(tasa_actividad = lab_force / total_pop)
-geonomenclador <- geonomenclador %>% select(codigo_fundar, iso3_desc = desc_fundar, nivel_agregacion)
-df_output <- df %>% select(iso3, anio, tasa_actividad) %>% left_join(., geonomenclador, by=c("iso3"="codigo_fundar")) %>% filter(!is.na(nivel_agregacion))
+
+df <- df %>% 
+  mutate(tasa_actividad = lab_force / total_pop)
+
+geonomenclador <- geonomenclador %>% 
+  select(codigo_fundar, iso3_desc = desc_fundar, nivel_agregacion)
+
+df_output <- df %>% 
+  select(iso3, anio, tasa_actividad) %>% 
+  left_join(., geonomenclador, by=c("iso3"="codigo_fundar")) %>% 
+  dplyr::filter(!is.na(nivel_agregacion))
 
 
 

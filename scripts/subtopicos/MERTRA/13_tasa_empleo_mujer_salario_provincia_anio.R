@@ -50,13 +50,13 @@ base <- ephtu_df %>%
 
 # Salario medio nacional
 salario_medio_nacional <- base %>% 
-  filter(ocupado == 'ocupado') %>% 
+  dplyr::filter(ocupado == 'ocupado') %>% 
   group_by(anio) %>% 
   summarise(salario_medio = weighted.mean(p21, pondiio))
 
 #Salario relativo a la media nacional por provincia y anio
 salario_medio_relativo_prov <- base %>% 
-  filter(ocupado == 'ocupado') %>% 
+  dplyr::filter(ocupado == 'ocupado') %>% 
   group_by(anio, provincia) %>% 
   summarise(salario_medio_prov = weighted.mean(p21, pondiio)) %>% 
   left_join(., salario_medio_nacional, by=join_by(anio)) %>% 
@@ -66,7 +66,7 @@ salario_medio_relativo_prov <- base %>%
 
 # Tasa de empleo mujer entre 18 y 65 años
 empleo_mujer_prov <- base %>% 
-  filter(edad>=18 & edad<=65 & sexo == 2) %>%
+  dplyr::filter(edad>=18 & edad<=65 & sexo == 2) %>%
   group_by(anio, provincia, ocupado) %>% 
   summarize(pondera = sum(pondera)) %>% 
   ungroup() %>% 

@@ -46,7 +46,7 @@ ephtu_df <- ephtu_df %>% mutate(
 
 base <- ephtu_df %>% 
   select(anio = ano4, ocupado, provincia = prov_desc, edad = ch06, nivel_ed, pondera) %>% 
-  filter(edad>24 & edad<66) %>% 
+  dplyr::filter(edad>24 & edad<66) %>% 
   mutate(nivel_ed_fundar = case_when(
     nivel_ed == 4 ~ "Secundario completo",
     nivel_ed %in% c(5,6) ~ "Superior incompleto o completo",

@@ -104,7 +104,7 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c(fuente1, fuente2, fuente3), # fuente3 debería ser la de la ENGHO
+    fuentes = c(fuente0, fuente1, fuente2), 
     analista = "",
     pk = c("prov_cod"),
     es_serie_tiempo = F,
