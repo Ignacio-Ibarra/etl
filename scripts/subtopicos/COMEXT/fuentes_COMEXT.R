@@ -63,3 +63,12 @@ argendataR::descargar_fuente(codigo = "R95C0") ## indec_estimacion_experimental_
         to_path <- glue::glue("{tempdir()}/{raw_file}")
         file.copy(from = from_path, to = to_path ) 
         
+        
+        
+        
+        # Elimino objetos de enviroment
+        rm(list = c("from_path", "raw_file", "to_path"))
+        
+        
+        
+        
