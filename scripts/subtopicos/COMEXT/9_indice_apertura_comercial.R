@@ -6,15 +6,20 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+
+output_name <- stringr::str_sub(string = code_name, start = 3, end = -3)
+
+
 
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+## Consolidado WDI para COMEXT
+wdi_comext <- readr::read_csv(argendataR::get_temp_path("R98C0"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +28,9 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- wdi_comext %>% 
+  select(time = year, iso3, countryname, tradeofgdp) 
+
 
 #-- Controlar Output ----
 
@@ -34,7 +41,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("time", "iso3"),
   drop_output_drive = F
 )
 
@@ -44,17 +51,18 @@ comparacion <- argendataR::comparar_outputs(
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
-  argendataR::write_output(
-    output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+  rename(anio = time) %>% 
+  argendataR::write_output(directorio = "data/COMEXT/",
+                           output_name = output_name,
+                           subtopico = subtopico,
+                           fuentes = c("R98C0"),
+                           analista = analista,
+                           pk = c("anio", "iso3"),
+                           es_serie_tiempo = T,
+                           columna_indice_tiempo = "anio",
+                           columna_geo_referencia = "iso3",
+                           nivel_agregacion = "pais",
+                           etiquetas_indicadores = list("tradeofgdp" = "Exportaciones e importaciones de bienes y servicios (% del PIB)"),
+                           unidades = list("tradeofgdp" = "real")
   )
 

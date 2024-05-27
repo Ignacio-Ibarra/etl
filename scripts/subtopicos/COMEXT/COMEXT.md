@@ -10,8 +10,8 @@
 - [X] 5_participacion_exportaciones_bienes_servicios_mundo
 - [X] 6_participacion_exportaciones_bienes_servicios_mundo (no se genero script. Mismo dataset que #5)
 - [X] 7_indice_valores_unitarios_exportacion_bienes_2000
-- [ ] 8_indice_volumen_exportaciones_bienes_2000
-- [ ] 9_indice_apertura_comercial
+- [X] 8_indice_volumen_exportaciones_bienes_2000
+- [X] 9_indice_apertura_comercial
 - [ ] 10_composicion_exportaciones_bienes_sitc_seccion
 - [ ] 11_composicion_importaciones_bienes_sitc_seccion
 - [ ] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
