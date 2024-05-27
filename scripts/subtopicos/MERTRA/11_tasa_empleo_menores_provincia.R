@@ -62,7 +62,7 @@ A <- bind_rows(empleo_prov, empleo_total_prov) %>%
   select(anio, prov_desc, tasa_empleo)
   
 empleo_menor_prov <- base %>% 
-  filter(edad < 18) %>% 
+  dplyr::filter(edad < 18) %>% 
   select(!edad)
 
 empleo_menor_prov_total <- empleo_menor_prov %>% 

@@ -50,10 +50,10 @@ df_output <- ephtu_df %>%
   ungroup() %>% 
   pivot_wider(names_from = activo, values_from = pondera, values_fill = 0) %>% 
   rename(activo = `1`, no_activo = `0`) %>% 
-  mutate(activo = rollsum(activo, 5, align="right", fill = 0),
-         no_activo = rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
+  mutate(activo = zoo::rollsum(activo, 5, align="right", fill = 0),
+         no_activo = zoo::rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
   mutate(tasa_actividad = activo / (no_activo + activo)) %>% 
-  filter(edad >= 10 & edad <= 90) %>% 
+  dplyr::filter(edad >= 10 & edad <= 90) %>% 
   select(anio, edad, tasa_actividad)
   
 

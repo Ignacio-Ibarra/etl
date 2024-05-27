@@ -32,7 +32,7 @@ enut_df_c6 <- readr::read_csv(argendataR::get_temp_path(fuente2))
 df_output <- enut_df_c5 %>% 
   left_join(enut_df_c6, by=join_by(sexo, nivel_ed, tipo_trabajo)) %>% 
   mutate(minutos = participacion * minutos_dia) %>%
-  filter(tipo_trabajo == "No remunerado") %>% 
+  dplyr::filter(tipo_trabajo == "No remunerado") %>% 
   select(sexo, nivel_educativo = nivel_ed, minutos) 
 
 #-- Controlar Output ----

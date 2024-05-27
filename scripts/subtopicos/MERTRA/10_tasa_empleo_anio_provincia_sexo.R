@@ -44,7 +44,7 @@ ephtu_df <- ephtu_df %>% mutate(
 )
 
 e_franja_sexo_prov <- ephtu_df %>% 
-  filter(ch06>=18 & ch06<=65) %>%
+  dplyr::filter(ch06>=18 & ch06<=65) %>%
   select(anio = ano4, ocupado, prov_desc, sexo = ch04, pondera)%>% 
   mutate(sexo = case_when(
     sexo == 1 ~ "Varon",
