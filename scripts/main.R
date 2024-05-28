@@ -1,4 +1,6 @@
+library(conflicted)
 library(tidyverse)
+conflicts_prefer(dplyr::filter)
 library(googledrive)
 library(googlesheets4)
 library(argendataR)
