@@ -2,28 +2,92 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "INFDES"
+output_name <- "tasa_informalidad_legal_por_edad_sexo"
+fuente1 <- "R49C16"
+fuente2 <- "R84C14"
 
-#-- Librerias ----
 
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
 
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+codigos <- readr::read_csv(argendataR::get_temp_path(fuente2))
+codigos <- codigos %>% select(aglomerado = aglom_cod_indec, provincia = prov_cod, prov_desc)
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+ephtu_df <- ephtu_df %>% 
+  left_join(codigos, by = join_by(aglomerado, provincia)) # Joineo así por los casos en que hay mismo aglomerado pero distinta provincia e.g. San Nicolás-Villa Constitucion
+
+
+data <- data.frame(ephtu_df) %>% 
+  select(ano4, ch04, ch06, estado, cat_ocup, pp07h, pondera)
+
+
+# Calcular formal_def_legal
+data$formal_def_legal <- NA
+data$formal_def_legal[data$cat_ocup == 3 & data$estado == 1 & data$pp07h == 1] <- "formal_legal"
+data$formal_def_legal[data$cat_ocup == 3 & data$estado == 1 & data$pp07h == 2] <- "informal_legal"
+
+# Filtrar para estado == 1
+data <- data %>% 
+  dplyr::filter(!is.na(formal_def_legal))
+
+
+data_sexo_total <- data %>% 
+  group_by(ano4, ch06, pp07h, estado, cat_ocup, formal_def_legal) %>% 
+  summarise(pondera = sum(pondera, na.rm = T)) %>% 
+  ungroup() %>% 
+  mutate(ch04 = 9)
+
+data <- bind_rows(data, data_sexo_total) %>% 
+  mutate(ch04 = case_when(
+    ch04 == 1 ~ "masculino",
+    ch04 == 2 ~ "femenino",
+    TRUE ~ "total"
+  ))
+
+data_sexo <- data %>% 
+  group_by(ano4, formal_def_legal, ch04, ch06) %>% 
+  summarise(pondera = sum(pondera, na.rm = T)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = c(formal_def_legal,ch04), values_from = pondera, values_fill = 0) %>% 
+  arrange(ano4, ch06) %>% 
+  mutate(
+    rolled_formal_legal_femenino = zoo::rollsum(formal_legal_femenino, k=5, align = "right", fill=NA, na.pad = T)
+  )
+
+sexos <- unique(data$ch04)
+
+for (s in sexos){
+  str_formal <- paste0("formal_legal_",s)
+  str_informal <- paste0("informal_legal_", s)
+  str_rolled_formal <- paste0("rolled_formal_legal_",s)
+  str_rolled_informal <- paste0("rolled_informal_legal_",s)
+  data_sexo <- data_sexo %>% 
+    mutate(!!str_rolled_formal := zoo::rollsum(get(str_formal), k=5, align = "right", fill=NA, na.pad = T),
+           !!str_rolled_informal := zoo::rollsum(get(str_informal),  k=5, align = "right", fill=NA, na.pad = T),
+           !!s:= get(str_rolled_informal) / (get(str_rolled_informal) + get(str_rolled_formal))
+    )
+}
+
+
+
+df_output <- data_sexo %>% 
+  dplyr::filter(ch06>=18 & ch06<=70) %>% 
+  select(anio = ano4, edad = ch06, femenino, masculino, total) %>% 
+  pivot_longer(c(femenino, masculino, total), 
+               names_to = "apertura_sexo", 
+               values_to = "tasa_informalidad_legal")
+  
+
 
 #-- Controlar Output ----
 
@@ -34,7 +98,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("anio", "edad","apertura_sexo"),
   drop_output_drive = F
 )
 
@@ -47,14 +111,12 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = c(fuente1, fuente2),
+    analista = "",
+    pk = c("anio", "edad","apertura_sexo"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("tasa_informalidad_legal" = "Tasa de informalidad legal"),
+    unidades = list("tasa_informalidad_legal" = "unidades")
   )
 
