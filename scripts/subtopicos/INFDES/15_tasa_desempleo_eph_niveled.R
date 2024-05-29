@@ -2,28 +2,147 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "INFDES"
+output_name <- "tasa_desempleo_eph_niveled"
+codigos.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(nombre, codigo) 
 
-#-- Librerias ----
+# librerías
+
+require(data.table)
 
 #-- Lectura de Datos ----
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+anios <- 2003:2004
 
 
-#-- Parametros Generales ----
+# Creo una función custom para aplicar un determinado wrangling a cada dataset de EPH
+eph_tasa_desocupacion_nivel_ed <- function(eph_data) {
+  outdf <- eph_data %>%
+    filter(!is.na(nivel_ed)) %>% 
+    select(anio = ano4, nivel_ed, edad = ch06, estado, pondera) %>%
+    mutate(
+      desocupado = case_when(
+        estado == 2 ~ 1,
+        estado == 1 ~ 0,
+        TRUE ~ NA_real_
+      ),
+      nivel_ed_fundar = case_when(
+        nivel_ed <= 3 ~ 1,
+        nivel_ed == 7 ~ 1,
+        nivel_ed == 4 ~ 2,
+        nivel_ed == 5 ~ 3,
+        nivel_ed == 6 ~ 4,
+        TRUE ~ NA_real_
+      ),
+      nivel_ed_desc = case_when(
+        nivel_ed_fundar == 1 ~ "Hasta secundaria incompleta",
+        nivel_ed_fundar == 2 ~ "Secundaria completa",
+        nivel_ed_fundar == 3 ~ "Superior incompleta",
+        nivel_ed_fundar == 4 ~ "Superior completa",
+        TRUE ~ NA_character_
+      )
+    ) %>%
+    filter(!is.na(desocupado)) %>%
+    group_by(anio, desocupado, nivel_ed_fundar, nivel_ed_desc) %>%
+    summarise(pondera = sum(pondera, na.rm = TRUE)) %>%
+    ungroup() %>%
+    group_by(anio, nivel_ed_fundar, nivel_ed_desc) %>%
+    mutate(totalactivos = sum(pondera),
+           tasa_desocupacion = pondera / totalactivos) %>%
+    filter(desocupado != 0) %>%
+    select(anio, nivel_ed_fundar, nivel_ed_desc, tasa_desocupacion)
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+  return(outdf)
+  }
+
+# Creo una función que levanta el dataset correspondiente a un año
+load_eph_by_year <- function(year, codes_and_names){
+  fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
+  eph_df <- fread(argendataR::get_temp_path(fuente))
+  return(eph_df)
+}
+
+
+# Creo una función de cleaning de cada archivo
+cleaning_eph <- function(eph_data){
+  colnames(eph_data) <- tolower(colnames(eph_data))
+  return(eph_data)
+}
+
+# Creo una función que procesa una lista de años 
+eph_processing <- function(years, codes_and_names, custom_wrangling){
+  result_processing <- data.table()
+  for (year in years){
+    cat(sprintf("Archivo EPH (%s)... empezando\n", year))
+    
+    # Cargo archivo
+    eph_df <- load_eph_by_year(year = year, codes_and_names = codes_and_names)
+    dimensiones <- dim(eph_df)
+    cat(sprintf("... cargando %s filas y %s columnas \n", dimensiones[1], dimensiones[2]))
+    
+    # Hago cleaning
+    eph_df <- cleaning_eph(eph_data = eph_df)
+    cat("... limpieza\n")
+    
+    # Hago wrangling
+    result_df <- custom_wrangling(eph_data = eph_df)
+    cat("... procesado\n")
+    
+    result_processing <- rbind(result_processing, result_df, fill=F)
+    cat("... finalizado\n")
+    
+  }
+  return(result_processing)
+}
+
+df_output <- eph_processing(years = anios, codes_and_names = codigos.eph, custom_wrangling = eph_tasa_desocupacion_nivel_ed)
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+data <- data.frame(ephtu_df) %>% 
+  select(anio = ano4, nivel_ed, edad = ch06, estado, pondera) %>% 
+  mutate(
+    desocupado = case_when(
+      estado == 2 ~ 1,
+      estado == 1 ~ 0,
+      TRUE ~ NA_real_
+    ),
+    nivel_ed_fundar = case_when(
+      nivel_ed <= 3 ~ 1,
+      nivel_ed == 7 ~ 1,
+      nivel_ed == 4 ~ 2,
+      nivel_ed == 5 ~ 3,
+      nivel_ed == 6 ~ 4,
+      TRUE ~ NA_real_
+    ),
+    nivel_ed_desc = case_when(
+      nivel_ed_fundar == 1 ~ "Hasta secundaria incompleta",
+      nivel_ed_fundar == 2 ~ "Secundaria completa",
+      nivel_ed_fundar == 3 ~ "Superior incompleta",
+      nivel_ed_fundar == 4 ~ "Superior completa",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  dplyr::filter(!is.na(desocupado)) %>% 
+  group_by(anio, desocupado, nivel_ed_fundar, nivel_ed_desc) %>% 
+  summarise(pondera = sum(pondera, na.rm=T)) %>% 
+  ungroup()
+
+
+df_output <- data %>% 
+  group_by(anio, nivel_ed_fundar, nivel_ed_desc) %>% 
+  mutate(totalactivos = sum(pondera),
+         tasa_desocupacion = pondera / totalactivos) %>%
+  dplyr::filter(desocupado != 0) %>% 
+  select(anio, nivel_ed_fundar, nivel_ed_desc, tasa_desocupacion)
+
+
+
+
 
 #-- Controlar Output ----
 
@@ -34,7 +153,7 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
+  pk = c("anio", "rango_edad","sexo"),
   drop_output_drive = F
 )
 
@@ -47,14 +166,11 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = c(fuente1),
+    analista = "",
+    pk = c("anio", "rango_edad","sexo"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("tasa_desocupacion" = "Tasa de desocupación"),
+    unidades = list("tasa_desocupacion" = "unidades")
   )
-
