@@ -9,7 +9,6 @@ gc()   #Garbage Collection
 subtopico <- "INFDES"
 output_name <- "tasa_informalidad_legal_por_edad_sexo"
 fuente1 <- "R49C16"
-fuente2 <- "R84C14"
 
 
 #-- Lectura de Datos ----
@@ -18,14 +17,8 @@ fuente2 <- "R84C14"
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
 
-codigos <- readr::read_csv(argendataR::get_temp_path(fuente2))
-codigos <- codigos %>% select(aglomerado = aglom_cod_indec, provincia = prov_cod, prov_desc)
 
 #-- Procesamiento ----
-
-ephtu_df <- ephtu_df %>% 
-  left_join(codigos, by = join_by(aglomerado, provincia)) # Joineo así por los casos en que hay mismo aglomerado pero distinta provincia e.g. San Nicolás-Villa Constitucion
-
 
 data <- data.frame(ephtu_df) %>% 
   select(ano4, ch04, ch06, estado, cat_ocup, pp07h, pondera)
@@ -111,7 +104,7 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c(fuente1, fuente2),
+    fuentes = c(fuente1),
     analista = "",
     pk = c("anio", "edad","apertura_sexo"),
     es_serie_tiempo = T,
