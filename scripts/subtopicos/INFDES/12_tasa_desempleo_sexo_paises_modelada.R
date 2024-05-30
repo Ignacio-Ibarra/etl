@@ -61,7 +61,11 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 #-- Exportar Output ----
-
+aclaracion <- "Cuando el analista elaboró el primer output, el nomenclador que 
+              referenciaba iso3-continente no es el mismo que el actual, por ende hay países
+              que poseen un continente distinto del que anteriormente tenía. 
+              Ejemplo Turquía antes figuraba en Asia ahora está en Europa y podría volver a cambiar cuando
+              se modifique el nomenclador"
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
@@ -71,6 +75,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2, fuente3),
     analista = "",
+    aclaraciones = aclaracion,
     pk = c("anio", "iso3", "sexo"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
