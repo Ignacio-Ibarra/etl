@@ -18,14 +18,91 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
 descargar_fuente_raw(id_fuente = id_fuente, tempdir())
 descargar_fuente("R84C14")
 
+sheets <- tidyxl::xlsx_sheet_names(argendataR::get_temp_path(fuente_raw1)) 
+sheets <- sheets[sheets!="Index"]
+
+# Cargo funciones para hacer limpieza
+source("./scripts/limpieza_fuentes/funciones_limpieza_cedlas_sedlac.R")
+
+# for (sheet in sheets){
+#   
+# }
+
+
 sheet <- "labor force"
-cell_range = "A8:D31"
+
+cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = sheet, col_names = F) %>%
+  select_if(~ !all(is.na(.))) %>%
+  filter(rowSums(is.na(.)) < ncol(.)) %>%
+  mutate(across(everything(), as.character)) %>%
+  as.data.frame()
 
 
-enut_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = sheet, range = cell_range, col_names = col_names)
+columnas_sheet <- obtengo_columnas(df = cedlas_df)
 
-iso_pais <- argendataR::get_nomenclador_geografico() %>%
-  select(iso3 = codigo_fundar, iso3_desc_fundar = desc_fundar)
+tabla_numeros <- obtengo_tabla_numeros(df = cedlas_df)
+
+df <- data.frame(cedlas_df)
+
+
+obtengo_paises_fuentes <- function(df, lista.paises) {
+  df <- df %>%
+    select(where(~ !all(is.na(.)))) %>%
+    filter(rowSums(is.na(.)) != ncol(.)) %>%
+    as.data.frame()
+  
+  locs <- cols_and_data_row_locations(df)
+  start_data <- locs$start_data
+  
+  col0 <- df[[1]]
+  strings <- lapply(col0[(start_data-2):length(col0)], function(x) strip_chars(x) ) %>% unlist()
+  
+ 
+   paises_fuentes_dates <- data.frame(
+    pais = character(),
+    fuente = character(),
+    fuente_orden = integer(),
+    encuesta_date = character(),
+    stringsAsFactors = FALSE
+  )
+  
+  fuente_orden <- 0
+  
+  for (v in strings) {
+    cat(v)
+    if (!es_entero(v)) {
+      if (v %in% lista_paises) {
+        pais <- v
+        fuente <- NULL
+        fuente_orden <- 0
+      } 
+      else {
+        if (is.na(as.numeric(strsplit(v, "-")[[1]][1]))) {
+          fuente <- v
+          fuente_orden <- fuente_orden + 1
+        } 
+        else {
+          encuesta_date <- v
+          # paises_fuentes_dates <- append(paises_fuentes_dates, list(list(pais, fuente, fuente_orden, encuesta_date)))
+        }
+      }
+    } 
+    else {
+      encuesta_date <- v
+      # paises_fuentes_dates <- append(paises_fuentes_dates, list(list(pais, fuente, fuente_orden, encuesta_date)))
+    }
+    paises_fuentes_dates <- rbind(paises_fuentes_dates,
+      data.frame(pais = pais, fuente = fuente, fuente_orden = fuente_orden, encuesta_date = encuesta_date, stringsAsFactors = FALSE))
+  }
+}  
+
+
+
+
+lista_paises <- c("Argentina", "Bolivia", "Brazil", "Chile", "Colombia",
+                  "Costa Rica", "Dominican Rep", "Ecuador", "El Salvador",
+                  "Guatemala", "Honduras", "Mexico", "Nicaragua", "Panama",
+                  "Paraguay", "Peru", "Uruguay", "Venezuela")
 
 
 mapeo_pais_iso3_adhoc <- c(
@@ -49,60 +126,5 @@ mapeo_pais_iso3_adhoc <- c(
   'Venezuela' = 'VEN'
 )
 
-strip_chars <- function(x) {
-  if (is.numeric(x)) {
-    return(x)
-  } else {
-    return(str_replace_all(str_trim(x), "\\.", ""))
-  }
-}
 
-quitar_coma_adelante <- function(s) {
-  if (startsWith(s, ",")) {
-    s <- substr(s, 2, nchar(s))
-  }
-  return(str_trim(s))
-}
 
-cols_and_data_row_locations <- function(input_sheet) {
-  input_sheet <- input_sheet %>%
-    drop_na() %>%
-    mutate_all(as.character)
-  
-  col0 <- input_sheet[[1]]
-  upper_loc <- which(cumsum(is.na(col0)) == 1)[1]
-  
-  lower_loc <- which(!is.na(col0) & grepl("^\\d+$", col0))[1] - 2
-  
-  col_loc <- upper_loc + 1
-  data_row_loc <- upper_loc + 2
-  
-  return(list(col_loc = col_loc, data_row_loc = data_row_loc))
-}
-
-normalizo_cedlas <- function(input_sheet, topico, lista_paises, multidx) {
-  locs <- cols_and_data_row_locations(input_sheet)
-  col_loc <- locs$col_loc
-  data_row_loc <- locs$data_row_loc
-  
-  col_names <- input_sheet[col_loc,] %>%
-    as.character() %>%
-    unlist()
-  
-  input_sheet <- input_sheet[-c(1:data_row_loc - 1),]
-  names(input_sheet) <- col_names
-  
-  normalized_df <- input_sheet %>%
-    pivot_longer(cols = !c(pais, fuente, fecha_sedlac), 
-                 names_to = "apertura", values_to = "valor") %>%
-    mutate(apertura = quitar_coma_adelante(apertura),
-           iso3 = mapeo_pais_iso3_adhoc[pais],
-           # pais = mapeo_iso_pais[iso3],
-           topico_sedlac = topico,
-           subtopico_sedlac = NA,
-           variable = NA,
-           valor = valor) %>%
-    select(topico_sedlac, subtopico_sedlac, variable, iso3, fuente, fecha_sedlac, apertura, valor)
-  
-  return(normalized_df)
-}
