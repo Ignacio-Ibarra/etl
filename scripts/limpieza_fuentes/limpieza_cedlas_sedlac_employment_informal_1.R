@@ -1,5 +1,4 @@
 
-
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
@@ -21,7 +20,7 @@ descargar_fuente_raw(id_fuente = id_fuente, tempdir())
 source("./scripts/limpieza_fuentes/funciones_limpieza_cedlas_sedlac.R")
 
 TOPIC_PARAM <- "Employment"
-SHEET_PARAM <- "labor force"
+SHEET_PARAM <- "informal_1"
 
 
 cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) %>%
@@ -84,7 +83,6 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      dir = tempdir(),
 #                      nombre = glue::glue("{TOPIC_PARAM} - {tematica} - SEDLAC"),
 #                      script = code_name)
-
-actualizar_fuente_clean(id_fuente_clean = 30,
-                        dir = tempdir())
-
+# 
+# actualizar_fuente_clean(id_fuente_clean = 30,
+#                         dir = tempdir())
