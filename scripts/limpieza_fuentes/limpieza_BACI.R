@@ -37,14 +37,33 @@ all_csv_files <- list.files(directorio_temporal, full.names = T)
 ## Importar y transformar ----
 
 
+## CODES (country and product)
+
+codes <- grep('codes', all_csv_files, value = TRUE)
+
+#codes present in all_csv_files
+#[1] "/tmp/Rtmp3qibtu/country_codes_V202401b.csv"     
+#[2] "/tmp/Rtmp3qibtu/product_codes_HS07_V202401b.csv"
+#[3] "/tmp/Rtmp3qibtu/product_codes_HS96_V202401b.csv"
+
 
 ###### HS07  ----
+
+codesHS07 <- grep('HS96', codes, value = TRUE, invert = TRUE)
+
 
 #Filter the files that contain both "HS07" and ".csv"
 HS07files <- grep("BACI_HS07.*\\.csv$", all_csv_files, value = TRUE)
 
 
 
+for(i in codesHS07){
+  
+  file <- stringr::str_remove(string = i, pattern = tempdir())
+  
+  read_csv(file = i) %>% 
+    write_parquet(paste0("/srv/server_data/argendata/baci_comext/BACI_HS07/", file))
+}
 
 # Define input and output folder paths
 folder_input <- tempdir()
@@ -70,6 +89,20 @@ for (i in 2007:2022) {
 
 ##### HS96 -----
 
+codesHS96 <- grep('HS07', codes, value = TRUE, invert = TRUE)
+
+
+
+
+for(i in codesHS96){
+  
+  file <- stringr::str_remove(string = i, pattern = tempdir())
+  
+  read_csv(file = i) %>% 
+    write_parquet(paste0("/srv/server_data/argendata/baci_comext/BACI_HS96/", file))
+}
+
+
 # Filter the files that contain both "HS96" and ".csv"
 
 HS96files <- grep("BACI_HS96.*\\.csv$", all_csv_files, value = TRUE)
@@ -88,4 +121,10 @@ for (i in 1996:2021) {
   write_parquet(data, output_file)
 }
 
+### Classification Codes - The Micro-D Classification: A New Approach to Identifying Differentiated Exports ----
+link_hallak <- "0B19niEgxbWCrUTM3bHNodU9Lenc"
+
+drive_download(as_id(link_hallak), path = glue::glue("{tempdir()}/Micro-D-Codes.zip"), overwrite = TRUE)
+
+unzip(glue::glue("{tempdir()}/Micro-D-Codes.zip"), exdir = directory_path) 
 
