@@ -23,11 +23,17 @@ TOPIC_PARAM <- "Employment"
 SHEET_PARAM <- "MDG"
 
 
-cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) %>%
-  select_if(~ !all(is.na(.))) %>%
-  filter(rowSums(is.na(.)) < ncol(.)) %>%
-  mutate(across(everything(), as.character)) %>%
-  as.data.frame()
+cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) 
+
+cedlas_df <- quitar_string_source(df = cedlas_df)
+
+cedlas_df <- cedlas_df %>%
+              select_if(~ !all(is.na(.))) %>%
+              filter(rowSums(is.na(.)) < ncol(.)) %>%
+              mutate(across(everything(), as.character)) %>%
+              as.data.frame()
+
+
 
 tematica <- cedlas_df[[1,1]]
 variable <- cedlas_df[[2,1]]
@@ -58,13 +64,22 @@ mapeo_pais_iso3_adhoc <- c(
 
 lista_paises <- names(mapeo_pais_iso3_adhoc)
 
-cedlas_clean <- armar_tabla(df = cedlas_df, 
-                            topico = TOPIC_PARAM,
-                            tematica = tematica,
-                            variable = variable,
-                            lista.paises = lista_paises, 
-                            mapper.paises_cedlas.a.isos = mapeo_pais_iso3_adhoc,
-                            mapper.isos.a.paises = mapeo_iso3_pais) 
+df_original <- armar_serie_original(df = cedlas_df, 
+                                    topico = TOPIC_PARAM,
+                                    tematica = tematica,
+                                    variable = variable,
+                                    lista.paises = lista_paises, 
+                                    mapper.paises_cedlas.a.isos = mapeo_pais_iso3_adhoc,
+                                    mapper.isos.a.paises = mapeo_iso3_pais)
+
+
+df_anual <- armar_serie_anualizada(df_original = df_original)
+
+df_empalme <- armar_serie_empalme(df_anual = df_anual)
+
+
+df_clean <- armar_tabla(df_anual = df_anual, 
+                        df_empalme = df_empalme) 
 
 
 
@@ -74,15 +89,16 @@ clean_filename <- glue::glue("{norm_sheet}_{nombre_archivo_raw}_CLEAN.csv")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
-cedlas_clean %>% write_csv_fundar(., file = path_clean)
+df_clean %>% write_csv_fundar(., file = path_clean)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
 #                      path_clean = clean_filename,
 #                      dir = tempdir(),
-#                      nombre = glue::glue("{TOPIC_PARAM} - {tematica} - SEDLAC"),
+#                      nombre = glue::glue("{TOPIC_PARAM} - {tematica} - SEDLAC (serie original y empalmada)"),
+#                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir, se anualizaron los valores que poseían una frecuencia semestral y se calculó una serie empalmada",
 #                      script = code_name)
-# 
-# actualizar_fuente_clean(id_fuente_clean = 30,
-#                         dir = tempdir())
+ 
+actualizar_fuente_clean(id_fuente_clean = 37,
+                        dir = tempdir())

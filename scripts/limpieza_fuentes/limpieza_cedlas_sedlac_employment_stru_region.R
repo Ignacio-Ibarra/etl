@@ -23,11 +23,17 @@
 # SHEET_PARAM <- "stru_region"
 # 
 # 
-# cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) %>%
+# cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) 
+# 
+# cedlas_df <- quitar_string_source(df = cedlas_df)
+# 
+# cedlas_df <- cedlas_df %>%
 #   select_if(~ !all(is.na(.))) %>%
 #   filter(rowSums(is.na(.)) < ncol(.)) %>%
 #   mutate(across(everything(), as.character)) %>%
 #   as.data.frame()
+# 
+# 
 # 
 # tematica <- cedlas_df[[1,1]]
 # variable <- cedlas_df[[2,1]]
@@ -94,5 +100,5 @@
 # #                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir, se anualizaron los valores que poseían una frecuencia semestral y se calculó una serie empalmada",
 # #                      script = code_name)
 # 
-# actualizar_fuente_clean(id_fuente_clean = 38,
+# actualizar_fuente_clean(id_fuente_clean = ,
 #                         dir = tempdir())
