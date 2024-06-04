@@ -107,8 +107,16 @@ obtengo_tabla_numeros <- function(df){
   start_data <- locs$start_data
   cat("Data was founded in row", start_data, "\n")
   
-  data <- df[start_data:nrow(df), 2:ncol(df)] %>%
-    filter(rowSums(is.na(.)) != ncol(.))
+  if (ncol(df) == 2){
+    data <- as.data.frame(df[start_data:nrow(df), 2:ncol(df)]) %>%
+      filter(rowSums(is.na(.)) != ncol(.))
+  }else{
+    data <- as.data.frame(df[start_data:nrow(df), 2:ncol(df)]) %>%
+      filter(rowSums(is.na(.)) != ncol(.)) %>% 
+      filter(rowSums(is.na(.)) != (ncol(.) - 1)) 
+             
+  }
+  
   
   return( data )
 } 
@@ -173,7 +181,7 @@ obtengo_paises_fuentes <- function(df, lista.paises) {
       if (v %in% lista_paises) {
         # cat("1.1\n")
         pais <- v
-        fuente <- NA
+        fuente <- "sd"
         fuente_orden <- 0
       } 
       else {
@@ -189,7 +197,7 @@ obtengo_paises_fuentes <- function(df, lista.paises) {
           paises_fuentes_dates <- rbind(paises_fuentes_dates,
                                         data.frame(pais = pais, fuente = fuente, 
                                                    fuente_orden = fuente_orden, 
-                                                   encuesta_date = encuesta_date, 
+                                                   fecha_sedlac = encuesta_date, 
                                                    stringsAsFactors = FALSE))
         }
       }
@@ -198,23 +206,26 @@ obtengo_paises_fuentes <- function(df, lista.paises) {
       # cat("2\n")
       encuesta_date <- v
       paises_fuentes_dates <- rbind(paises_fuentes_dates,
-                                    data.frame(pais = pais, fuente = fuente, fuente_orden = fuente_orden, encuesta_date = encuesta_date, stringsAsFactors = FALSE))
+                                    data.frame(pais = pais, fuente = fuente, 
+                                               fuente_orden = fuente_orden, 
+                                               fecha_sedlac = encuesta_date, 
+                                               stringsAsFactors = FALSE))
     }
   }
   return(paises_fuentes_dates)
 }  
 
 obtener_isos_de_paises <- function(df, mapper){
-  df_isos <- df %>% transmute(iso3 = mapper[pais])
-  return(df_isos)
+  data <- df %>% mutate(iso3 = mapper[pais])
+  return(data)
 }
 
 
-corregir_paises_de_isos <- function(df, mapper){
-  return(df %>% mutate(pais = mapper[iso3]))
+corregir_paises_de_isos <- function(data, mapper){
+  return(data %>% mutate(pais = mapper[iso3]))
 }
 
-armar_tabla <- function(df,
+armar_serie_original<- function(df,
                         topico,
                         tematica,
                         variable,
@@ -228,17 +239,19 @@ armar_tabla <- function(df,
   
   paises_fuentes_dates <- obtengo_paises_fuentes(df = df, lista.paises = lista.paises)
   
-  isos <- obtener_isos_de_paises(paises_fuentes_dates, mapper = mapper.paises_cedlas.a.isos)
+  paises_fuentes_dates <- obtener_isos_de_paises(paises_fuentes_dates, mapper = mapper.paises_cedlas.a.isos) %>%
+    select(iso3, pais, fuente, fuente_orden, fecha_sedlac)
+  
+  paises_fuentes_dates <- corregir_paises_de_isos(data = paises_fuentes_dates, mapper = mapper.isos.a.paises)
   
   # armo data
   data <- data.frame(tabla_numeros)
   colnames(data) <- columnas_sheet
-  data <- cbind(isos, paises_fuentes_dates, data)
-  data <- corregir_paises_de_isos(df = data, mapper = mapper.isos.a.paises )
+  data <- cbind(paises_fuentes_dates, data)
   
   # Pivoteo
   data <- data %>% 
-    pivot_longer(!all_of(c("iso3","pais","fuente","fuente_orden","encuesta_date")), 
+    pivot_longer(!all_of(c("iso3","pais","fuente","fuente_orden","fecha_sedlac")), 
                  names_to = "apertura", values_to = "valor",
                  values_transform = list(valor = as.numeric))
   
@@ -259,9 +272,12 @@ armar_tabla <- function(df,
                           tematica = tematica,
                           variable = variable)
   
+  data <- data %>% mutate(anio = substr(fecha_sedlac, start = 1, stop = 4))
+  
   data <- data %>% select(topico, tematica, variable, 
                           iso3, pais, fuente, fuente_orden, 
-                          encuesta_date, apertura, valor)
+                          fecha_sedlac, anio, apertura, valor)
+  
   
   
   
@@ -270,4 +286,71 @@ armar_tabla <- function(df,
 }
 
 
+armar_serie_anualizada <- function(df_original){
+  
+  data <- data.frame(df_original)
+  
+  data <- data %>% 
+    group_by(topico, tematica, variable, 
+             iso3, pais, fuente, fuente_orden, 
+             anio, apertura) %>% 
+    summarise(valor = mean(valor, na.rm=T)) %>% 
+    ungroup() %>% 
+    mutate(serie = "Serie original")
+  
+  
+  return(data)
+  
+  
+}
 
+
+
+armar_serie_empalme <- function(df_anual){
+  data <- data.frame(df_anual)
+  
+  # TODO
+  # procesamiento de empalme
+  
+  data <- data %>% mutate(serie = "Serie empalmada")
+  
+  return(data)
+}
+
+
+
+armar_tabla <- function(df_anual, 
+                        df_empalme){
+  data <- rbind(df_anual, 
+                df_empalme
+                )
+  return(data)
+}
+
+encontrar_coordenadas <- function(df, cadena) {
+  # Encontrar la posición de la cadena en el dataframe
+  pos <- which(apply(df, 1:2, function(x) x == cadena ))
+  
+  # Manejo del caso en que la cadena no se encuentra en el dataframe
+  if (length(pos) == 0) {
+    return(c(NA, NA))  # Devolver NA si no se encuentra la cadena
+  } else {
+    # Convertir la posición a coordenadas de fila y columna
+    fila <- (pos - 1) %% nrow(df) + 1
+    columna <- (pos - 1) %/% nrow(df) + 1
+    
+    # Devolver un vector con fila y columna
+    return(c(fila, columna))
+  }
+}
+
+
+quitar_string_source <- function(df){
+  source_str = "Source: SEDLAC (CEDLAS and The World Bank)"
+  coords = encontrar_coordenadas(df = df, cadena = source_str)
+  print(coords)
+  row = coords[1]
+  col = coords[2]
+  df[row,col] <- NA
+  return(df)
+}
