@@ -13,4 +13,4 @@ download.file(url,
 argendataR::agregar_fuente_raw(url = url, nombre = "Índices y variaciones porcentuales mensuales e interanuales según divisiones de la canasta, bienes y servicios, clasificación de grupos. Diciembre de 2016 - a fecha disponible",
                                institucion = "INDEC",actualizable = T,
                                path_raw = archivo,
-                               script = "descarga_ipc_indec.R", directorio = tempdir())
+                               script = "descarga_ipc_divisiones_2016_indec.R", directorio = tempdir())
