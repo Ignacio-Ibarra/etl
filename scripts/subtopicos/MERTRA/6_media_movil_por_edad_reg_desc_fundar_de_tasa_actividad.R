@@ -13,7 +13,7 @@ gc()   #Garbage Collection
 
 subtopico <- "MERTRA"
 output_name <- "media_movil_por_edad_reg_desc_fundar_de_tasa_actividad"
-fuente1 <- "R49C0"  # Cambiar luego por la fuente clean. 
+fuente1 <- "R49C16"  
 fuente2 <- "R84C14"
 
 
@@ -22,7 +22,7 @@ fuente2 <- "R84C14"
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
-ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
+# ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
 
 codigos <- readr::read_csv(argendataR::get_temp_path(fuente2))
 codigos <- codigos %>% select(aglomerado = aglom_cod_indec, provincia = prov_cod, reg_desc_fundar)
@@ -50,10 +50,10 @@ a_total <- ephtu_df %>%
   summarize(pondera = sum(pondera)) %>% 
   ungroup() %>% 
   pivot_wider(names_from = activo, values_from = pondera, values_fill = 0) %>%
-  mutate(activo = rollsum(activo, 5, align="right", fill = 0),
-         no_activo = rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
+  mutate(activo = zoo::rollsum(activo, 5, align="right", fill = 0),
+         no_activo = zoo::rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
   mutate(tasa_actividad = activo / (no_activo + activo)) %>% 
-  filter(edad >= 10 & edad <= 90) %>% 
+  dplyr::filter(edad >= 10 & edad <= 90) %>% 
   select(anio, edad, tasa_Todas = tasa_actividad)
 
 
@@ -73,14 +73,14 @@ for (r in regiones){
   str_rolled_activo <- paste0("rolled_activo_",r)
   str_rolled_no_activo <- paste0("rolled_no_activo_",r)
   c <- c %>% 
-    mutate(!!paste0("rolled_",str_activo) := rollsum(get(str_activo), k= 5, by=1, align = "right", fill = 0),
-           !!paste0("rolled_", str_no_activo) := rollsum(get(str_no_activo), k= 5, by = 1, align = "right", fill = 0),
+    mutate(!!paste0("rolled_",str_activo) := zoo::rollsum(get(str_activo), k= 5, by=1, align = "right", fill = 0),
+           !!paste0("rolled_", str_no_activo) := zoo::rollsum(get(str_no_activo), k= 5, by = 1, align = "right", fill = 0),
            !!paste0("tasa_",r) := get(str_rolled_activo) / (get(str_rolled_activo) + get(str_rolled_no_activo))
     )
 }
 
 df_output <- c %>%
-  filter(edad >= 10 & edad <= 90) %>%
+  dplyr::filter(edad >= 10 & edad <= 90) %>%
   select(anio, edad, starts_with("tasa_")) %>% 
   left_join(., a_total, by=join_by(anio, edad)) %>% 
   pivot_longer(cols = starts_with("tasa_"), names_to = "reg_desc_fundar", values_to = "tasa_actividad") %>% 

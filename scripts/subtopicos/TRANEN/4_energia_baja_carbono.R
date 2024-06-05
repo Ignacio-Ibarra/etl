@@ -5,8 +5,9 @@
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+limpiar_temps()
 
-output_name <- "nombre del archivo de salida"
+output_name <- "energia_baja_carbono.csv"
 
 #-- Librerias ----
 
@@ -14,7 +15,7 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+data <- readr::read_csv(argendataR::get_temp_path("R71C0"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +24,12 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+
+data <- data %>% 
+  select(anio, iso3 = entities_code, valor_en_porcentaje = valor) %>% 
+  filter(!is.na(iso3))
+
+df_output <- data
 
 #-- Controlar Output ----
 
@@ -34,6 +40,8 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
+  entrega_subtopico = "datasets_segunda_entrega",
+  subtopico = "TRANEN",
   pk = c("anio", "iso3"),
   drop_output_drive = F
 )
@@ -46,15 +54,17 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
+    subtopico = "TRANEN",
+    fuentes = c("R71C0"),
+    analista = "",
     pk = c("anio", "iso3"),
+    aclaraciones = "Proporción del consumo de energía primaria que proviene de fuentes bajas en carbono",
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("valor_en_porcentaje" = "Porcentaje del consumo primario de energía"),
+    unidades = list("valor_en_porcentaje" = "porcentaje")
   )
 
+rm(list = ls())

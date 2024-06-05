@@ -28,9 +28,15 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Procesamiento ----
 
-df <- df %>% select(iso3 = iso3c, iso3_desc = country, anio = year,  ratio_tasa_actividad_mujer_varon = SL.TLF.CACT.FM.NE.ZS)
-geonomenclador <- geonomenclador %>% select(codigo_fundar, nivel_agregacion)
-df_output <- df %>% left_join(., geonomenclador, by=c("iso3"="codigo_fundar")) %>% filter(!is.na(nivel_agregacion))
+df <- df %>% 
+  select(iso3 = iso3c, iso3_desc = country, anio = year,  ratio_tasa_actividad_mujer_varon = SL.TLF.CACT.FM.NE.ZS)
+
+geonomenclador <- geonomenclador %>% 
+  select(codigo_fundar, nivel_agregacion)
+
+df_output <- df %>% 
+  left_join(., geonomenclador, by=c("iso3"="codigo_fundar")) %>% 
+  dplyr::filter(!is.na(nivel_agregacion))
 
 
 #-- Controlar Output ----

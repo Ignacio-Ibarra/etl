@@ -13,7 +13,7 @@ gc()   #Garbage Collection
 
 subtopico <- "MERTRA"
 output_name <- "media_movil_por_edad_sexo_de_tasa_actividad_brecha"
-fuente1 <- "R49C0"  # Cambiar luego por la fuente clean. 
+fuente1 <- "R49C16"  
 # fuente2 <- "R84C14"
 
 #-- Librerias ----
@@ -23,7 +23,7 @@ fuente1 <- "R49C0"  # Cambiar luego por la fuente clean.
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
-ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
+# ephtu_df <- ephtu_df %>% rename_with(tolower, everything()) #esta linea no haría falta que esté cuando cambiemos el input de fuente1 por la fuente clean. 
 
 #-- Procesamiento ----
 
@@ -46,10 +46,10 @@ a_total <- ephtu_df %>%
   ungroup() %>% 
   pivot_wider(names_from = activo, values_from = pondera, values_fill = 0) %>% 
   rename(activo = `1`, no_activo = `0`) %>% 
-  mutate(activo = rollsum(activo, 5, align="right", fill = 0),
-         no_activo = rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
+  mutate(activo = zoo::rollsum(activo, 5, align="right", fill = 0),
+         no_activo = zoo::rollsum(no_activo, 5, align = "right", fill = 0)) %>% 
   mutate(tasa_actividad = activo / (no_activo + activo)) %>% 
-  filter(edad >= 10 & edad <= 90) %>% 
+  dplyr::filter(edad >= 10 & edad <= 90) %>% 
   select(anio, edad, tasa_total = tasa_actividad)
 
 b <- ephtu_df %>% 
@@ -62,14 +62,14 @@ b <- ephtu_df %>%
          no_activo_mujer = `0_2`, 
          activo_varon = `1_1`,
          activo_mujer = `1_2`) %>% 
-  mutate(rolled_no_activo_mujer = rollsum(no_activo_mujer, k = 5, by = 1, align = "right", fill = 0),
-         rolled_no_activo_varon = rollsum(no_activo_varon, k = 5, by = 1, align = "right", fill = 0),
-         rolled_activo_mujer = rollsum(activo_mujer, k = 5, by = 1, align = "right", fill = 0),
-         rolled_activo_varon = rollsum(activo_varon, k = 5, by = 1, align = "right", fill = 0))%>% 
+  mutate(rolled_no_activo_mujer = zoo::rollsum(no_activo_mujer, k = 5, by = 1, align = "right", fill = 0),
+         rolled_no_activo_varon = zoo::rollsum(no_activo_varon, k = 5, by = 1, align = "right", fill = 0),
+         rolled_activo_mujer = zoo::rollsum(activo_mujer, k = 5, by = 1, align = "right", fill = 0),
+         rolled_activo_varon = zoo::rollsum(activo_varon, k = 5, by = 1, align = "right", fill = 0))%>% 
   mutate(tasa_varon = rolled_activo_varon / (rolled_activo_varon + rolled_no_activo_varon),
          tasa_mujer = rolled_activo_mujer / (rolled_activo_mujer + rolled_no_activo_mujer),
          brecha_tasa = tasa_mujer - tasa_varon) %>%
-  filter(edad >= 10 & edad <= 90) %>%
+  dplyr::filter(edad >= 10 & edad <= 90) %>%
   select(anio, edad, tasa_varon, tasa_mujer, brecha_tasa)
 
 
