@@ -46,5 +46,5 @@ descargar_fuente("R106C0")
 # CEPXXI - Distribución de establecimientos productivos
 descargar_fuente("R107C0")
 
-"Participación Laboral según sexo, en los Censos (1869 - 2022)"
+# "Participación Laboral según sexo, en los Censos (1869 - 2022)"
 descargar_fuente("R108C27")
