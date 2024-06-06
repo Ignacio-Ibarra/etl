@@ -108,6 +108,8 @@
 
 - `10_10_tasa_trimestral_inflacion_y_pib_desestacionalizado_argentina_1984_1988`:
 
+  se dibuja
+
   **Scripts:**
 -- 10_tasa_trimestral_inflacion_y_pib_desestacionalizado_argentina_1984_1988.docx
 -- 10_tasa_trimestral_inflacion_y_pib_desestacionalizado_argentina_1984_1988.r
@@ -115,6 +117,8 @@
 -- Estadísticas históricas: https://www.indec.gob.ar/indec/web/Institucional-Indec-InformacionDeArchivo-1
 
 - `11_11_tasa_de_inflacion_mensual_argentina_feb1989_jun1990`:
+
+  se dibuja
 
   **Scripts:**
 -- 11_tasa_de_inflacion_mensual_argentina_feb1989_jun1990.docx
