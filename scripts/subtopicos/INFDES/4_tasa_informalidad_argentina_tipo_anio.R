@@ -2,28 +2,32 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "INFDES"
+output_name <- "tasa_informalidad_argentina_tipo_anio"
+fuente1 <- "R115C31"
+fuente2 <- "R115C32"
 
-#-- Librerias ----
 
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
-
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+inf_prod_def <- readr::read_csv(argendataR::get_temp_path(fuente1))
+inf_legal_def <- readr::read_csv(argendataR::get_temp_path(fuente2))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+informality_df <- bind_rows(inf_prod_def, inf_legal_def) %>% 
+  dplyr::filter((apertura == "Edad total") & (serie == "Serie empalmada")) %>% 
+  dplyr::filter(iso3 == "ARG")
+
+df_output <- informality_df %>% 
+  mutate(tipo_informalidad = ifelse(tematica == "Informalidad", "Definición legal", "Definición productiva")) %>% 
+  select(anio, tipo_informalidad, valor)
 
 #-- Controlar Output ----
 
@@ -34,8 +38,8 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
+  pk = c("anio","tipo_informalidad"),
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -47,14 +51,12 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = c(fuente1, fuente2),
+    analista = "",
+    pk = c("anio","tipo_informalidad"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("valor" = "Tasa de informalidad"),
+    unidades = list("valor" = "porcentaje")
   )
-
