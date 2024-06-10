@@ -384,7 +384,8 @@ armar_serie_empalme <- function(df_anual, mapper = mapeo_iso3_pais){
     colnames(x2) <- sources
     
     division <- x2/x1
-    tasas <-  c(rowSums(division, na.rm = T)[1:(nrow(division)-1)], 1)
+    tasas <- unlist(lapply(1:nrow(division), function(row) quedarse_con_el_ultimo_no_na(division[row,])))
+    tasas <-  c(tasas[1:(length(tasas)-1)], 1)
     idx <- 1:length(tasas)
     idx_rev <- sort(idx, decreasing = T)
     tasas_rev <- tasas[idx_rev]
@@ -456,4 +457,12 @@ quitar_string_source <- function(df){
   col = coords[2]
   df[row,col] <- NA
   return(df)
+}
+
+quedarse_con_el_ultimo_no_na = function(row.df){
+  row.vec <- as.numeric(row.df)
+  value <- row.vec[!is.na(row.vec)]
+  if (length(value)>0){return(row.vec[!is.na(row.vec)] %>% tail(.,1))}
+  else{return(NA)}
+  
 }
