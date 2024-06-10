@@ -75,7 +75,8 @@ df_output <- bind_rows(empalmados, originales) %>%
   mutate(brecha = mujer - varon,
          circa = ifelse(abs(anio-anio.circa.start)<=4,anio.circa.start, anio.circa.end)) %>% 
   arrange(circa, iso3) %>% 
-  rename(c("anio_circa"="anio"))
+  select(iso3, pais, anio_circa = anio, brecha, circa)
+
 
 #-- Controlar Output ----
 
@@ -109,9 +110,3 @@ df_output %>%
     unidades = list("valor" = "porcentaje")
   )
 
-
-
-A <- inf_legal_def %>% 
-  dplyr::filter(serie == "Serie empalmada") %>% 
-  dplyr::filter(iso3 == "URY") %>% 
-  dplyr::filter(apertura %in% c("Adultos (25-64), Género, Mujer", "Adultos (25-64), Género, Masculino"))
