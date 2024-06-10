@@ -1,4 +1,3 @@
-
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
@@ -76,7 +75,6 @@ df_original <- armar_serie_original(df = cedlas_df,
 df_anual <- armar_serie_anualizada(df_original = df_original)
 
 df_empalme <- armar_serie_empalme(df_anual = df_anual)
-
 
 df_clean <- armar_tabla(df_anual = df_anual, 
                         df_empalme = df_empalme) 
