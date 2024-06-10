@@ -31,3 +31,7 @@ descargar_fuente("R115C39")
 
 # GDP per capita, PPP (constant 2021 international $)
 descargar_fuente("R126C0")
+
+# Years of Education - Years of education - SEDLAC (serie original y empalmada)
+descargar_fuente("R116C42")
+
