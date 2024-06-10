@@ -14,7 +14,8 @@ agregar_fuente_raw(
   fecha_descarga = Sys.Date(),
   fecha_actualizar = Sys.Date()+months(1),
   path_raw = archivo,
-  script = "descarga_ipc_gba_1943_2008_indec.R"
+  script = "descarga_ipc_gba_1943_2013_indec.R"
 )
 
-actualizar_fuente_raw(id_fuente = 128)
+actualizar_fuente_raw(id_fuente = 128,
+                      script = "descarga_ipc_gba_1943_2013_indec.R")
