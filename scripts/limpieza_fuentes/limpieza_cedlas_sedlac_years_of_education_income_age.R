@@ -5,7 +5,7 @@ gc()   #Garbage Collection
 limpiar_temps()
 
 
-id_fuente <- 115
+id_fuente <- 116
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
@@ -18,8 +18,8 @@ descargar_fuente_raw(id_fuente = id_fuente, tempdir())
 # Cargo funciones para hacer limpieza
 source("./scripts/limpieza_fuentes/funciones_limpieza_cedlas_sedlac.R")
 
-TOPIC_PARAM <- "Employment"
-SHEET_PARAM <- "informal_2"
+TOPIC_PARAM <- 'Years of Education'
+SHEET_PARAM <- 'income_age'
 
 
 cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) 
@@ -76,6 +76,7 @@ df_anual <- armar_serie_anualizada(df_original = df_original)
 
 df_empalme <- armar_serie_empalme(df_anual = df_anual)
 
+
 df_clean <- armar_tabla(df_anual = df_anual, 
                         df_empalme = df_empalme) 
 
@@ -83,20 +84,20 @@ df_clean <- armar_tabla(df_anual = df_anual,
 
 norm_sheet <- str_to_lower(SHEET_PARAM) %>% str_replace(., " ", "_")
 
-clean_filename <- glue::glue("{norm_sheet}_{nombre_archivo_raw}_CLEAN.csv")
+clean_filename <- sprintf("%s_%s_CLEAN.csv", norm_sheet, nombre_archivo_raw)
 
-path_clean <- glue::glue("{tempdir()}/{clean_filename}")
+path_clean <- sprintf("%s/%s", tempdir(), clean_filename)
 
 df_clean %>% write_csv_fundar(., file = path_clean)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
-#                      path_clean = clean_filename,
-#                      dir = tempdir(),
-#                      nombre = glue::glue("{TOPIC_PARAM} - {tematica} - SEDLAC (serie original y empalmada)"),
-#                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir, se anualizaron los valores que poseían una frecuencia semestral y se calculó una serie empalmada",
-#                      script = code_name)
+#                       path_clean = clean_filename,
+#                       dir = tempdir(),
+#                       nombre = sprintf("%s - %s - SEDLAC (serie original y empalmada)", TOPIC_PARAM, variable),
+#                       descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir, se anualizaron los valores que poseían una frecuencia semestral y se calculó una serie empalmada",
+#                       script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 32,
+actualizar_fuente_clean(id_fuente_clean = 46,
                         dir = tempdir())

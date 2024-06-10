@@ -330,9 +330,8 @@ armar_serie_empalme <- function(df_anual, mapper = mapeo_iso3_pais){
   
   # Unir esta información de vuelta al dataset original
   empalme <- empalme %>%
-    left_join(max_fuente_orden, by = c("iso3", "apertura")) %>%
-    mutate(fuente_orden_max = ifelse(is.na(fuente_orden_max), 0, fuente_orden_max))
-  
+    left_join(max_fuente_orden, by = c("iso3", "apertura")) 
+    
   
   # Filtrar filas donde is_empalme es 1, agrupar y calcular min de fuente_orden
   min_fuente_orden <- empalme %>%
@@ -342,11 +341,12 @@ armar_serie_empalme <- function(df_anual, mapper = mapeo_iso3_pais){
   
   # Unir esta información de vuelta al dataset original
   empalme <- empalme %>%
-    left_join(min_fuente_orden, by = c("iso3", "apertura")) %>%
-    mutate(fuente_orden_min = ifelse(is.na(fuente_orden_min), -1, fuente_orden_min))
+    left_join(min_fuente_orden, by = c("iso3", "apertura")) 
+   
   
   # genero una variable booleana
   empalme <- empalme %>%
+    dplyr::filter(!is.na(fuente_orden_max) & !is.na(fuente_orden_min)) %>% 
     mutate(selection = as.integer(fuente_orden <= fuente_orden_max & fuente_orden >= fuente_orden_min))
   
   grid <- empalme %>% 
@@ -384,7 +384,8 @@ armar_serie_empalme <- function(df_anual, mapper = mapeo_iso3_pais){
     colnames(x2) <- sources
     
     division <- x2/x1
-    tasas <-  c(rowSums(division, na.rm = T)[1:(nrow(division)-1)], 1)
+    tasas <- unlist(lapply(1:nrow(division), function(row) quedarse_con_el_ultimo_no_na(division[row,])))
+    tasas <-  c(tasas[1:(length(tasas)-1)], 1)
     idx <- 1:length(tasas)
     idx_rev <- sort(idx, decreasing = T)
     tasas_rev <- tasas[idx_rev]
@@ -456,4 +457,12 @@ quitar_string_source <- function(df){
   col = coords[2]
   df[row,col] <- NA
   return(df)
+}
+
+quedarse_con_el_ultimo_no_na = function(row.df){
+  row.vec <- as.numeric(row.df)
+  value <- row.vec[!is.na(row.vec)]
+  if (length(value)>0){return(row.vec[!is.na(row.vec)] %>% tail(.,1))}
+  else{return(NA)}
+  
 }
