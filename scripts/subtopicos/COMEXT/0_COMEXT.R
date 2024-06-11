@@ -1,6 +1,8 @@
 source("scripts/subtopicos/COMEXT/fuentes_COMEXT.R")
 subtopico <-  "COMEXT"
 analista <-  c("")
+fuentes <- fuentes()
+metadata_comext <- metadata(subtopico = "COMEXT")
 
 #-- Sources -----
 
