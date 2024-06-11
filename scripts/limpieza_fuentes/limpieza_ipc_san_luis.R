@@ -22,5 +22,11 @@ ipc_san_luis <- ipc_san_luis %>%
 ipc_san_luis %>% 
   write_csv_fundar(file = glue::glue("{tempdir()}/{archivo}"))
 
-agregar_fuente_clean(id_fuente_raw = 124, path_clean = archivo, nombre = "Indice de precios al consumidor (IPC) - San Luis",
-                     script = "limpieza_ipc_san_luis.R")
+# agregar_fuente_clean(
+#   id_fuente_raw = 124,
+#   path_clean = archivo,
+#   nombre = "Indice de precios al consumidor (IPC) - San Luis",
+#   script = "limpieza_ipc_san_luis.R"
+# )
+
+actualizar_fuente_clean(id_fuente_clean = 50)
