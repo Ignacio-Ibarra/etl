@@ -22,12 +22,18 @@ argendataR::descargar_fuente(codigo = "R95C0") ## indec_estimacion_experimental_
 ## BACI 
 
 
-BACI_HS07 <- arrow::open_dataset("/srv/server_data/argendata/baci_comext/BACI_HS07/")
+#BACI_HS07 <- arrow::open_dataset("/srv/server_data/argendata/baci_comext/BACI_HS07/")
 
 
 raw_file <- "datasets_BACI_raw.txt"
 
 datasets_BACI_raw <- read_lines(glue::glue("{Sys.getenv('BACI_PATH')}/{raw_file}"))
+
+###
+
+argendataR::descargar_fuente("R113C57") # BASI HS96 Comoposicion EXPO - IMPO Sectores Brambilla y Porto
+
+
 
 ## Harvard Atlas Economic Complexity (from server) ----
 
