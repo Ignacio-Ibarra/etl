@@ -14,8 +14,8 @@
 - [X] 9_indice_apertura_comercial
 - [ ] 10_composicion_exportaciones_bienes_sitc_seccion
 - [ ] 11_composicion_importaciones_bienes_sitc_seccion
-- [ ] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
-- [ ] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
+- [X] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
+- [X] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
 - [ ] 14_composicion_exportaciones_bienes_diferenciado_Bernini
 - [ ] 15_composicion_importaciones_bienes_diferenciado_Bernini
 - [ ] 16_composicion_exportaciones_bienes_regiones_mundo
