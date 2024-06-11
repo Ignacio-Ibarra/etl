@@ -7,11 +7,16 @@
 # "NGDPRPC" (pib per capita) esta en moneda nacional constantes
 # "LP" (poblacion) esta en millones (1e6)
 
+url <- "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2024/April/WEOApr2024all.ashx"
+
+archivo <- "weo-imf.xls"
 
 
-download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2024/April/WEOApr2024all.ashx",
+download.file(url = url,
               mode = "wb",
-              destfile = glue::glue("{tempdir()}/weo-imf.xls"))
+              destfile = glue::glue("{tempdir()}/{archivo}"))
+
+readr::read_tsv(glue::glue("{tempdir()}/{archivo}"), locale = locale(encoding = "UTF-16"))
 
 # agregar_fuente_raw(
 #   url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2023/WEOOct2023all.ashx",
@@ -25,4 +30,4 @@ download.file(url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Data
 # )
 
 actualizar_fuente_raw(id_fuente = 34,
-                      url = "https://www.imf.org/-/media/Files/Publications/WEO/WEO-Database/2024/April/WEOApr2024all.ashx", dir = tempdir())
+                      url = url)
