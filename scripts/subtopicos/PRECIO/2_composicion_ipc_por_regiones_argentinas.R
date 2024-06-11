@@ -6,7 +6,7 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+output_name <- "2_composicion_ipc_por_regiones_argentinas.csv"
 
 #-- Librerias ----
 
@@ -14,7 +14,7 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+df <- readr::read_csv(argendataR::get_temp_path("R117C29"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +23,16 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+
+df <- df %>% 
+  select(-c(peso_region))
+
+df_output <- df %>% 
+  rename(sector = division, valor = peso_division) %>% 
+  mutate(valor =  round(100*valor, 2),
+         sector = replace_non_ascii(sector) %>% 
+           gsub(",", "", .)) 
+
 
 #-- Controlar Output ----
 
@@ -32,10 +41,10 @@ df_outoput <- proceso
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
+  df_output, subtopico = "PRECIO", entrega_subtopico = "datasets_update",
   nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
+  pk = c("region", "sector"),
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -46,15 +55,15 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
+    subtopico = "PRECIO",
+    fuentes = c("R117C29"),
+    analista = "",
+    pk = c("sector", "region"),
+    es_serie_tiempo = F,
+    # columna_indice_tiempo = "anio",
+    # columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("valor" = "Peso de cada sector en el IPC según región"),
+    unidades = list("valor" = "porcentaje")
   )
 
