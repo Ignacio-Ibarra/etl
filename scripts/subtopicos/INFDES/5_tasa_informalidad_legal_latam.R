@@ -28,19 +28,38 @@ empalmados <- data %>%
 
 originales <- data %>% 
   dplyr::filter(serie == "Serie original") %>% 
-  anti_join(empalmados %>% select(iso3) , join_by(iso3))
+  anti_join(empalmados %>% select(iso3) , join_by(iso3)) %>% 
+  group_by(iso3) %>% 
+  mutate(n_fuentes = n_distinct(fuente)) %>% 
+  ungroup() 
 
-  
-df_output <- bind_rows(empalmados, originales) %>% 
-  mutate(valor = valor/100)%>% 
-  select(-fuente, -fuente_orden, -apertura)
+originales_unica_fuente <- originales %>% 
+  filter(n_fuentes == 1)
 
+
+originales_multi_fuente <- originales %>% 
+  filter(n_fuentes>1) %>% 
+  group_by(iso3, fuente) %>% 
+  mutate(anio.max.iso.fuente = max(anio)) %>% 
+  ungroup() %>% 
+  group_by(iso3) %>% 
+  mutate(anio.max.iso = max(anio)) %>% 
+  ungroup() %>% 
+  filter(anio.max.iso == anio.max.iso.fuente)
+
+
+
+df_output <- bind_rows(empalmados, originales_unica_fuente, originales_multi_fuente) %>% 
+  select(iso3, pais, anio, valor, serie) %>% 
+  mutate(valor = valor/100)
+
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 #-- Controlar Output ----
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  nombre = output_name,
+  df_anterior,
   pk = c("iso3","anio"),
   drop_joined_df = F
 )
@@ -60,6 +79,7 @@ df_output %>%
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     nivel_agregacion = "pais",
+    aclaraciones = "Este dataset contiene solo series de datos comparables. Es decir, en aquellos países donde se puedo hacer un empalme entre fuentes que poseían años en común se utilizó el dato de empalme. En países donde no se pudo hacer empalme y se poseía más de una fuente de información, se mantuvieron unicamente las fuentes de datos más actuales",
     etiquetas_indicadores = list("valor" = "Tasa de informalidad legal"),
     unidades = list("valor" = "unidades")
   )
