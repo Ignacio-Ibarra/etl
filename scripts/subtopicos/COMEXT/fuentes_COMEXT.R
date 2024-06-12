@@ -36,52 +36,50 @@ argendataR::descargar_fuente("R113C57") # BASI HS96 Comoposicion EXPO - IMPO Sec
 argendataR::descargar_fuente("R113C59") # BASI HS96 Comoposicion EXPO - IMPO  Diferenciados  BERININI
 
 
-
-## Harvard Atlas Economic Complexity (from server) ----
-
-
-        ### country_partner_sitcproductsection_year.csv ----
-        
-        raw_file <- "country_partner_sitcproductsection_year.csv"
-        
-        
-        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
-        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
-        to_path <- glue::glue("{tempdir()}/{raw_file}")
-        file.copy(from = from_path, to = to_path ) 
-        
-        ### country_sitcproductsection_year.csv ----
-        
-        raw_file <- "country_sitcproductsection_year.csv"
-        
-        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
-        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
-        to_path <- glue::glue("{tempdir()}/{raw_file}")
-        file.copy(from = from_path, to = to_path ) 
-        
-        ### sitc_product-dta.csv ----
-        
-        raw_file <- "sitc_product-dta.csv"
-        
-        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
-        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
-        to_path <- glue::glue("{tempdir()}/{raw_file}")
-        file.copy(from = from_path, to = to_path ) 
-        
-        ### location.csv ----
-        
-        raw_file <- "location.csv"
-        # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
-        from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
-        to_path <- glue::glue("{tempdir()}/{raw_file}")
-        file.copy(from = from_path, to = to_path ) 
-        
-        
-        
-        
-        # Elimino objetos de enviroment
-        rm(list = c("from_path", "raw_file", "to_path"))
-        
-        
-        
-        
+  
+  ## Harvard Atlas Economic Complexity (from server) ----
+  
+  
+          ### country_partner_sitcproductsection_year.csv ----
+          
+          raw_file <- "country_partner_sitcproductsection_year.csv"
+          
+          
+          # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+          from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+          to_path <- glue::glue("{tempdir()}/{raw_file}")
+          file.copy(from = from_path, to = to_path ) 
+          
+          ### country_sitcproductsection_year.csv ----
+          
+          raw_file <- "country_sitcproductsection_year.csv"
+          
+          # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+          from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+          to_path <- glue::glue("{tempdir()}/{raw_file}")
+          file.copy(from = from_path, to = to_path ) 
+          
+          ### sitc_product-dta.csv ----
+          
+          raw_file <- "sitc_product-dta.csv"
+          
+          # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+          from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+          to_path <- glue::glue("{tempdir()}/{raw_file}")
+          file.copy(from = from_path, to = to_path ) 
+          
+          ### location.csv ----
+          
+          raw_file <- "location.csv"
+          # Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+          from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+          to_path <- glue::glue("{tempdir()}/{raw_file}")
+          file.copy(from = from_path, to = to_path ) 
+          
+          
+          
+          
+          # Elimino objetos de enviroment
+          rm(list = c("from_path", "raw_file", "to_path"))
+          
+          
