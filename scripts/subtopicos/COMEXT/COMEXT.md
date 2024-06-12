@@ -16,8 +16,8 @@
 - [ ] 11_composicion_importaciones_bienes_sitc_seccion
 - [X] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
 - [X] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
-- [ ] 14_composicion_exportaciones_bienes_diferenciado_Bernini
-- [ ] 15_composicion_importaciones_bienes_diferenciado_Bernini
+- [X] 14_composicion_exportaciones_bienes_diferenciado_Bernini
+- [X] 15_composicion_importaciones_bienes_diferenciado_Bernini
 - [ ] 16_composicion_exportaciones_bienes_regiones_mundo
 - [ ] 17_composicion_importaciones_bienes_regiones_mundo
 - [ ] 18_cambio_destinos_exportacion

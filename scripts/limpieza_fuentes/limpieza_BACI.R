@@ -10,6 +10,7 @@ url_fuente <- "http://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37
 institution <- "Centre d'Études Prospectives et d'Informations Internationales (CEPII)"
 
 
+## Wrangle RAW data csv 2 parquet ----
 
 #### Obtener datos crudos en .csv ----
 
@@ -34,10 +35,7 @@ all_csv_files <- list.files(directorio_temporal, full.names = T)
 
 
 
-## Importar y transformar ----
-
-
-## CODES (country and product)
+##### CODES (country and product) -----
 
 codes <- grep('codes', all_csv_files, value = TRUE)
 
@@ -47,7 +45,7 @@ codes <- grep('codes', all_csv_files, value = TRUE)
 #[3] "/tmp/Rtmp3qibtu/product_codes_HS96_V202401b.csv"
 
 
-###### HS07  ----
+##### HS07  ----
 
 codesHS07 <- grep('HS96', codes, value = TRUE, invert = TRUE)
 
@@ -121,7 +119,7 @@ for (i in 1996:2021) {
   write_parquet(data, output_file)
 }
 
-### Classification Codes - The Micro-D Classification: A New Approach to Identifying Differentiated Exports ----
+##### Classification Codes - The Micro-D Classification: A New Approach to Identifying Differentiated Exports ----
 link_hallak <- "0B19niEgxbWCrUTM3bHNodU9Lenc"
 
 drive_download(as_id(link_hallak), path = glue::glue("{tempdir()}/Micro-D-Codes.zip"), overwrite = TRUE)
@@ -148,6 +146,7 @@ haven::read_dta(glue::glue("{tempdir()}/Combined SIM for Micro-D.dta")) %>%
 
 hs96_arg_2020 <- arrow::read_parquet(glue::glue("{directory_path}/BACI_HS96/BACI_HS96_Y2020_V202401b.parquet")) %>% arrow::to_duckdb() 
 
+hs07_arg_2020 <- arrow::read_parquet(glue::glue("{directory_path}/BACI_HS07/BACI_HS07_Y2020_V202401b.parquet")) %>% arrow::to_duckdb() 
 
 
 country_codes <- arrow::read_parquet(glue::glue("{directory_path}/BACI_HS07/country_codes_V202401b.csv"))  %>% arrow::to_duckdb()
@@ -263,13 +262,71 @@ write_csv_fundar(imports_exports_brambilla_porto,
 # carga en sheet fuentes clean
 #argendataR::agregar_fuente_clean(id_fuente_raw = 113,
 #                    path_clean = "imports_exports_brambilla_porto.csv",
+#                    nombre = "Composición de las exportaciones e importaciones de Argentina según sectores. En porcentaje del total. Año 2020",, 
+#                    script = code_name, )
+
+actualizar_fuente_clean(id_fuente_clean = 57, 
+                        nombre = "Composición de las exportaciones e importaciones de Argentina según sectores. En porcentaje del total. Año 2020.")
+
+
+#####-- HS07----
+
+df_output_export07 <- hs07_arg_2020 %>% 
+  # Select only the required columns
+  select(t, i, k, v) %>%
+  # Group by t, i, and k, and then sum v
+  group_by(t, i, k) %>%
+  summarise(v = sum(v, na.rm = TRUE)) %>%
+  # Rename i to country_code and v to export_value
+  rename(country_code = i, export_value = v, year = t) %>% 
+  mutate(export_value = export_value/1000)
+
+
+df_output_import07 <- hs07_arg_2020 %>% 
+  # Select only the required columns
+  select(t, j, k, v) %>%
+  # Group by t, i, and k, and then sum v
+  group_by(t, j, k) %>%
+  summarise(v = sum(v, na.rm = TRUE)) %>%
+  # Rename i to country_code and v to export_value
+  rename(country_code = j, import_value = v, year = t) %>% 
+  mutate(import_value = import_value/1000)
+
+
+
+
+merged07 <- left_join(df_output_export07, df_output_import07) %>% 
+  left_join(country_codes)
+
+
+microD_6_digits <- read_csv("/srv/server_data/argendata/baci_comext/6-digit Micro-D.csv") %>% 
+  arrow::to_duckdb()
+
+imports_exports_micro_D_berinini <- merged07 %>%
+  rename(hs2007 = k) %>% 
+  left_join(microD_6_digits) %>% 
+  rename(microd = microd_6dig) %>% 
+  group_by(year, country_code, country_name, country_iso3, microd) %>% 
+  summarise(export_value = sum(export_value), 
+            import_value = sum(import_value))  %>% 
+  group_by(year, country_code) %>%
+  mutate(
+    export_value_pc = 100 * export_value / sum(export_value, na.rm = TRUE),
+    import_value_pc = 100 * import_value / sum(import_value, na.rm = TRUE)
+  ) %>% 
+  rename(iso3 = country_iso3) %>% 
+  collect()
+ 
+
+
+# guardar como csv
+write_csv_fundar(imports_exports_micro_D_berinini,
+                 file = glue::glue("{tempdir()}/imports_exports_micro_D_berinini.csv"))  
+
+# carga en sheet fuentes clean
+#argendataR::agregar_fuente_clean(id_fuente_raw = 113,
+#                    path_clean = "imports_exports_micro_D_berinini.csv",
 #                    nombre = "Composición de las exportaciones e importaciones de Argentina según grado de diferenciación del producto. En porcentaje del total. Año 2020",
 #                    script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 57)
-
-
-
-
-
-
+argendataR::actualizar_fuente_clean(id_fuente_clean = "R113C59")
