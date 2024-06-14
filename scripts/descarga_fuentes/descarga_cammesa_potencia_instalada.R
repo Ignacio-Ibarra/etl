@@ -19,13 +19,14 @@ cammesa_data %>%
   write_csv_fundar(normalizePath(sprintf("%s/potencia_instalada_renovables_arg_2022.csv", tempdir())))
 
 
-agregar_fuente_raw(
-  url = url,
-  nombre = "Potencia instalada por region 2022, Argentina",
-  institucion =  "CAMMESA",
-  actualizable = F,
-  path_raw = "potencia_instalada_renovables_arg_2022.csv",
-  directorio = tempdir(), script = "cammesa_potencia_instalada.R",api = F
-)
+# agregar_fuente_raw(
+#   url = url,
+#   nombre = "Potencia instalada por region 2022, Argentina",
+#   institucion =  "CAMMESA",
+#   actualizable = F,
+#   path_raw = "potencia_instalada_renovables_arg_2022.csv",
+#   directorio = tempdir(), script = "cammesa_potencia_instalada.R",api = F
+# )
 
-actualizar_fuente_raw(81)
+
+actualizar_fuente_raw(81, script = "descarga_cammesa_potencia_instalada.R")
