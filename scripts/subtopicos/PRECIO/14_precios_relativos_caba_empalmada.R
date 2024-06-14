@@ -6,7 +6,7 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+output_name <- "precios_relativos_caba_empalmada.csv"
 
 #-- Librerias ----
 
@@ -14,8 +14,9 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+ipcba <- readr::read_csv(argendataR::get_temp_path("R136C64"))
 
+ipcba_empalme <- readr::read_csv(argendataR::get_temp_path("R135C63"))
 
 #-- Parametros Generales ----
 
@@ -23,7 +24,49 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df <- bind_rows(ipcba_empalme %>% 
+                  filter(fecha < lubridate::ym("2022-02")),
+                ipcba)
+
+anios_excl <- df %>% 
+  group_by(anio = year(fecha), apertura) %>% 
+  mutate(n = n()) %>% 
+  filter(n != 12) %>% 
+  ungroup() %>% 
+  pull(anio) %>% unique()
+
+df <- df %>% 
+  filter(! year(fecha) %in% anios_excl)
+
+df <- df %>%
+  group_by(anio = year(fecha), codigo, apertura, nivel) %>%
+  summarize(ipc = mean(indice, na.rm = TRUE)) %>% 
+  ungroup()
+
+df <- df %>%
+  group_by(codigo) %>%
+  mutate(ipc_2013 = ipc[anio == 2013]) %>%
+  ungroup() %>%
+  mutate(ipc_base2013 = ipc / ipc_2013 * 100) %>%
+  select(anio, codigo, nivel, apertura, ipc_base2013) %>%
+  rename(ipc = ipc_base2013)
+
+df <- df %>%
+  group_by(anio) %>% 
+  mutate(nivelgeneral = ipc[codigo == "0"]) %>% 
+  ungroup()
+
+# Calcular precios relativos
+df <- df %>%
+  mutate(precio_relativo = ipc / nivelgeneral * 100) %>%
+  filter(codigo != "0") %>%
+  select(-c(nivelgeneral, ipc))
+
+# Ordenar y exportar datos
+df_output <- df %>%
+  arrange(anio, codigo) %>% 
+  rename(rubro = apertura)
+
 
 #-- Controlar Output ----
 
@@ -34,8 +77,9 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
+  subtopico = "PRECIO", entrega_subtopico = "datasets_update",
+  pk = c("anio", "codigo", "nivel"),
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -46,15 +90,15 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    subtopico = "PRECIO",
+    fuentes = c("R136C64", "R135C63"),
+    analista = "",
+    pk = c("anio", "codigo", "rubro", "nivel"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    # columna_geo_referencia = "iso3",
+    # nivel_agregacion = "pais",
+    etiquetas_indicadores = list("precio_relativo" = "Nivel de precio relativo respecto del nivel general"),
+    unidades = list("precio_relativo" = "indice")
   )
 
