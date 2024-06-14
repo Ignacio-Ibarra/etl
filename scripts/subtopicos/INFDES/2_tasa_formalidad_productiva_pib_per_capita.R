@@ -2,28 +2,43 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
-
-output_name <- "nombre del archivo de salida"
-
+subtopico <- "INFDES"
+output_name <- "tasa_formalidad_productiva_pib_per_capita"
+fuente1 <- "R115C31"
+fuente2 <- "R126C0"
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+inf_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
+gdp_df <- readr::read_csv(argendataR::get_temp_path(fuente2)) %>% 
+  rename(c("pib_per_capita_ppp" = "NY.GDP.PCAP.PP.KD")) %>% 
+  select(anio = year, iso3 = iso3c, pib_per_capita_ppp)
 
 
-#-- Parametros Generales ----
+formalidad_df <- inf_df %>% 
+  dplyr::filter((serie == "Serie original") & (apertura == "Edad total")) %>% 
+  select(-one_of("topico", "variable", "serie", "apertura"), everything()) %>% 
+  group_by(pais, tematica) %>% 
+  mutate(dummy_anio_max = max(anio) == anio) %>% 
+  ungroup() %>% 
+  dplyr::filter(dummy_anio_max) %>% 
+  mutate(tasa_formalidad_productiva = 1 - valor/100) %>% 
+  select(iso3, pais, anio, tasa_formalidad_productiva) %>% 
+  dplyr::filter(anio>2012)
+  
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-df_outoput <- proceso
+df_output <- formalidad_df %>% 
+  left_join(gdp_df, by = join_by(anio, iso3))
 
 #-- Controlar Output ----
 
@@ -35,7 +50,7 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   pk = c("anio", "iso3"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -54,7 +69,10 @@ df_output %>%
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    aclaraciones = "Este dataset cuenta con un cambio. Dado que el Banco Mundial actualizó el año base (de 2017 a 2021) para el cálculo del indicador 'NY.GDP.PCAP.PP.KD' el cual es utilizado en esta fuente",
+    etiquetas_indicadores = list("tasa_formalidad_productiva" = "Tasa de formalidad (definción productiva)",
+                                 "pib_per_capita_ppp" = "GDP per capita, PPP (constant 2021 international $)", ),
+    unidades = list("tasa_formalidad_productiva" = "unidades",
+                    "pib_per_capita_ppp" = "unidades")
   )
 

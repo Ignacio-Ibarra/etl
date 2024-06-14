@@ -8,16 +8,16 @@
 - [X] 3_participacion_exportaciones_servicios_porcentaje_exportaciones
 - [X] 4_participacion_exportaciones_bienes_servicios_porcentaje_pib
 - [X] 5_participacion_exportaciones_bienes_servicios_mundo
-- [ ] 6_participacion_exportaciones_bienes_servicios_mundo
-- [ ] 7_indice_valores_unitarios_exportacion_bienes_2000
-- [ ] 8_indice_volumen_exportaciones_bienes_2000
-- [ ] 9_indice_apertura_comercial
+- [X] 6_participacion_exportaciones_bienes_servicios_mundo (no se genero script. Mismo dataset que #5)
+- [X] 7_indice_valores_unitarios_exportacion_bienes_2000
+- [X] 8_indice_volumen_exportaciones_bienes_2000
+- [X] 9_indice_apertura_comercial
 - [ ] 10_composicion_exportaciones_bienes_sitc_seccion
 - [ ] 11_composicion_importaciones_bienes_sitc_seccion
-- [ ] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
-- [ ] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
-- [ ] 14_composicion_exportaciones_bienes_diferenciado_Bernini
-- [ ] 15_composicion_importaciones_bienes_diferenciado_Bernini
+- [X] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
+- [X] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
+- [X] 14_composicion_exportaciones_bienes_diferenciado_Bernini
+- [X] 15_composicion_importaciones_bienes_diferenciado_Bernini
 - [ ] 16_composicion_exportaciones_bienes_regiones_mundo
 - [ ] 17_composicion_importaciones_bienes_regiones_mundo
 - [ ] 18_cambio_destinos_exportacion

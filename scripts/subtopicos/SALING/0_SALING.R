@@ -1,0 +1,32 @@
+source("scripts/subtopicos/SALING/fuentes_SALING.R")
+subtopico <-  "SALING"
+analista <-  c("")
+
+#-- Sources -----
+
+# source("scripts/subtopicos/SALING/1_ISA_ipcf_it1.R)"
+# source("scripts/subtopicos/SALING/10_ISA_composicion-ipcf_it5.R)"
+# source("scripts/subtopicos/SALING/11_ISA_salario_real_i1.R)"
+# source("scripts/subtopicos/SALING/12_ISA_salario_real_i2.R)"
+# source("scripts/subtopicos/SALING/13_ISA_salario_real_i3.R)"
+# source("scripts/subtopicos/SALING/14_ISA_salarios_mundo_i1.R)"
+# source("scripts/subtopicos/SALING/15_ISA_salarios_mundo_i2.R)"
+# source("scripts/subtopicos/SALING/16_ISA_tipo_empleo_i1.R)"
+# source("scripts/subtopicos/SALING/17_ISA_tipo_empleo_i2.R)"
+# source("scripts/subtopicos/SALING/18_ISA_tipo_empleo_i3.R)"
+# source("scripts/subtopicos/SALING/19_ISA_salarios_region_i1.R)"
+# source("scripts/subtopicos/SALING/2_ISA_ipcf-LAC_it1.R)"
+# source("scripts/subtopicos/SALING/20_ISA_salarios_region_i2.R)"
+# source("scripts/subtopicos/SALING/21_ISA_edad_genero_i1.R)"
+# source("scripts/subtopicos/SALING/22_ISA_edad_genero_i2.R)"
+# source("scripts/subtopicos/SALING/23_ISA_edad_genero_i3.R)"
+# source("scripts/subtopicos/SALING/24_salario_real_base1970.R)"
+# source("scripts/subtopicos/SALING/25_salario_real_ppa2017_ceped.R)"
+# source("scripts/subtopicos/SALING/26_prima_formalidad_argentina.R)"
+# source("scripts/subtopicos/SALING/3_ISA_ipcf-LAC_it2.R)"
+# source("scripts/subtopicos/SALING/4_ISA_regiones-ipcf_it1.R)"
+# source("scripts/subtopicos/SALING/5_ISA_regiones-ipcf_it2.R)"
+# source("scripts/subtopicos/SALING/6_ISA_composicion-ipcf_it1.R)"
+# source("scripts/subtopicos/SALING/7_ISA_composicion-ipcf_it2.R)"
+# source("scripts/subtopicos/SALING/8_ISA_composicion-ipcf_it3.R)"
+# source("scripts/subtopicos/SALING/9_ISA_composicion-ipcf_it4.R)"

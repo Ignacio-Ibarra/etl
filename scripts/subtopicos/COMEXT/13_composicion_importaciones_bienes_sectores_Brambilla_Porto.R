@@ -6,15 +6,24 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+#-- Descripcion ----
+#' Breve descripcion de output creado
 
-#-- Librerias ----
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+
+output_name <- stringr::str_sub(string = code_name, start = 4, end = -3)
+
 
 #-- Lectura de Datos ----
 
+
+
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+
+comex_sectores_brambilla_porto <- readr::read_csv(argendataR::get_temp_path("R113C57"))
+
 
 
 #-- Parametros Generales ----
@@ -23,20 +32,21 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- comex_sectores_brambilla_porto %>% 
+  dplyr::select(year, iso3, country_name_abbreviation, sector_bp, sector_bp_name, import_value_pc)
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega")
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
-)
+
+df_anterior <- read_csv(glue::glue("{tempdir()}/composicion_importaciones_bienes_sectores_Brambilla_Porto_datasets_primera_entrega_COMEXT_argdt6c30c304ff2bb.csv"))
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            pk = c("year", "iso3", "sector_bp", "sector_bp_name"))
 
 #-- Exportar Output ----
 
@@ -44,17 +54,20 @@ comparacion <- argendataR::comparar_outputs(
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
+  rename(anio = year) %>% # Modifico colname -year
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c("R113C57"),
     analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
+    pk = c("anio", "iso3", "sector_bp", "sector_bp_name"),
+    es_serie_tiempo = FALSE,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("import_value_pc" = "Importaciones de bienes (% del total importado en bienes)"),
+    unidades = list("import_value_pc" = "porcentaje"), 
+    aclaraciones = "los valores para ARG que son los graficados son
+    correctos. La comparacion muestra outliers altos de algunas unidades geograficas no relevantes para la narrativa"
   )
 
