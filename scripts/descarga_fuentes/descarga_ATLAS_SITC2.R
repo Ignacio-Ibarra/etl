@@ -120,5 +120,5 @@ file.copy(from = from_path, to = to_path )
 
 actualizar_fuente_raw(id_fuente = "R104C0", dir = tempdir())
 
-
-
+# Elimino objetos de enviroment
+rm(list = c("from_path", "raw_file", "to_path"))

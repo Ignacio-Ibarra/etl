@@ -1,10 +1,10 @@
 
 # weo imf -----------------------------------------------------------------
 
-descargar_fuente_raw(id_fuente = 34,
-                     dir = tempdir())
+descargar_fuente("R34C0")
 
-data <- readr::read_tsv(get_temp_path("R34C0"))
+
+data <- readr::read_tsv(get_temp_path("R34C0"), locale = locale(encoding = "UTF-16"))
 
 data <- data %>% 
   mutate(across(everything(), as.character))
@@ -48,17 +48,11 @@ sum(is.na(data$valor))
 
 head(data)
 
-data <- data %>% 
-  mutate(valor = case_when(
-    units == "Billions" ~ valor*1E9,
-    units == "Millions" ~ valor*1E6,
-    T ~ valor
-  ))
+
 
 diccionario <- data %>% 
   distinct(weo_subject_code, subject_descriptor, subject_notes, scale, iso3,
-           country_series_specific_notes, estimates_start_after) %>% 
-  mutate(scale_aclaracion = "Todos los indicadores fueron rexpresados en unidades.")
+           country_series_specific_notes, estimates_start_after)
 
 
 data <- data %>% 
@@ -66,10 +60,10 @@ data <- data %>%
 # guardar
 
 write_csv_fundar(data,
-          file = "data/_FUENTES/clean/weo_imf.csv")
+          file = glue::glue("{tempdir()}/weo_imf.csv"))
 
 write_csv_fundar(diccionario,
-                 file = "data/_FUENTES/clean/diccionario_weo_imf.csv")
+                 file = glue::glue("{tempdir()}/diccionario_weo_imf.csv"))
 
 
 # agregar_fuente_clean(path_clean = "weo_imf.csv",
