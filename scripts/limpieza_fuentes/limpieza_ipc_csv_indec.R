@@ -26,20 +26,20 @@ ipc_indec <- ipc_indec %>%
          mes = substr(periodo, 5, 6))
 # 
 ipc_indec <- ipc_indec %>%
-  select(-c(codigo, periodo))
+  select(-c(periodo))
 # 
 # 
 ipc_indec <- ipc_indec %>%
-  select(anio, mes, region, clasificador, descripcion,  everything())
+  select(anio, mes, region, codigo, clasificador, descripcion,  everything())
 
 
 write_csv_fundar(x = ipc_indec, file = glue::glue("{tempdir()}/{archivo}"))
 
 
-agregar_fuente_clean(id_fuente_raw = 127,script = "scripts/limpieza_fuentes/limpieza_ipc_csv_indec.R", 
-                     path_clean = archivo,
-                     nombre = "Indice de precios al consumidor (IPC) por regiones según divisiones, categorías, bienes y servicios",
-                     descripcion = "Los datos de esta tabla deberian coincidir con la sheet ipc de fuente raw 117 tambien. Se consume directo del link csv por comodidad"
-                     )
+# agregar_fuente_clean(id_fuente_raw = 127,script = "scripts/limpieza_fuentes/limpieza_ipc_csv_indec.R", 
+#                      path_clean = archivo,
+#                      nombre = "Indice de precios al consumidor (IPC) por regiones según divisiones, categorías, bienes y servicios",
+#                      descripcion = "Los datos de esta tabla deberian coincidir con la sheet ipc de fuente raw 117 tambien. Se consume directo del link csv por comodidad"
+#                      )
 
 actualizar_fuente_clean(id_fuente_clean = 54)
