@@ -10,9 +10,9 @@
 - [ok] 5_evolucion_temperatura_1850_2023
 - [ver] 6_06_evolucion_nivel_del_mar_1993_2022
 - [ok] 7_emisiones_anuales_co2_region_2021
-- [ ] 8_emisiones_anuales_co2_region
-- [ ] 9_emisiones_per_cap
-- [ ] 10_emisiones_sector_global_2016
+- [OK] 8_emisiones_anuales_co2_region
+- [OK] 9_emisiones_per_cap
+- [OK] 10_emisiones_sector_global_2016
 - [ ] 11_emisiones_global_sec_1850_2014
 - [ ] 12_emisiones_subsec_arg_2018
 - [ ] 13_emisiones_arg_mundo

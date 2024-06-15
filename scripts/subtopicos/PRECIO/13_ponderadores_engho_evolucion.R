@@ -6,7 +6,7 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+output_name <- "ponderadores_engho_evolucion.csv"
 
 #-- Librerias ----
 
@@ -14,7 +14,7 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+df <- readr::read_csv(argendataR::get_temp_path("R134C61"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +23,16 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df <- df %>% 
+  filter(subcategoria == "Total" & grepl("Porcentaje", indicador) & indicador != "Total gasto de consumo")
+
+df <- df %>% 
+  select(rubro = categoria, periodo, porcentaje = valor)
+
+df <-  df %>% 
+  mutate(porcentaje = porcentaje/100)
+
+df_output <- df
 
 #-- Controlar Output ----
 
@@ -34,8 +43,9 @@ df_outoput <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
+  subtopico = "PRECIO", entrega_subtopico = "datasets_update",
+  pk = c("rubro", "periodo"),
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -46,15 +56,15 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
+    subtopico = "PRECIO",
+    fuentes = c("R134C61"),
+    analista = "",
+    pk = c("rubro", "periodo"),
+    es_serie_tiempo = F,
+    # columna_indice_tiempo = "anio",
+    # columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("porcentaje" = "Porcentaje que el rubro representa en el gasto de consumo de los hogaores"),
+    unidades = list("porcentaje" = "porcentaje")
   )
 
