@@ -91,11 +91,11 @@ file.copy(from = from_path, to = to_path )
 actualizar_fuente_raw(id_fuente = "103C0", dir = tempdir())
 
 
-## location.csv ----
+## location.dta ----
 
 
 
-raw_file <- "location.csv"
+raw_file <- "location.dta"
 
 
 
@@ -118,7 +118,40 @@ file.copy(from = from_path, to = to_path )
 #                   api = F
 #)
 
-actualizar_fuente_raw(id_fuente = "R104C0", dir = tempdir())
+actualizar_fuente_raw(id_fuente = "R154C0", dir = tempdir())
+
+
+## location.tab ----
+
+
+
+raw_file <- "location.tab"
+
+
+
+
+
+# Muevo archivo al tempdir para que lo suba desde ahi al filesystem remoto y genere la entrada en fuentes_raw
+from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
+to_path <- glue::glue("{tempdir()}/{raw_file}")
+file.copy(from = from_path, to = to_path ) 
+
+
+#agregar_fuente_raw(url = url_fuente,
+#                   nombre = glue::glue("{fuente_sitic}-{raw_file}"),
+#                   institucion = institution,
+#                   actualizable = F,
+#                   fecha_descarga = Sys.Date(),
+#                   directorio = tempdir(),
+#                   path_raw = raw_file,
+#                   script = code_name,
+#                   api = F
+#)
+
+actualizar_fuente_raw(id_fuente = "R155C0", dir = tempdir())
+
+
+
 
 # Elimino objetos de enviroment
 rm(list = c("from_path", "raw_file", "to_path"))
