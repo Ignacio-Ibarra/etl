@@ -20,8 +20,8 @@
 - [X] 15_composicion_importaciones_bienes_diferenciado_Bernini
 - [X] 16_composicion_exportaciones_bienes_regiones_mundo
 - [X] 17_composicion_importaciones_bienes_regiones_mundo
-- [ ] 18_cambio_destinos_exportacion
-- [ ] 19_cambio_origenes_importacion
+- [X] 18_cambio_destinos_exportacion
+- [X] 19_cambio_origenes_importacion
 - [ ] 20_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado
 - [ ] 21_exportaciones_servicios_top_20_destinos
 
