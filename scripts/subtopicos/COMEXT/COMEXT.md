@@ -18,8 +18,8 @@
 - [X] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
 - [X] 14_composicion_exportaciones_bienes_diferenciado_Bernini
 - [X] 15_composicion_importaciones_bienes_diferenciado_Bernini
-- [ ] 16_composicion_exportaciones_bienes_regiones_mundo
-- [ ] 17_composicion_importaciones_bienes_regiones_mundo
+- [X] 16_composicion_exportaciones_bienes_regiones_mundo
+- [X] 17_composicion_importaciones_bienes_regiones_mundo
 - [ ] 18_cambio_destinos_exportacion
 - [ ] 19_cambio_origenes_importacion
 - [ ] 20_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado
