@@ -16,6 +16,7 @@ walk(scripts, function(x) {
 
 salidas <- list.files(tempdir(), full.names = T)[list.files(tempdir()) %in% subtopico_outputs(subtopico_nombre = subtopico,
                                                                                               entrega_subtopico = entrega)$name]
+salidas <- c(salidas, gsub("\\.csv$", ".json", salidas))
 
 path_data <- glue::glue("~/data/{subtopico}")
 
