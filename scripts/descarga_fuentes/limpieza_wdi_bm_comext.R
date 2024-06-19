@@ -51,10 +51,14 @@ argendataR::descargar_fuente(codigo = "R91C0") # WDI_trade_of_gdp.csv	R91C0
                exportsconstant_servi_v2 = exportsconstant * servicesexportsbop_pc_v2 / 100,
                exportsofgoodsandservicesofgdp = exports_of_goods_and_services_of_gdp,
                exportunitvalueindex = export_unit_value_index,
-               baseyear2000 = ifelse(year == 2000, 1, 0),
-               exportunitvalueindex_2000 = 100 * baseyear2000[1] * exportunitvalueindex / exportunitvalueindex[1],
                tradeofgdp = trade_of_gdp
- )
+ ) %>% 
+   mutate(baseyear2000 = if_else(year == 2000, 1, 0)) %>%
+   group_by(iso3c) %>%
+   arrange(iso3c, baseyear2000) %>%
+   mutate(exportunitvalueindex_2000 = if_else(baseyear2000 == 1, 100, 100 * exportunitvalueindex / first(exportunitvalueindex[baseyear2000 == 1])),
+          exportvolumeindex = if_else(baseyear2000 == 1, 100, 100 *  export_volume_index / first( export_volume_index[baseyear2000 == 1]))) 
+   
  
  # Renombrar variables
  data <- rename(WDI, 

@@ -9,13 +9,7 @@ argendataR::descargar_fuente(codigo = "R43C22") ## sector-externo-fundacion-nort
 
 argendataR::descargar_fuente(codigo = "R44C23") ## indices_comex_indec.xls R44C0 ----
  
-## WDI Indicators - COMEXT ----
-
 argendataR::descargar_fuente(codigo = "R98C0") ## WDI_wdi_bm_comext.csv R98C0 (Compilacion de otras fuentes) 
-
-
-## BACI ----
-
 
 argendataR::descargar_fuente(codigo = "R94C0") ## wto_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado.csv R94C0 ----
 
@@ -23,6 +17,25 @@ argendataR::descargar_fuente(codigo = "R95C0") ## indec_estimacion_experimental_
 
 
 ################################  BASES AD HOC EN SERVER  ###################################
+
+
+## BACI 
+
+
+#BACI_HS07 <- arrow::open_dataset("/srv/server_data/argendata/baci_comext/BACI_HS07/")
+
+
+raw_file <- "datasets_BACI_raw.txt"
+
+datasets_BACI_raw <- read_lines(glue::glue("{Sys.getenv('BACI_PATH')}/{raw_file}"))
+
+###
+
+argendataR::descargar_fuente("R113C57") # BASI HS96 Comoposicion EXPO - IMPO Sectores Brambilla y Porto
+
+argendataR::descargar_fuente("R113C59") # BASI HS96 Comoposicion EXPO - IMPO  Diferenciados  BERININI
+
+
 
 ## Harvard Atlas Economic Complexity (from server) ----
 
@@ -62,4 +75,13 @@ argendataR::descargar_fuente(codigo = "R95C0") ## indec_estimacion_experimental_
         from_path <- glue::glue("{Sys.getenv('ATLAS_SITIC2_PATH')}/{raw_file}")
         to_path <- glue::glue("{tempdir()}/{raw_file}")
         file.copy(from = from_path, to = to_path ) 
+        
+        
+        
+        
+        # Elimino objetos de enviroment
+        rm(list = c("from_path", "raw_file", "to_path"))
+        
+        
+        
         
