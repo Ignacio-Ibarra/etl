@@ -2,7 +2,7 @@
 comex_indec_url_servicios <- "https://www.indec.gob.ar/ftp/cuadros/economia/Base_servicios_internacionales_pais_CABPS.csv"
 
 
-df_tibble <- read.csv2(comex_indec_url_servicios, header=TRUE, fileEncoding="latin1") %>% 
+df_tibble <- data.table::fread(comex_indec_url_servicios, encoding = "Latin-1") %>% 
   janitor::clean_names() %>% 
   as_tibble()
 
@@ -24,4 +24,4 @@ argendataR::write_csv_fundar(x = df_tibble,
 #                )
 #
 
-actualizar_fuente(id_fuente = "R95C0" , fecha_descarga = Sys.Date())
+argendataR::actualizar_fuente_raw(id_fuente = "R95C0" , fecha_descarga = Sys.Date())
