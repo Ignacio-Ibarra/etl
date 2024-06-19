@@ -27,6 +27,10 @@ data <- readr::read_csv(argendataR::get_temp_path("R80C0"))
 #-- Procesamiento ----
 
 
+
+data <- data %>% 
+  mutate(entities_code = ifelse(str_detect(entities_name, "Latin America and Caribbean"), "LCN", entities_code))
+
 data <- data %>% 
   select(anio,iso3 = entities_code, valor_en_gco2_por_kwh = valor )
 
@@ -47,9 +51,9 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   subtopico = "TRANEN",
-  entrega_subtopico = "datasets_segunda_entrega",
+  entrega_subtopico = "datasets_update",
   pk = c("anio", "iso3"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----

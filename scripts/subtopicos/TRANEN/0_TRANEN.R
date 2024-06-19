@@ -1,20 +1,29 @@
 source("scripts/subtopicos/TRANEN/fuentes_TRANEN.R")
-# subtopico <-  "TRANEN"
-# analista <-  c("")
-# meta_tranen <- metadata("TRANEN")
-
+subtopico <-  "TRANEN"
+analista <-  c("")
+entrega <- "datasets_update"
 #-- Sources -----
 
-source("scripts/subtopicos/TRANEN/1_matriz_prim_mundo_historic_larga.R")
-source("scripts/subtopicos/TRANEN/10_produccion_biocomb.R")
-source("scripts/subtopicos/TRANEN/11_produc_electricidad_fuente_mundo_twh.R")
-source("scripts/subtopicos/TRANEN/14_potencia_instalada_renov_regional.R")
-source("scripts/subtopicos/TRANEN/15_identidad_kaya_mundo.R")
-source("scripts/subtopicos/TRANEN/17_intensidad_energ_mundo.R")
-source("scripts/subtopicos/TRANEN/18_intensidad_carbono_electri_mundo.R")
-source("scripts/subtopicos/TRANEN/2_matriz_prim_mundo_historic.R")
-source("scripts/subtopicos/TRANEN/4_energia_baja_carbono.R")
-source("scripts/subtopicos/TRANEN/6_generacion_hidro_twh.R")
-source("scripts/subtopicos/TRANEN/7_generacion_nuclear_twh.R")
-source("scripts/subtopicos/TRANEN/8_capacidad_instalada_fv_gw.R")
-source("scripts/subtopicos/TRANEN/9_capacidad_instalada_eolica_gw.R")
+
+
+archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
+scripts <- archivos[grepl("\\.R$", archivos) &
+                      ! archivos %in% c(glue::glue("0_{subtopico}.R"), glue::glue("fuentes_{subtopico}.R"))]
+
+walk(scripts, function(x) {
+  source(glue::glue("~/etl/scripts/subtopicos/{subtopico}/{x}"), local = T)
+})
+
+salidas <- list.files(tempdir(), full.names = T)[list.files(tempdir()) %in% subtopico_outputs(subtopico_nombre = subtopico,
+                                                                                              entrega_subtopico = entrega)$name]
+salidas <- c(salidas, gsub("\\.csv$", ".json", salidas))
+
+path_data <- glue::glue("~/data/{subtopico}")
+
+purrr::walk(salidas, 
+            function (x) {
+              
+              file.copy(from = x, to = path_data, overwrite = T) 
+              message(glue::glue("{x} copiado a {path_data}."))
+            })
+

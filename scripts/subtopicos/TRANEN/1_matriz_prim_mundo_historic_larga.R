@@ -61,22 +61,23 @@ df_output <- data
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-comparacion <- argendataR::comparar_outputs(
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                              entrega_subtopico = "datasets_update",
+                                              subtopico = "TRANEN")
+
+df_anterior$tipo_energia <-df_anterior$tipo_energia %>% gsub("\xf3", "ó",.)
+
+
+comparacion <- comparar_outputs(
   df_output,
-  nombre = output_name,
-  entrega_subtopico = "datasets_segunda_entrega",
-  subtopico = "TRANEN",
+  df_anterior,
   pk = c("anio", "tipo_energia"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 # fix caracteres rotos x encoding
-comparacion$output_drive$tipo_energia <- comparacion$output_drive$tipo_energia %>% gsub("\xf3", "ó",.)
 
 # comparacion manual
-x <- left_join(comparacion$output_drive, df_output, by = c("anio", "tipo_energia"))
-sum(is.na(x$valor_en_twh.y))
-cor(x$valor_en_twh.x, x$valor_en_twh.y) > 0.99
 
 #-- Exportar Output ----
 

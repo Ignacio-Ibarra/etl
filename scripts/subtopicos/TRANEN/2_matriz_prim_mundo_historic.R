@@ -82,10 +82,10 @@ df_output <- data
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  entrega_subtopico = "datasets_segunda_entrega",
+  entrega_subtopico = "datasets_update",
   subtopico = "TRANEN",
   pk = c("anio", "iso3", "tipo_energia", "fuente_energia"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 
