@@ -22,7 +22,7 @@
 - [X] 17_composicion_importaciones_bienes_regiones_mundo
 - [X] 18_cambio_destinos_exportacion
 - [X] 19_cambio_origenes_importacion
-- [ ] 20_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado
+- [X] 20_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado
 - [X] 21_exportaciones_servicios_top_20_destinos
 
 
