@@ -5,7 +5,7 @@ limpiar_temps()
 
 # source("scripts/utils/funciones_descarga_cedlas_desde_metadata.R")
 
-SUBTOP <- "POBREZ"
+SUBTOP <- "SALING"
 scripts.folder <- glue::glue("scripts/subtopicos/{SUBTOP}")
 scripts.files <- list.files(scripts.folder)
 scripts.df <- data.frame(scripts_names = scripts.files[grepl(".R$", scripts.files)]) %>% 
@@ -31,7 +31,10 @@ scripts_borrar <- datasets.cedlas_jn  %>%
   dplyr::filter(no_va) %>% 
   select(scripts_names) %>% pull()
 
-file.remove(paste0(scripts.folder,"/",scripts_borrar))
+if (length(scripts_borrar)>0){
+  file.remove(paste0(scripts.folder,"/",scripts_borrar))
+}
+
 
 datasets.cedlas_generar <- datasets.cedlas_jn %>% 
   dplyr::filter(!no_va) %>% 
