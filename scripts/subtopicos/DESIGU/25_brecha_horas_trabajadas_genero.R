@@ -2,28 +2,80 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-output_name <- "nombre del archivo de salida"
+subtopico <- "DESIGU"
+output_name <- "brecha_horas_trabajadas_genero"
+codigos.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(nombre, codigo) 
 
-#-- Librerias ----
+# librerías
+
+require(data.table)
 
 #-- Lectura de Datos ----
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
+anios <- 2003:2023
 
 
-#-- Parametros Generales ----
+# Creo una función custom para aplicar un determinado wrangling a cada dataset de EPH
+eph_brecha_horas_trabajadas_genero <- function(eph_data) {
+  outdf <- eph_data %>%
+    dplyr::filter(estado == 1) %>% 
+    dplyr::filter(pp3e_tot<900) %>% 
+    select(anio = ano4, genero_cod = ch04, edad = ch06, pp3e_tot, pondera) %>%
+    mutate(genero_desc = ifelse(genero_cod == 1, "Hombres", "Mujeres")) %>% 
+    group_by(anio, genero_cod, genero_desc) %>%
+    summarise(hs_trabajadas_sem = stats::weighted.mean(pp3e_tot, pondera) ) %>%
+    ungroup() 
+    
+  
+  return(outdf)
+}
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+# Creo una función que levanta el dataset correspondiente a un año
+load_eph_by_year <- function(year, codes_and_names){
+  fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
+  eph_df <- fread(argendataR::get_temp_path(fuente))
+  return(eph_df)
+}
+
+# Creo una función de cleaning de cada archivo
+cleaning_eph <- function(eph_data){
+  colnames(eph_data) <- tolower(colnames(eph_data))
+  return(eph_data)
+}
+
+# Creo una función que procesa una lista de años 
+eph_processing <- function(years, codes_and_names, custom_wrangling){
+  result_processing <- data.table()
+  for (year in years){
+    cat(sprintf("Archivo EPH (%s)... empezando\n", year))
+    
+    # Cargo archivo
+    eph_df <- load_eph_by_year(year = year, codes_and_names = codes_and_names)
+    dimensiones <- dim(eph_df)
+    cat(sprintf("... cargando %s filas y %s columnas \n", dimensiones[1], dimensiones[2]))
+    
+    # Hago cleaning
+    eph_df <- cleaning_eph(eph_data = eph_df)
+    cat("... limpieza\n")
+    
+    # Hago wrangling
+    result_df <- custom_wrangling(eph_data = eph_df)
+    cat("... procesado\n")
+    
+    result_processing <- rbind(result_processing, result_df, fill=F)
+    cat("... finalizado\n")
+    
+  }
+  return(result_processing)
+}
 
 #-- Procesamiento ----
 
-df_output <- proceso
+df_output <- eph_processing(years = anios, codes_and_names = codigos.eph, custom_wrangling = eph_brecha_horas_trabajadas_genero)
 
 #-- Controlar Output ----
 
@@ -34,8 +86,8 @@ df_output <- proceso
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  pk = c("anio", "genero_cod", "genero_desc"),
+  drop_joined_df =  F
 )
 
 #-- Exportar Output ----
@@ -47,14 +99,12 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = codigos.eph$codigo,
+    analista = "",
+    pk = c("anio", "genero_cod", "genero_desc"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("hs_trabajadas_sem" = "Horas promedio trabajadas semanalmente"),
+    unidades = list("hs_trabajadas_sem" = "unidades"),
+    aclaraciones = "El dataset update contiene algunas diferencias para el ultimo anio disponible 2023, dado que el analista creo un dataset sin tener todos los trimestres completos de dicho año, las clases de las variables genero_cod y anio no coinciden, aunque el mismatch no es dado que en el dataset del analista vienen como numeric y en el dataset nuevo se encuentran como integer."
   )
-
