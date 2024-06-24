@@ -15,7 +15,7 @@ output_name <- "emisiones_anuales_co2_region_2021"
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 
-evol_anua_co2_reg_2021<-readr::read_csv(argendataR::get_temp_path("R119C0"))
+emis_anua_co2_reg_2021<-readr::read_csv(argendataR::get_temp_path("R119C0"))
 geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Parametros Generales ----
@@ -24,43 +24,55 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Procesamiento ----
 
+# dejo la variables que ncesitamos
+emis_anua_co2_reg_2021 <- emis_anua_co2_reg_2021 %>% 
+  select(-name,-id,-unit,-shortUnit,-datasetId,-entities_id)
+
 ## transformo los datos
-evol_anua_co2_reg_2021 <- evol_anua_co2_reg_2021 %>% 
-  select (2,7,8,81) %>% 
-  rename(anio = "2021")
+emis_anua_co2_reg_2021_long <- pivot_longer(emis_anua_co2_reg_2021, 
+               cols = -c(entities_name,entities_code),  # Columnas a mantener fijas
+               names_to = "anio",             # Nombre para la columna de años
+               values_to = "valor")          # Nombre para la columna de valores
+
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
+  mutate(anio = parse_number(anio)) %>%  # Convierte la columna "anios" en numérica
+  slice_max(order_by = anio) 
 
 # armo valor referencia worl
-valor_referencia <- evol_anua_co2_reg_2021 %>%
+valor_referencia <- emis_anua_co2_reg_2021_long %>%
   filter(entities_code == "OWID_WRL") %>%
-  select(anio) %>%
+  select(valor) %>%
   pull()
 
 #  doy formato a porcent
-evol_anua_co2_reg_2021 <- evol_anua_co2_reg_2021 %>%
-  mutate(valor_en_porcent = sprintf("%.9f", (anio / valor_referencia)))
+
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
+  mutate(
+    valor_en_porcent = as.numeric(sprintf("%.9f", (valor / valor_referencia)))
+  )
 
 # final
-evol_anua_co2_reg_2021 <- evol_anua_co2_reg_2021 %>%
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
   inner_join(geonomenclador, by = c("entities_code" = "codigo_fundar")) %>% 
-  mutate(anio = 2021)  %>%  
-  select(3,10,8,4,5)  %>% 
   rename(
     iso3 = entities_code,
     continente_fundar = continente_fundar,
     iso3_desc_fundar = desc_fundar,
     anio = anio,
     valor_en_porcent = valor_en_porcent
-  ) %>% 
-  mutate(valor_en_porcent = as.numeric(valor_en_porcent))
+  ) %>%  
+  select(iso3, continente_fundar, iso3_desc_fundar, anio, valor_en_porcent)
 
-view(evol_anua_co2_reg_2021)
-  
 # elimino na
-evol_anua_co2_reg_2021 <- na.omit(evol_anua_co2_reg_2021)
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
+  filter(!is.na(valor_en_porcent))
 
-df_output <- evol_anua_co2_reg_2021
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
+  filter(!is.na(continente_fundar))
 
 #-- Controlar Output ----
+
+df_output<-emis_anua_co2_reg_2021_long
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
