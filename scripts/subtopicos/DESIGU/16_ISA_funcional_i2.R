@@ -6,7 +6,7 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+output_name <- "nombre del archivo de salida "
 
 #-- Librerias ----
 
