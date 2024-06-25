@@ -1,20 +1,43 @@
-################################################################################
-##                              Dataset: nombre                               ##
-################################################################################
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+limpiar_temps()
 
-output_name <- "nombre del archivo de salida "
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+subtopico <- 'DESIGU'
+output_name <- 'ISA_funcional_i1'
 
-#-- Librerias ----
+
+fuente_1 <- "R210C0"
+fuente_2 <- "R35C76"
+fuente_3 <- "R211C77"
+# nombre_archivo_raw1 <- str_split_1(fuentes_raw() %>% 
+#                                     filter(codigo == fuente_raw1) %>% 
+#                                     select(path_raw) %>% 
+#                                     pull(), pattern = "\\.")[1]
+
+
+# Participación en el Valor Agregado Bruto a precios básicos (por sector o total de la economía)
+ceped_df <- readxl::read_excel(argendataR::get_temp_path(fuente_1)) %>% 
+  dplyr::filter(variable == "particip.vab.pb") %>% 
+  select(anio = Anio, particip_vab_pb_total = Total)
+  
+# Cuenta Generacion del Ingeso (RTA pp) - INDEC
+cgi_df <- read_csv(argendataR::get_temp_path(fuente_2)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  dplyr::filter(indicador == "Total general") %>% 
+  select(anio, participacion)
+
+grania_df <- read_csv(argendataR::get_temp_path(fuente_3)) %>% select(anio, masa_salarial)
+
+
+data_total <- grania_df %>% 
+  full_join(., ceped_df, by=join_by(anio)) %>% 
+  full_join(., cgi_df, by=join_by(anio))
 
 #-- Lectura de Datos ----
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
 
 
 #-- Parametros Generales ----
