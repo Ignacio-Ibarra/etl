@@ -18,7 +18,7 @@ descargar_fuente_raw(id_fuente = id_fuente, tempdir())
 
 # Lectura datos 
 
-SHEET_NAME <- "RTA pp"
+SHEET_NAME <- "EEB pp"
 serie_cgi <- readxl::read_excel(get_temp_path(fuente_raw1), sheet = SHEET_NAME)
 
 
@@ -75,5 +75,5 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 76,
+actualizar_fuente_clean(id_fuente_clean = 79,
                         dir = tempdir())
