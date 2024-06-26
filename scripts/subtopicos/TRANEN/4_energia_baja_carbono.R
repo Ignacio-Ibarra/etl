@@ -57,6 +57,7 @@ df_output %>%
     subtopico = "TRANEN",
     fuentes = c("R71C0"),
     analista = "",
+    control = comparacion,
     pk = c("anio", "iso3"),
     aclaraciones = "Proporción del consumo de energía primaria que proviene de fuentes bajas en carbono",
     es_serie_tiempo = T,

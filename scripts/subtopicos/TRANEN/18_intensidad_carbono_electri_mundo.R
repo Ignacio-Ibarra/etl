@@ -68,6 +68,7 @@ df_output %>%
     subtopico = "TRANEN",
     fuentes = c("R80C0"),
     analista = "",
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

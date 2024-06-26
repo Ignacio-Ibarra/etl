@@ -121,6 +121,7 @@ df_output %>%
     subtopico = "TRANEN",
     fuentes = c("R81C0"),
     analista = "",
+    control = comparacion,
     pk = c("region", "tipo_energia"),
     es_serie_tiempo = F,
     # columna_indice_tiempo = "anio",
