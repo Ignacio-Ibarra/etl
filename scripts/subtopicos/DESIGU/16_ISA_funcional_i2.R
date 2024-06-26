@@ -1,42 +1,62 @@
-################################################################################
-##                              Dataset: nombre                               ##
-################################################################################
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+limpiar_temps()
 
-output_name <- "nombre del archivo de salida "
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+subtopico <- 'DESIGU'
+output_name <- 'ISA_funcional_i2'
 
 
-#-- Parametros Generales ----
+fuente_1 <- "R35C76"
+fuente_2 <- "R35C78"
+fuente_3 <- "R35C79"
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
-#-- Procesamiento ----
+# Cuenta Generacion del Ingeso (RTA pp) - INDEC
+rta_df <- read_csv(argendataR::get_temp_path(fuente_1)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  dplyr::filter(indicador == "Total general") %>% 
+  select(anio, `Remuneración al trabajo asalariado` = participacion)
 
-df_output <- proceso
+# Cuenta Generacion del Ingeso (IBM pp) - INDEC
+ibm_df <- read_csv(argendataR::get_temp_path(fuente_2)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  dplyr::filter(indicador == "Total general") %>% 
+  select(anio, `Ingreso mixto bruto` = participacion)
 
-#-- Controlar Output ----
+# Cuenta Generacion del Ingeso (EEB pp) - INDEC
+eeb_df <- read_csv(argendataR::get_temp_path(fuente_3)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  dplyr::filter(indicador == "Total general") %>% 
+  select(anio, `Excedente de explotación bruto` = participacion)
 
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+
+df_output <- rta_df %>% 
+  left_join(ibm_df, by=join_by(anio)) %>% 
+  left_join(eeb_df, by=join_by(anio)) %>% 
+  pivot_longer(-anio, names_to = "categoria", values_to = "participacion")
+
+
+df_anterior <- argendataR::descargar_output(nombre ='ISA_funcional_i2', 
+                                            subtopico = "DESIGU", 
+                                            entrega_subtopico = "datasets_primera_entrega") %>% 
+  select(anio = ano, categoria = variable, participacion = valor) %>% 
+  mutate(categoria  = case_when(
+    categoria == "remuneraciontrabajo" ~ "Remuneración al trabajo asalariado",
+    categoria == "ingresobrutomixto" ~ "Ingreso mixto bruto",
+    TRUE ~ "Excedente de explotación bruto"
+  ))
 
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  df_anterior,
+  pk = c("anio","categoria"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df = F
 )
+
 
 #-- Exportar Output ----
 
@@ -47,14 +67,15 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    fuentes = c(fuente_1, fuente_2, fuente_3),
+    analista = "",
+    pk = c("anio","categoria"),
     es_serie_tiempo = T,
+    control = comparacion,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    aclaraciones = "El dataset posee algunas diferencias con respecto al realizado por el analista",
+    etiquetas_indicadores = list("participacion" = "Participación en el Valor Agregado Bruto a precios básicos"),
+    unidades = list("participacion" = "porcentaje")
   )
+
 
