@@ -2,6 +2,8 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+rm(list = ls())
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -23,58 +25,51 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Procesamiento ----
 
-#-- Procesamiento ----
-
 ## transformo los datos
+
+# me quedo con las variables que necesitamos
 emis_anual_co2_region <- emis_anual_co2_region %>% 
-  select (2,7,8,81) %>% 
-  rename(anio = "2021")
+  select(-name,-id,-unit,-shortUnit,-datasetId,-entities_id)
 
-# armo valor referencia worl
-valor_referencia <- evol_anua_co2_reg_2021 %>%
-  filter(entities_code == "OWID_WRL") %>%
-  select(anio) %>%
-  pull()
+# paso a formato long
+emis_anual_co2_region_long <- pivot_longer(emis_anual_co2_region, 
+              cols = -c(entities_name,entities_code),  # Columnas a mantener fijas
+              names_to = "anio",             # Nombre para la columna de años
+              values_to = "valor")          # Nombre para la columna de valores
 
-#  doy formato a porcent
-evol_anua_co2_reg_2021 <- evol_anua_co2_reg_2021 %>%
-  mutate(valor_en_porcent = sprintf("%.9f", (anio / valor_referencia)))
+# paso anio a numeric
+emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
+  mutate(anio = as.numeric(anio))
 
-# final
-evol_anua_co2_reg_2021 <- evol_anua_co2_reg_2021 %>%
-  inner_join(geonomenclador, by = c("entities_code" = "codigo_fundar")) %>% 
-  mutate(anio = 2021)  %>%  
-  select(3,10,8,4,5)  %>% 
-  rename(
-    iso3 = entities_code,
-    continente_fundar = continente_fundar,
-    iso3_desc_fundar = desc_fundar,
-    anio = anio,
-    valor_en_porcent = valor_en_porcent
-  ) %>% 
-  mutate(valor_en_porcent = as.numeric(valor_en_porcent))
+# tragio info genomenclador
+emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
+  inner_join(geonomenclador, by = c("entities_code" = "codigo_fundar"))
 
-view(evol_anua_co2_reg_2021)
+# dejo la variables que ncesitamos
+emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
+  select(entities_code,continente_fundar,anio,valor) %>% 
+  rename(iso3 = entities_code,
+         valor_en_ton=valor)
 
-# elimino na
-evol_anua_co2_reg_2021 <- na.omit(evol_anua_co2_reg_2021)
+## elimino NA en valor
+emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
+  filter(!is.na(valor_en_ton))
 
-df_output <- evol_anua_co2_reg_2021
-
-
-df_outoput <- proceso
+df_output <- emis_anual_co2_region_long
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-
 comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
+  emis_anual_co2_region_long,
+  subtopico = "CAMCLI",
+  entrega_subtopico = "segunda_entrega",
+  nombre = "emisiones_anuales_co2_region.csv",
+  k_control_num = 3,
+  pk = c("iso3","anio"),
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -85,15 +80,16 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
+    subtopico = "CAMCLI",
+    fuentes = c("R119C0"),
+    analista = "",
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    aclaraciones = "se agrega en la actualización anio 2022",
+    etiquetas_indicadores = list("valor_en_ton" = "Valor emisiones co2 en troneladas"),
+    unidades = list("valor_en_ton" = "toneladas")
   )
 

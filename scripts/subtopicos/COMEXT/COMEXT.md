@@ -12,18 +12,18 @@
 - [X] 7_indice_valores_unitarios_exportacion_bienes_2000
 - [X] 8_indice_volumen_exportaciones_bienes_2000
 - [X] 9_indice_apertura_comercial
-- [ ] 10_composicion_exportaciones_bienes_sitc_seccion
-- [ ] 11_composicion_importaciones_bienes_sitc_seccion
+- [X] 10_composicion_exportaciones_bienes_sitc_seccion
+- [X] 11_composicion_importaciones_bienes_sitc_seccion
 - [X] 12_composicion_exportaciones_bienes_sectores_Brambilla_Porto
 - [X] 13_composicion_importaciones_bienes_sectores_Brambilla_Porto
 - [X] 14_composicion_exportaciones_bienes_diferenciado_Bernini
 - [X] 15_composicion_importaciones_bienes_diferenciado_Bernini
-- [ ] 16_composicion_exportaciones_bienes_regiones_mundo
-- [ ] 17_composicion_importaciones_bienes_regiones_mundo
-- [ ] 18_cambio_destinos_exportacion
-- [ ] 19_cambio_origenes_importacion
-- [ ] 20_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado
-- [ ] 21_exportaciones_servicios_top_20_destinos
+- [X] 16_composicion_exportaciones_bienes_regiones_mundo
+- [X] 17_composicion_importaciones_bienes_regiones_mundo
+- [X] 18_cambio_destinos_exportacion
+- [X] 19_cambio_origenes_importacion
+- [X] 20_composicion_exportaciones_servicios_EBOPS_2digitos_agrupado
+- [X] 21_exportaciones_servicios_top_20_destinos
 
 
 ## Referencias datasets

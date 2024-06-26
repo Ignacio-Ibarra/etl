@@ -1,12 +1,13 @@
-################################################################################
+#################################################################################
 ##                              Dataset: nombre                               ##
 ################################################################################
 
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
+#'
 
-output_name <- "nombre del archivo de salida"
+output_name <- "emisiones_prov_2010_2018"
 
 #-- Librerias ----
 
@@ -14,8 +15,13 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
 
+descargar_fuente_raw(id_fuente = 157, tempdir())
+
+# traigo la data 
+
+emisiones_provincias_2010_2018<- readr::read_csv(argendataR::get_temp_path("R157C67")) %>% 
+  mutate(provincia = ifelse(provincia == "PBA", "Buenos Aires", provincia)) # le cambio PBA que no lo hice en limpieza
 
 #-- Parametros Generales ----
 
@@ -23,20 +29,30 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+#-- Controlar Output ----
+
+# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
+# Cambiar los parametros de la siguiente funcion segun su caso
+
+df <- emisiones_provincias_2010_2018
+
+df_anterior <- descargar_output(nombre=output_name,
+                                subtopico = "CAMCLI",
+                                entrega_subtopico = "datasets_segunda_entrega")
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+df_output <- df
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
-)
+comparacion <- argendataR::comparar_outputs(df,
+                                            df_anterior,
+                                            k_control_num = 3,
+                                            pk = c("anio"),
+                                            drop_joined_df = F)
+
 
 #-- Exportar Output ----
 
@@ -45,16 +61,16 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
-    output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
+    output_name = "emisiones_prov_2010_2018",
+    subtopico = "CAMCLI",
+    fuentes = c("R157C67"),
+    analista = "",
+    pk = c("anio","sector","provincia"),
+    es_serie_tiempo = F,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    #columna_geo_referencia = "iso3",
+    nivel_agregacion = "sector",
+    etiquetas_indicadores = list("anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
+    unidades = list("valor_en_mtco2e" = "Millones de toneladas de CO2 equivalente")
   )
 

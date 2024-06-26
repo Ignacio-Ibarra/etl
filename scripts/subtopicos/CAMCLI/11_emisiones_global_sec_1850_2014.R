@@ -6,7 +6,7 @@
 #' Breve descripcion de output creado
 #'
 
-output_name <- "nombre del archivo de salida"
+output_name <- "emisiones_global_sec_1850_2014"
 
 #-- Librerias ----
 
@@ -14,7 +14,7 @@ output_name <- "nombre del archivo de salida"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("R37C1"))
+emisiones_glob_sect_1850_2014 <- readr::read_csv(argendataR::get_temp_path("R132C56"))
 
 
 #-- Parametros Generales ----
@@ -23,7 +23,7 @@ readr::read_csv(argendataR::get_temp_path("R37C1"))
 
 #-- Procesamiento ----
 
-df_outoput <- proceso
+df_output <- emisiones_glob_sect_1850_2014
 
 #-- Controlar Output ----
 
@@ -32,10 +32,13 @@ df_outoput <- proceso
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
+  emisiones_glob_sect_1850_2014,
+  subtopico = "CAMCLI",
+  entrega_subtopico = "segunda_entrega",
   nombre = output_name,
-  pk = c("anio", "iso3"),
-  drop_output_drive = F
+  k_control_num = 3,
+  pk = c("sector","anio"),
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -46,15 +49,15 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
+    subtopico = "CAMCLI",
+    fuentes = c("R132C56"),
+    analista = "",
+    pk = c("anio", "sector"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    #columna_geo_referencia = "iso3",
+    nivel_agregacion = "mundo",
+    etiquetas_indicadores = list("sector" = "sector"),
+    unidades = list("valor_en_ggco2e" = "Mil toneladas de CO2 equivalente")
   )
 

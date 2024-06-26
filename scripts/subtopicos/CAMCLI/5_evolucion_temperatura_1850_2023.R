@@ -19,7 +19,7 @@ output_name <- "evolucion_temperatura_1850_2023"
 evol_temp_mar_1850_2023<-readr::read_csv(argendataR::get_temp_path("R121C0"))
 
 # levanto tierra 
-evol_temp_tierra_1850_2023<-fread(argendataR::get_temp_path("R122C0"),skip = 35)
+evol_temp_tierra_1850_2023<-data.table::fread(argendataR::get_temp_path("R122C0"),skip = 35)
 
 # transformo tierra
 
@@ -98,7 +98,11 @@ evol_temp_mar_tierra_1850_2023 <- inner_join(evol_temp_mar_1850_2023, evol_temp_
 
 #-- Procesamiento ----
 
-df_outoput <- evol_temp_mar_tierra_1850_2023
+#-- Controlar Output ----
+
+# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
+# Cambiar los parametros de la siguiente funcion segun su caso
+
 
 #-- Controlar Output ----
 
@@ -106,15 +110,25 @@ df_outoput <- evol_temp_mar_tierra_1850_2023
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-comparacion <- argendataR::comparar_outputs(
-  evol_temp_mar_tierra_1850_2023,
-  subtopico = "CAMCLI",
-  entrega_subtopico = "segunda_entrega",
-  nombre = output_name,
-  k_control_num = 3,
-  pk = c("fecha"),
-  drop_joined_df = F
-)
+df <- evol_temp_mar_tierra_1850_2023
+
+df_anterior <- descargar_output(nombre=output_name,
+                                subtopico = "CAMCLI",
+                                entrega_subtopico = "datasets_segunda_entrega")
+
+#-- Controlar Output ----
+
+# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
+# Cambiar los parametros de la siguiente funcion segun su caso
+
+df_output <- df
+
+comparacion <- argendataR::comparar_outputs(df,
+                                            df_anterior,
+                                            k_control_num = 3,
+                                            pk = c("fecha"),
+                                            drop_joined_df = F)
+
 
 #-- Exportar Output ----
 
@@ -123,19 +137,16 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
-    output_name = output_name,
+    output_name = "evolucion_temperatura_1850_2023",
     subtopico = "CAMCLI",
-    fuentes = c("R121C0", "R122C0"),
+    fuentes = c("R121C0","R122C0"),
     analista = "",
     pk = c("fecha"),
-    es_serie_tiempo = T,
-    aclaraciones = "cambió mucho este output respecto al dataset original del analaista porque se hicieron modificaciones en función de cálculos (gráfico anomalias tem mar tierra - risaro)",
+    es_serie_tiempo = F,
     columna_indice_tiempo = "fecha",
     #columna_geo_referencia = "iso3",
-    #nivel_agregacion = "pais",
-    etiquetas_indicadores = list("anomalia_temperatura_mar_relativ" = "Anomalía temperatura mar realtiva respecto a promedio temperatura período 1850-1880",
-                                 "anomalia_temperatura_tierra_relativ" = "Anomalía temperatura tierra realtiva respecto a promedio temperatura período 1850-1880"),
-    unidades = list("anomalia_temperatura_tierra_relativ" = "°C","anomalia_temperatura_mar_relativ" = "°C"),
-    directorio = "data/CAMCLI/"
-)
+    nivel_agregacion = "global",
+    etiquetas_indicadores = list("fecha" = "Año","anomalia_temperatura_tierra_relativ"="Anomalias de temperatura de la superficie de la tierra","anomalia_temperatura_mar_relativ"="Anomalias de temperatura de la superficie del mar"),
+    unidades = list("anomalia_temperatura_tierra_relativ" = "Grados C")
+  )
 

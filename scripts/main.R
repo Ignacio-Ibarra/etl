@@ -2,6 +2,11 @@ library(tidyverse)
 library(googledrive)
 library(googlesheets4)
 library(argendataR)
+library(ncdf4)
+library(data.table)
+library(rvest)
+library(httr)
+
 # library(WDI)
 
 # reutuliza la auth drive cacheada para el mail guardado como var de environ de R
