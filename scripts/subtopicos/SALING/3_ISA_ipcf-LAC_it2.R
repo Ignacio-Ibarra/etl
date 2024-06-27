@@ -36,10 +36,10 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     pk =  c('country_code','year'),
+    control = comparacion, 
     es_serie_tiempo = [DEFINIR],
     columna_indice_tiempo = [DEFINIR],
     nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    etiquetas_indicadores = list('ipcf_promedio' = 'Ingreso per cápita familiar promedio en dólares a PPA 2017'),
+    unidades = list('ipcf_promedio' = 'unidades')
   )

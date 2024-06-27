@@ -36,10 +36,10 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     pk =  c('mes','ano'),
+    control = comparacion, 
     es_serie_tiempo = [DEFINIR],
     columna_indice_tiempo = [DEFINIR],
     nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    etiquetas_indicadores = list('indice' = 'Valor mensual del salario calculado a partir del Índice de Salarios publicado por INDEC, en términos reales, deflactado por el IPC nivel general de INDEC (octubre 2016=100)'),
+    unidades = list('indice' = 'unidades')
   )

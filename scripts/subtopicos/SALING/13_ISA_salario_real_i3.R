@@ -36,10 +36,10 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     pk =  c('ano'),
+    control = comparacion, 
     es_serie_tiempo = [DEFINIR],
     columna_indice_tiempo = [DEFINIR],
     nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    etiquetas_indicadores = list('salario' = 'Salario medio real a pesos constantes de 2014'),
+    unidades = list('salario' = 'unidades')
   )

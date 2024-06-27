@@ -36,10 +36,10 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     pk =  c('pais'),
+    control = comparacion, 
     es_serie_tiempo = [DEFINIR],
     columna_indice_tiempo = [DEFINIR],
     nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    etiquetas_indicadores = list('salariohorario' = 'Valor promedio por país del ingreso laboral por hora de la ocupación principal de todos los trabajadores expresados en dólares a paridad de poder de compra (PPP 2011)'),
+    unidades = list('salariohorario' = 'unidades')
   )
