@@ -2,33 +2,17 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-output_name <- "nombre del archivo de salida"
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
-
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-df_output <- proceso
-
-#-- Controlar Output ----
-
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+subtopico <- "SALING"
+output_name <- "salario_real_ppa2017_ceped"
+fuente_ceped <- "R209C0"
+fuente_cgi_rta <- 'R35C83'
+fuente_cgi_puestos_ar <- 'R35C84'
+fuente_cgi_puestos_anr <- 'R35C85'
+fuente_ipc <- 'R127C54'
 
 
 comparacion <- argendataR::comparar_outputs(
