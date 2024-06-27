@@ -32,9 +32,9 @@ df_output %>%
     analista = "",
     pk =  c('year','semestre'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = c('year','semestre'),
+    nivel_agregacion ='pais',
     etiquetas_indicadores = list('ipcf_index' = 'Índice evolución ingreso per cápita familiar (2003-II = 100)'),
     unidades = list('ipcf_index' = 'unidades')
   )
