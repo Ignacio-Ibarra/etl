@@ -19,14 +19,18 @@ output_name <- stringr::str_sub(string = code_name, start = 3, end = -3)
 ## Location
 
 
-location <- read_csv(get_temp_path("location.csv")) %>% 
+
+
+location <- read_delim(get_temp_path("R155C0")) %>% 
             mutate(location_name_short_en = ifelse(location_code == 'SXM', "St Maarten", location_name_short_en ))
+
+
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Join base complexity con location
 
 
-complexity <- readr::read_csv(glue::glue("{tempdir()}/country_sitcproductsection_year.csv")) %>% 
+complexity <- readr::read_csv(get_temp_path("R102C0")) %>% 
   select("year",  "location_id", "location_code", "export_value")
 
 
@@ -56,12 +60,20 @@ df_output <-   complexity %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("year", "iso3"),
-  drop_output_drive = F
-)
+
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega") 
+
+
+
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            pk = c("year", "iso3"))
+
+
+
+
+
 
 #-- Exportar Output ----
 
@@ -71,7 +83,9 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   rename(anio = year) %>% 
-  argendataR::write_output(directorio = "data/COMEXT/",
+  argendataR::write_output(
+    directorio = 'data/COMEXT/',
+    control = comparacion, 
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c("R102C0"),

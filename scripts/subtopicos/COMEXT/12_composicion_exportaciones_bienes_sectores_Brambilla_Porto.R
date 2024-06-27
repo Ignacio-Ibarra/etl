@@ -40,10 +40,10 @@ df_output <- comex_sectores_brambilla_porto %>%
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega")
 
 
-df_anterior <- read_csv(glue::glue("{tempdir()}/composicion_exportaciones_bienes_sectores_Brambilla_Porto_datasets_primera_entrega_COMEXT_argdt6c30c4dff18c3.csv"))
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega")
 
 comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
                                             pk = c("year", "iso3", "sector_bp", "sector_bp_name"))
@@ -56,6 +56,9 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 df_output %>%
   rename(anio = year) %>% # Modifico colname -year
   argendataR::write_output(
+    control = comparacion, 
+    directorio = "data/COMEXT/", 
+    aclaraciones = "Minimas desvisaciones en tests y valores en comparacion con dataset de analista. Valores de Argentina casi equivalentes",
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c("R113C57"),

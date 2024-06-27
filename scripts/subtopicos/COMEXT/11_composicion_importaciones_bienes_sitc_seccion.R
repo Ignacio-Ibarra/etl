@@ -16,18 +16,21 @@ output_name <- stringr::str_sub(string = code_name, start = 4, end = -3)
 
 #-- Lectura de Datos ----
 
+
 ## Location
 
 
-location <- read_csv(get_temp_path("location.csv")) %>% 
+
+
+location <- read_delim(get_temp_path("R155C0")) %>% 
   mutate(location_name_short_en = ifelse(location_code == 'SXM', "St Maarten", location_name_short_en ))
+
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Join base complexity con location
 
 
-country_sitcproductsection_year <- readr::read_csv(glue::glue("{tempdir()}/country_sitcproductsection_year.csv"))
-
+country_sitcproductsection_year <- readr::read_csv(get_temp_path("R102C0")) 
 
 country_sitcproductsection_year_location <- country_sitcproductsection_year %>% 
   left_join(location, by = c("location_id","location_code"))  %>% 
@@ -35,7 +38,13 @@ country_sitcproductsection_year_location <- country_sitcproductsection_year %>%
          sitc_product_code, export_value, import_value, 
          location_name_short_en) 
 
-products <- readr::read_csv(glue::glue("{tempdir()}/sitc_product-dta.csv"))
+
+
+
+### Products data
+products <-readr::read_csv(get_temp_path("R103C0")) 
+####
+
 
 
 complexity <- country_sitcproductsection_year_location %>% 
@@ -101,8 +110,9 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
-  argendataR::write_output(directorio = "data/COMEXT/", 
-                           aclaraciones = "Datos ok. Flujo de script, se uso desde server, aunque está disponible como fuentes R102C0 a R104C0",
+  argendataR::write_output(directorio = "data/COMEXT/",
+                           control = comparacion, 
+                           aclaraciones = "Datos ok. Flujo de script, se uso desde server incialmente. En esta pasada ya se usaron los disponibles como fuentes R102C0 a R104C0",
                            output_name = output_name,
                            subtopico = subtopico,
                            fuentes = c("R102C0","R103C0","R104C0"),
