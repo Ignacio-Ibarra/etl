@@ -10,11 +10,6 @@ output_name <- 'ISA_regiones-ipcf_it2.csv'
 id_fuente <- 175
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw1) %>% 
-                                    select(path_raw) %>% 
-                                    pull(), pattern = "\\.")[1]
-
 df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
