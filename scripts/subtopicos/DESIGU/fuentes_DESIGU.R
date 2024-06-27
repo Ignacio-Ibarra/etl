@@ -69,3 +69,18 @@ descargar_fuente('R207C0')
 # EPH descarga de todos los años
 ids.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(codigo) %>% pull()
 purrr::map(ids.eph, descargar_fuente)
+
+# CEPED - Distribución Funcional Argentina
+descargar_fuente("R210C0")
+
+# Cuenta Generacion del Ingeso (RTA pp) - INDEC
+descargar_fuente("R35C76")
+
+# Cuenta Generacion del Ingeso (IBM pp) - INDEC
+descargar_fuente("R35C78")
+
+# Cuenta Generacion del Ingeso (EEB pp) - INDEC
+descargar_fuente("R35C79")
+
+# Graña, Juan M. (2007) CEPED - Cuadro 2. Participación del Consumo Privado, Inversión Bruta Interna Total, Privada y Pública, Masa Salarial, Ingreso Asalariado, Superávit Bruto de Explotación e Ingreso Capitalista en el PBIpm.
+descargar_fuente("R211C77")

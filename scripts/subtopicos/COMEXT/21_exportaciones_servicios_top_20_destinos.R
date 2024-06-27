@@ -73,34 +73,9 @@ base_rank <- base %>%
     #### ID rank TOP
     codigo_pais = if_else(value_rank > 20 | iso3_oficial == FALSE, "", codigo_pais),
     descripcion_pais = if_else(value_rank > 20 | iso3_oficial == FALSE, "Resto", descripcion_pais),
-    iso3c = if_else(value_rank > 20 | iso3_oficial == FALSE, "", iso3c),
+    iso3c = if_else(value_rank > 20 | is.na(iso3c), "", iso3c),
     Englishshortname = if_else(value_rank > 20 | iso3_oficial == FALSE, "", Englishshortname)
   ) 
-
-
-
-
-# RANKING TOP 20 DESTINOS
-# Calculamos rankings de países por año
-
-
-
-output <- base %>%
-  group_by(year) %>%
-#  arrange(year, desc(export_value)) %>% 
-  mutate(
-    value_rank = if_else(iso3_oficial == 1, rank(-export_value, ties.method = "first", na.last = "keep"), NA_real_),
-    #### ID rank TOP
-    codigo_pais = if_else(value_rank > 20 | is.na(iso3c), "", codigo_pais),
-    descripcion_pais = if_else(value_rank > 20 | is.na(iso3c), "Resto", descripcion_pais),
-    iso3c = if_else(value_rank > 20 | is.na(iso3c), "", iso3c),
-    Englishshortname = if_else(value_rank > 20 | is.na(iso3_oficial), "", Englishshortname)
-  ) %>%
-  ungroup()
-
-
-
-
 
 
 
@@ -112,7 +87,8 @@ df_output <-  base_rank %>%
       arrange(year, descripcion_pais) %>%
     # Calculamos shares y etiquetamos
       group_by(year) %>%
-      mutate(export_value_pc = export_value / sum(export_value) * 100) %>%
+      mutate(export_value_pc = export_value / sum(export_value) * 100, 
+             year = as.numeric(year)) %>%
       ungroup() %>% 
       select(year, iso3 = iso3c, descripcionpais = descripcion_pais, export_value_pc)
 
@@ -142,6 +118,7 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 
 df_output %>%
   argendataR::write_output(directorio = 'data/COMEXT/',
+                           control = comparacion,
                            output_name = output_name,
                            subtopico = subtopico,
                            fuentes = c("R158C0"),

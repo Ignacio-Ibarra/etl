@@ -59,7 +59,9 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
-  argendataR::write_output(directorio = 'data/COMEXT/',
+  argendataR::write_output(
+    control = comparacion, 
+    directorio = 'data/COMEXT/',
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c("R113C57"),

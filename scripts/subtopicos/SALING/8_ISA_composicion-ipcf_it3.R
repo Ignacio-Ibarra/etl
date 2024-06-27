@@ -10,11 +10,6 @@ output_name <- 'ISA_composicion-ipcf_it3.csv'
 id_fuente <- 165
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw1) %>% 
-                                    select(path_raw) %>% 
-                                    pull(), pattern = "\\.")[1]
-
 df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
@@ -36,10 +31,10 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     pk =  c('year','semestre','edad_jefe','fuente'),
+    control = comparacion, 
     es_serie_tiempo = [DEFINIR],
     columna_indice_tiempo = [DEFINIR],
     nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    etiquetas_indicadores = list('proporcion' = 'Proporción representada por las distintas fuentes de ingreso en el ingreso total'),
+    unidades = list('proporcion' = 'porcentaje')
   )

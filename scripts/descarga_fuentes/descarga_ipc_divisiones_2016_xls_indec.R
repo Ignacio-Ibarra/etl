@@ -1,4 +1,4 @@
-url <- "https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_05_24.xls"
+url <- "https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_06_24.xls"
 
 fecha <- str_extract(url, "\\d+_\\d+")
 

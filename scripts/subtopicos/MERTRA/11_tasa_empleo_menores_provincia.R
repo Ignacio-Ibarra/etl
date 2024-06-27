@@ -47,6 +47,9 @@ ephtu_df <- ephtu_df %>% mutate(
 base <- ephtu_df %>% 
   select(anio = ano4, ocupado, prov_desc, edad = ch06, pondera) 
 
+
+X <- base %>% dplyr::filter(edad == -1)
+
 empleo_prov <- base %>% 
   select(!edad)
   
@@ -61,26 +64,46 @@ A <- bind_rows(empleo_prov, empleo_total_prov) %>%
   mutate(tasa_empleo = ocupado / (no_ocupado + ocupado)) %>% 
   select(anio, prov_desc, tasa_empleo)
   
-empleo_menor_prov <- base %>% 
+pob_menor_prov <- base %>% 
   dplyr::filter(edad < 18) %>% 
-  select(!edad)
+  select(-edad, -ocupado) %>% 
+  group_by(anio, prov_desc) %>% 
+  summarize(pob_menor = sum(pondera))
 
-empleo_menor_prov_total <- empleo_menor_prov %>% 
-  mutate(prov_desc = "Total") 
+pob_menor_total <- base %>% 
+  dplyr::filter(edad < 18) %>% 
+  mutate(prov_desc = "Total") %>% 
+  group_by(anio, prov_desc) %>% 
+  summarize(pob_menor = sum(pondera))
 
-B <- bind_rows(empleo_menor_prov, empleo_menor_prov_total) %>% 
-  group_by(anio, prov_desc, ocupado) %>% 
-  summarize(pondera = sum(pondera)) %>% 
-  ungroup() %>% 
-  pivot_wider(names_from = ocupado, values_from = pondera, values_fill = 0) %>% 
-  mutate(tasa_menor_18 = ocupado / (no_ocupado + ocupado)) %>% 
+pob_tot_prov <- base %>% 
+  group_by(anio, prov_desc) %>% 
+  summarize(pob_tot = sum(pondera)) %>% 
+  ungroup()
+
+pob_tot_tot <- base %>% 
+  mutate(prov_desc = "Total") %>% 
+  group_by(anio, prov_desc) %>% 
+  summarize(pob_tot = sum(pondera)) %>% 
+  ungroup()
+
+pob.menor <- bind_rows(pob_menor_prov, pob_menor_total)
+pob.tot <- bind_rows(pob_tot_prov, pob_tot_tot)
+
+B <- left_join(pob.menor, pob.tot, by=join_by(anio, prov_desc)) %>% 
+  mutate(tasa_menor_18 = pob_menor/pob_tot) %>% 
   select(anio, prov_desc, tasa_menor_18)
 
+
+
 df_output <- inner_join(A, B, by=join_by(anio, prov_desc)) %>% 
-  rename(provincia = prov_desc)
+  rename(provincia = prov_desc) %>% 
+  mutate(provincia = ifelse(provincia == "CABA", "Ciudad de Buenos Aires",provincia))
 
 
-
+df_anterior <- argendataR::descargar_output(nombre = output_name, 
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "datasets_primera_entrega")
 
 #-- Controlar Output ----
 
@@ -90,9 +113,9 @@ df_output <- inner_join(A, B, by=join_by(anio, prov_desc)) %>%
 # Las diferencias con el output anterior radican en que CABA era antes Ciudad de Buenos Aires, debido a cambios en el nomenclador usado. 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  nombre = output_name,
+  df_anterior = df_anterior,
   pk = c("anio", "provincia"),
-  drop_output_drive = F
+  drop_joined_df =  F
 )
 
 #-- Exportar Output ----
@@ -107,10 +130,11 @@ df_output %>%
     fuentes = c(fuente1, fuente2),
     analista = "",
     pk = c("anio", "provincia"),
+    control = comparacion, 
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     etiquetas_indicadores = list("tasa_empleo" = "Ratio entre la cantidad de personas ocupadas y la cantidad de personas pertenecientes a la población económicamente activa",
-                                 "tasa_menor_18" = "Ratio entre la cantidad de personas ocupadas y la cantidad de personas pertenecientes a la población económicamente activa, tomando en cuenta solo las personas menores a 18 años") ,
+                                 "tasa_menor_18" = "Porcentaje de la población que es menor a 18 años") ,
     unidades = list("tasa_empleo" = "unidades",
                     "tasa_menor_18" = "unidades")
   )

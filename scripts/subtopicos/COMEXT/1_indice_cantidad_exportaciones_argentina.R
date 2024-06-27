@@ -1,12 +1,16 @@
 ################################################################################
-##            Dataset: 1_indice_cantidad_exportaciones_argentina              ##
+##                              Dataset: nombre                               ##
 ################################################################################
 
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
 
-output_name <- "indice_cantidad_exportaciones_argentina"
+
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+
+output_name <- stringr::str_sub(string = code_name, start = 3, end = -3)
 
 #-- Librerias ----
 library(janitor) # Simple Tools for Examining and Cleaning Dirty Data CRAN v2.2.0 
@@ -16,7 +20,6 @@ library(janitor) # Simple Tools for Examining and Cleaning Dirty Data CRAN v2.2.
 # Los datos a cargar deben figurar en el script "fuentes_COMEXT.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 
-limpiar_temps()
 
 ferreres <- readr::read_csv(argendataR::get_temp_path("R43C22")) %>%
   dplyr::rename(cantidades_exportacion_ferreres = cantidades_de_exportacion) 
@@ -44,6 +47,25 @@ comparacion <- argendataR::comparar_outputs(
   drop_output_drive = F
 )
 
+
+
+#-- Controlar Output ----
+
+# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
+# Cambiar los parametros de la siguiente funcion segun su caso
+
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega") 
+
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            pk = c("anio"))
+
+
+
+
+
+
 #-- Exportar Output ----
 
 # Usar write_output con exportar = T para generar la salida
@@ -51,6 +73,8 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
+    directorio = 'data/COMEXT/',
+    control = comparacion, 
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c("R43C22", "R44C23"),
