@@ -57,23 +57,37 @@ for (i in 1:nrow(datasets.cedlas_generar)){
   INPUT_RAW_ID = fuentes.raw %>% 
     filter(path_raw == raw_filename) %>% select(id_fuente) %>% pull()
   
-  PK <- metadata.df %>% 
+  pkeys <- metadata.df %>% 
     dplyr::filter(dataset_archivo == OUTPUT_NAME & as.logical(primary_key)) %>%
     distinct(variable_nombre) %>% 
     pull() 
   
-  PK <- glue::glue("'{PK}'")
+  indicadores <- metadata.df %>% 
+    dplyr::filter(dataset_archivo == OUTPUT_NAME) %>% 
+    distinct(variable_nombre, descripcion, unidad_medida) %>% 
+    dplyr::filter(!(variable_nombre %in% pkeys))
+  
+  indicadores <- rbind(indicadores, indicadores)
+  
+  ETIQUETAS_INDICADORES <- paste(glue::glue("'{indicadores$variable_nombre}' = '{indicadores$descripcion}'"), collapse =" ,")
+  
+  UNIDADES <- paste(glue::glue("'{indicadores$variable_nombre}' = '{indicadores$unidad_medida}'"), collapse =" ,")
+  
+  PK <- glue::glue("'{pkeys}'")
   PK <- paste0(PK, collapse = ",")
   
   
+    
   output_script_str <- glue::glue(lineas_string, 
                                   SUBTOP = SUBTOP,
                                   INPUT_RAW_ID = INPUT_RAW_ID, 
                                   OUTPUT_NAME = OUTPUT_NAME,
-                                  PK = PK
+                                  PK = PK,
+                                  ETIQUETAS_INDICADORES = ETIQUETAS_INDICADORES,
+                                  UNIDADES = UNIDADES
                                   )
   
-  file.remove(script_path)
+  # file.remove(script_path)
   
   stringi::stri_write_lines(output_script_str, con = script_path)
   cat("Generando script: ", SCRIPT_NAME, "\n")
@@ -91,4 +105,4 @@ for (i in 1:nrow(escribir_descarga_fuentes)){
   
 }
 
-stringi::stri_write_lines(lines_descarga, con = glue::glue("{scripts.folder}/fuentes_{SUBTOP}.R"))
+stringi::stri_write_lines(lines_descarga, con = glue::glue("{scripts.folder}/fuentes_{SUBTOP}.R"), sep="")
