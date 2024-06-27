@@ -67,8 +67,6 @@ for (i in 1:nrow(datasets.cedlas_generar)){
     distinct(variable_nombre, descripcion, unidad_medida) %>% 
     dplyr::filter(!(variable_nombre %in% pkeys))
   
-  indicadores <- rbind(indicadores, indicadores)
-  
   ETIQUETAS_INDICADORES <- paste(glue::glue("'{indicadores$variable_nombre}' = '{indicadores$descripcion}'"), collapse =" ,")
   
   UNIDADES <- paste(glue::glue("'{indicadores$variable_nombre}' = '{indicadores$unidad_medida}'"), collapse =" ,")
@@ -87,7 +85,7 @@ for (i in 1:nrow(datasets.cedlas_generar)){
                                   UNIDADES = UNIDADES
                                   )
   
-  # file.remove(script_path)
+  file.remove(script_path)
   
   stringi::stri_write_lines(output_script_str, con = script_path)
   cat("Generando script: ", SCRIPT_NAME, "\n")
