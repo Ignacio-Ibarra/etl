@@ -60,6 +60,7 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 
 df_output %>%
   argendataR::write_output(directorio = 'data/COMEXT/',
+                           control = comparacion,
                            output_name = output_name,
                            subtopico = subtopico,
                            fuentes = c("R113C57"),
@@ -71,6 +72,6 @@ df_output %>%
                            nivel_agregacion = "pais",
                            etiquetas_indicadores = list("import_value_pc" = "Importaciones de bienes (% del total importado en bienes)"),
                            unidades = list("import_value_pc" = "porcentaje"), 
-                           aclaraciones =  'Reduzco comparacion solo para year 2020  (dataset original analistas toda la serie 2007 / 2020)'
+                           aclaraciones =  'Reduzco comparacion solo para year 2020  (dataset original analistas toda la serie 2007 / 2020). Valores para Argentina similares, pero conjunto de paises con mucha variacion en la comparacion'
   )
 

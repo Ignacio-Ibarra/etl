@@ -39,12 +39,16 @@ df_output <- wdi_comext %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("time", "iso3"),
-  drop_output_drive = F
-)
+
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega") 
+
+
+
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            pk = c("time", "iso3"))
+
 
 #-- Exportar Output ----
 
@@ -53,17 +57,20 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   rename(anio = time) %>% 
-  argendataR::write_output(directorio = "data/COMEXT/",
-                           output_name = output_name,
-                           subtopico = subtopico,
-                           fuentes = c("R98C0"),
-                           analista = analista,
-                           pk = c("anio", "iso3"),
-                           es_serie_tiempo = T,
-                           columna_indice_tiempo = "anio",
-                           columna_geo_referencia = "iso3",
-                           nivel_agregacion = "pais",
-                           etiquetas_indicadores = list("exportvolumeindex" = "Índice de volumen de exportaciones (2000 = 100)"),
-                           unidades = list("exportvolumeindex" = "real")
+  argendataR::write_output( aclaraciones = "Algunas diferencias y filas perdidas en actaulizacion para algunos paises.
+                            Valores de ARG equivalentes y correctos",
+    directorio = 'data/COMEXT/',
+    control = comparacion, 
+    output_name = output_name,
+    subtopico = subtopico,
+     fuentes = c("R98C0"),
+     analista = analista,
+     pk = c("anio", "iso3"),
+     es_serie_tiempo = T,
+     columna_indice_tiempo = "anio",
+     columna_geo_referencia = "iso3",
+     nivel_agregacion = "pais",
+     etiquetas_indicadores = list("exportvolumeindex" = "Índice de volumen de exportaciones (2000 = 100)"),
+     unidades = list("exportvolumeindex" = "real")
   )
 

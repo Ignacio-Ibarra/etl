@@ -36,6 +36,20 @@ df_output <- wdi_comext %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega") 
+
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            pk = c("time", "iso3", "countryname"))
+
+
+
+
+
+
+
 comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
@@ -55,6 +69,8 @@ df_output <- df_output %>%
 
 df_output %>%
   argendataR::write_output(
+    directorio = 'data/COMEXT/',
+    control = comparacion, 
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c("R98C0"),

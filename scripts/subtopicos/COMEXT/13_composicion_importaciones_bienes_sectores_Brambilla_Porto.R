@@ -40,10 +40,8 @@ df_output <- comex_sectores_brambilla_porto %>%
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega")
+df_anterior <- descargar_output(nombre = output_name, subtopico = "COMEXT", entrega_subtopico = "datasets_primera_entrega")
 
-
-df_anterior <- read_csv(glue::glue("{tempdir()}/composicion_importaciones_bienes_sectores_Brambilla_Porto_datasets_primera_entrega_COMEXT_argdt6c30c304ff2bb.csv"))
 
 comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
                                             pk = c("year", "iso3", "sector_bp", "sector_bp_name"))
@@ -56,6 +54,8 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 df_output %>%
   rename(anio = year) %>% # Modifico colname -year
   argendataR::write_output(
+    control = comparacion, 
+    directorio = "data/COMEXT/", 
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c("R113C57"),
@@ -68,6 +68,6 @@ df_output %>%
     etiquetas_indicadores = list("import_value_pc" = "Importaciones de bienes (% del total importado en bienes)"),
     unidades = list("import_value_pc" = "porcentaje"), 
     aclaraciones = "los valores para ARG que son los graficados son
-    correctos. La comparacion muestra outliers altos de algunas unidades geograficas no relevantes para la narrativa"
+    bastante similares. La comparacion muestra outliers altos de algunas unidades geograficas no relevantes para la narrativa y valores malos de los tests."
   )
 
