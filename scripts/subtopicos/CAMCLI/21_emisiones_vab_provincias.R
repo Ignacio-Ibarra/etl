@@ -72,7 +72,7 @@ pbi_per_capita_2018 <- pbi_per_capita_1895_2022 %>%
 
 ## traigo la población por provincia de las proyecciones que están en el raw de daniel
 poblacion_prov_2018 <- readxl::read_excel(glue::glue("{tempdir()}/pbg por provincia_R160C0.xlsx"), sheet = "Población 2004-2022 long") %>% 
-  clean_names() %>% 
+  janitor::clean_names() %>% 
   filter(ano==2018) %>% mutate(provincia = ifelse(provincia == "PBA", "Buenos Aires", provincia),
                                provincia = ifelse(provincia == "Cordoba", "Córdoba", provincia),
                                provincia = ifelse(provincia == "Tucuman", "Tucumán", provincia),
@@ -131,7 +131,8 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "emisiones_vab_provincias",
+    output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R157C67","R159C68","R160C70"),
     analista = "",

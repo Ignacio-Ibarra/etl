@@ -56,7 +56,7 @@ data <- data %>%
   summarize(
     export_value = sum(export_value, na.rm = TRUE),
     import_value = sum(import_value, na.rm = TRUE)
-  )
+  ) %>% collect()
 
 # Convert values to millions of USD
 data <- data %>%
@@ -67,7 +67,7 @@ data <- data %>%
 
 # Merge location names
 location_names <- location %>%
-  select(location_id, location_name_short_en) %>%  arrow::to_duckdb()
+  select(location_id, location_name_short_en) 
 
 data <- data %>%
   left_join(location_names, by = "location_id")
@@ -160,26 +160,5 @@ df_output %>%
                            unidades = list("export_value_pca" = "porcentaje", 
                                            "export_value_pcb" = "porcentaje"), 
                            aclaraciones =  ''
-  )
-
-
-#-- Exportar Output ----
-
-# Usar write_output con exportar = T para generar la salida
-# Cambiar los parametros de la siguiente funcion segun su caso
-
-df_output %>%
-  argendataR::write_output(
-    output_name = output_name,
-    subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
   )
 

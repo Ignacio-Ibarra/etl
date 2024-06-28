@@ -52,13 +52,13 @@ base <- ephtu_df %>%
 salario_medio_nacional <- base %>% 
   dplyr::filter(ocupado == 'ocupado') %>% 
   group_by(anio) %>% 
-  summarise(salario_medio = weighted.mean(p21, pondiio))
+  summarise(salario_medio = stats::weighted.mean(p21, pondiio))
 
 #Salario relativo a la media nacional por provincia y anio
 salario_medio_relativo_prov <- base %>% 
   dplyr::filter(ocupado == 'ocupado') %>% 
   group_by(anio, provincia) %>% 
-  summarise(salario_medio_prov = weighted.mean(p21, pondiio)) %>% 
+  summarise(salario_medio_prov = stats::weighted.mean(p21, pondiio)) %>% 
   left_join(., salario_medio_nacional, by=join_by(anio)) %>% 
   mutate(salario_relativo = 100*salario_medio_prov / salario_medio) %>% 
   select(anio, provincia, salario_relativo)
@@ -74,7 +74,11 @@ empleo_mujer_prov <- base %>%
   mutate(tasa_empleo_mujer = ocupado / (no_ocupado + ocupado)) %>% 
   select(anio, provincia, tasa_empleo_mujer)
 
-df_output <- inner_join(salario_medio_relativo_prov, empleo_mujer_prov, by=join_by(anio, provincia))
+df_output <- inner_join(salario_medio_relativo_prov, empleo_mujer_prov, by=join_by(anio, provincia)) %>% 
+  mutate(provincia = case_when(
+    provincia == "CABA" ~ 'Ciudad de Buenos Aires', 
+    TRUE ~ provincia
+  ))
 
 
 
@@ -85,12 +89,15 @@ df_output <- inner_join(salario_medio_relativo_prov, empleo_mujer_prov, by=join_
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 # Las diferencias con el output anterior radican en que CABA era antes Ciudad de Buenos Aires, debido a cambios en el nomenclador usado. 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("anio", "provincia"),
-  drop_output_drive = F
-)
+
+
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            nombre = output_name,   pk = c("anio", "provincia"))
+
+
 
 #-- Exportar Output ----
 
@@ -99,6 +106,7 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
+    control  = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),

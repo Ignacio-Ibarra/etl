@@ -62,7 +62,8 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "concentración c02 histórica",
+    output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R100C26","R161C71"),
     analista = "",
