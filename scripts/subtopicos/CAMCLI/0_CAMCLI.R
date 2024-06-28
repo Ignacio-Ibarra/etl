@@ -1,34 +1,24 @@
 source("scripts/subtopicos/CAMCLI/fuentes_CAMCLI.R")
 subtopico <-  "CAMCLI"
 analista <-  c("")
+entrega <- "datasets_segunda_entrega"
 
-#-- Sources -----
+archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
+scripts <- archivos[grepl("\\.R$", archivos) &
+                      ! archivos %in% c(glue::glue("0_{subtopico}.R"), glue::glue("fuentes_{subtopico}.R"))]
 
-# source("scripts/subtopicos/CAMCLI/1_emisiones_anuales_co2_ch4_n20_1850_2022.R)"
-# source("scripts/subtopicos/CAMCLI/10_emisiones_sector_global_2016.R)"
-# source("scripts/subtopicos/CAMCLI/11_emisiones_global_sec_1850_2014.R)"
-# source("scripts/subtopicos/CAMCLI/12_emisiones_subsec_arg_2018.R)"
-# source("scripts/subtopicos/CAMCLI/13_emisiones_arg_mundo.R)"
-# source("scripts/subtopicos/CAMCLI/14_emisiones_arg_1990_2018.R)"
-# source("scripts/subtopicos/CAMCLI/15_emisiones_arg_sec_1990_2018.R)"
-# source("scripts/subtopicos/CAMCLI/16_emisiones_energia_1990_2018.R)"
-# source("scripts/subtopicos/CAMCLI/17_emisiones_afolu_1990_2018.R)"
-# source("scripts/subtopicos/CAMCLI/18_emisiones_piup_1990_2018.R)"
-# source("scripts/subtopicos/CAMCLI/19_emisiones_residuos_1990_2018.R)"
-# source("scripts/subtopicos/CAMCLI/2_emisiones_anuales_co2_ch4_n20_1850_2022.R)"
-# source("scripts/subtopicos/CAMCLI/20_emisiones_prov_2010_2018.R)"
-# source("scripts/subtopicos/CAMCLI/21_emisiones_vab_provincias.R)"
-# source("scripts/subtopicos/CAMCLI/22_tmp_media_1960_2010.R)"
-# source("scripts/subtopicos/CAMCLI/23_cambio_temp_media_1960_2010.R)"
-# source("scripts/subtopicos/CAMCLI/24_pp_media_1960_2010.R)"
-# source("scripts/subtopicos/CAMCLI/25_cambio_pp_1960_2010.R)"
-# source("scripts/subtopicos/CAMCLI/26_pp_maximo_media_1960_2010.R)"
-# source("scripts/subtopicos/CAMCLI/27_cambios_pp_maximo_media_1960_2010.R)"
-# source("scripts/subtopicos/CAMCLI/28_sst_cambio_1982_2017.R)"
-# source("scripts/subtopicos/CAMCLI/3_01_evolucion_CO2_historico.R)"
-# source("scripts/subtopicos/CAMCLI/4_evolucion_temperatura_aire_1850_2020.R)"
-# source("scripts/subtopicos/CAMCLI/5_evolucion_temperatura_1850_2023.R)"
-# source("scripts/subtopicos/CAMCLI/6_06_evolucion_nivel_del_mar_1993_2022.R)"
-# source("scripts/subtopicos/CAMCLI/7_emisiones_anuales_co2_region_2021.R)"
-# source("scripts/subtopicos/CAMCLI/8_emisiones_anuales_co2_region.R)"
-# source("scripts/subtopicos/CAMCLI/9_emisiones_per_cap.R)"
+walk(scripts, function(x) {
+  source(glue::glue("~/etl/scripts/subtopicos/{subtopico}/{x}"), local = T)
+})
+
+salidas <- list.files(tempdir(), full.names = T)[list.files(tempdir()) %in% subtopico_outputs(subtopico_nombre = subtopico,
+                                                                                              entrega_subtopico = entrega)$name]
+path_data <- glue::glue("~/data/{subtopico}")
+
+purrr::walk(salidas, 
+            function (x) {
+              
+              file.copy(from = x, to = path_data, overwrite = T) 
+              message(glue::glue("{x} copiado a {path_data}."))
+            })
+

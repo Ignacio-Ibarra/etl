@@ -41,12 +41,13 @@ df_output <- enut_df_c5 %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("sexo", "nivel_educativo"),
-  drop_output_drive = F
+df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            nombre = output_name,
+                                            pk = c("sexo", "nivel_educativo")
 )
+
 
 #-- Exportar Output ----
 
@@ -55,6 +56,7 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
+    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
