@@ -168,6 +168,7 @@ df_output %>%
     pk = c("anio", "tipo_prima"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
+    aclaraciones = "El dataset generado por este script conserva una diferencia sistemática para los años 2003 a 2007 con respecto al analista, aunque no es sustantiva",
     etiquetas_indicadores = list("prima" = "Brecha en el salario horario entre asalariados registrados y asalariados no registrados"),
     unidades = list("prima" = "unidades")
   )
