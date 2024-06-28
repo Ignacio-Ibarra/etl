@@ -12,7 +12,7 @@ gc()   #Garbage Collection
 
 
 subtopico <- "MERTRA"
-output_name <- "tasa_empleo_anio_provincia"
+output_name <- "tasa_empleo_anio_provincia.csv"
 fuente1 <- "R49C16" 
 fuente2 <- "R84C14"
 
@@ -74,13 +74,12 @@ df_output <- data_prov %>% bind_rows(., data_total)
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = paste0(output_name,".csv"),
-  pk = c("anio", "provincia"),
-  drop_output_drive = F
-)
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            nombre = output_name,  pk = c("anio", "provincia"))
+
+
 
 #-- Exportar Output ----
 
@@ -89,6 +88,7 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
+    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),

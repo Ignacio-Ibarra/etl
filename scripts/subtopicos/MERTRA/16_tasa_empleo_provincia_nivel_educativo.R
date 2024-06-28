@@ -72,7 +72,8 @@ empleo_prov_total <- base %>%
   mutate(tasa_empleo = ocupado / (no_ocupado + ocupado)) %>% 
   select(anio, provincia, nivel_ed_fundar, ocupado = tasa_empleo)
 
-df_output <- bind_rows(empleo_prov_ed, empleo_prov_total)
+df_output <- bind_rows(empleo_prov_ed, empleo_prov_total) %>% 
+  mutate(provincia = ifelse(provincia == "CABA", "Ciudad de Buenos Aires", provincia))
 
 
 
@@ -82,12 +83,16 @@ df_output <- bind_rows(empleo_prov_ed, empleo_prov_total)
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 # Las diferencias con el output anterior radican en que CABA era antes Ciudad de Buenos Aires, debido a cambios en el nomenclador usado. 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("anio", "provincia", "nivel_ed_fundar"),
-  drop_output_drive = F
+
+
+df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            nombre = output_name,
+                                            pk = c("anio", "provincia", "nivel_ed_fundar")
 )
+
+
 
 #-- Exportar Output ----
 
@@ -96,6 +101,7 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
+    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
