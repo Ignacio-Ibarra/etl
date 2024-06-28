@@ -67,3 +67,24 @@ descargar_fuente('R184C0')
 # Indicadores Sociales de Argentina: Ingresos laborales mensuales por tipo de trabajo (en dólares a PPA)
 descargar_fuente('R185C0')
 
+# Salario real en dólares de paridad de poder adquisitivo de 2017 (PPA de consumo privado)
+descargar_fuente("R209C0")
+
+# Cuenta Generacion del Ingreso - Cuadro: RTA - INDEC
+descargar_fuente("R35C83")
+
+# Cuenta Generacion del Ingreso - Cuadro: Puestos AR - INDEC
+descargar_fuente("R35C84")
+
+# Cuenta Generacion del Ingreso - Cuadro: Puestos ANR - INDEC
+descargar_fuente("R35C85")
+
+# Indice de precios al consumidor (IPC) por regiones según divisiones, categorías, bienes y servicios
+descargar_fuente("R127C54")
+
+# EPH descarga de todos los años
+ids.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(codigo) %>% pull()
+purrr::map(ids.eph, descargar_fuente)
+
+
+
