@@ -2,8 +2,6 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-rm(list = ls())
-
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -54,7 +52,7 @@ emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>%
 emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>%
   filter(!is.na(valor_en_ton))
 
-df_outoput <- emis_per_cap_co2_toneladas_long
+df_output <- emis_per_cap_co2_toneladas_long
 
 #-- Controlar Output ----
 
@@ -76,11 +74,10 @@ comparacion <- argendataR::comparar_outputs(
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-names(emis_per_cap_co2_toneladas_long) 
-
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R123C0"),
     analista = "",

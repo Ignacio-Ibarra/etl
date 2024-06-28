@@ -45,7 +45,6 @@ valor_referencia <- emis_anua_co2_reg_2021_long %>%
   pull()
 
 #  doy formato a porcent
-
 emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
   mutate(
     valor_en_porcent = as.numeric(sprintf("%.9f", (valor / valor_referencia)))
@@ -72,20 +71,28 @@ emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
 
 #-- Controlar Output ----
 
-df_output<-emis_anua_co2_reg_2021_long
+#-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-comparacion <- argendataR::comparar_outputs(
-  evol_anua_co2_reg_2021,
-  subtopico = "CAMCLI",
-  entrega_subtopico = "segunda_entrega",
-  nombre = output_name,
-  k_control_num = 3,
-  pk = c("iso3","anio"),
-  drop_joined_df = F
-)
+df <- emis_anua_co2_reg_2021_long
+
+df_anterior <- descargar_output(nombre=output_name,
+                                subtopico = "CAMCLI",
+                                entrega_subtopico = "datasets_segunda_entrega")
+
+# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
+# Cambiar los parametros de la siguiente funcion segun su caso
+
+df_output <- df
+
+comparacion <- argendataR::comparar_outputs(df,
+                                            df_anterior,
+                                            k_control_num = 3,
+                                            pk = c("iso3"),
+                                            drop_joined_df = F)
+
 
 #-- Exportar Output ----
 
@@ -95,15 +102,14 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R119C0"),
     analista = "",
-    pk = c("iso3","anio"),
+    pk = c("anio"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     #    columna_geo_referencia = "",
     #    nivel_agregacion = "pais",
     etiquetas_indicadores = list("valor_en_porcent" = "Porcentaje emisiones anuales co2"),
-    unidades = list("valor_en_porcent" = "%"),
-    directorio = "data/CAMCLI/"
-  )
+    unidades = list("valor_en_porcent" = "porecentaje %"))

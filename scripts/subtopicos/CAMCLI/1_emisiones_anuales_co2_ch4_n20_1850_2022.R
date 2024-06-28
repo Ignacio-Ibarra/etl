@@ -62,7 +62,7 @@ comparacion <- argendataR::comparar_outputs(
   emi_anua_co2_ch4_n20_1850_2022,
   subtopico = "CAMCLI",
   nombre = output_name,
-  entrega_subtopico = "datasets_segunda_entrega",
+  entrega_subtopico = "segunda_entrega",
   pk = c("fecha"),
   k_control_num = 3,
   drop_joined_df  = F
@@ -78,6 +78,7 @@ df_output %>%
     output_name = output_name,
     subtopico = "CAMCLI",
     fuentes = c("R114C0"),
+    control = comparacion,
     analista = "",
     pk = c("fecha"),
     es_serie_tiempo = T,
@@ -86,5 +87,4 @@ df_output %>%
   # nivel_agregacion = "mundial",
     etiquetas_indicadores = list("emisiones_anuales_co2_toneladas" = "Emisiones CO2 en toneladas","emisiones_anuales_ch4_en_co2_toneladas" = "Emisiones CH4 en CO2 en toneladas",
                                  "emisiones_anuales_n2o_en_co2_toneladas" = "Emisiones N2O en CO2 en toneladas"),
-    unidades = list("emisiones_anuales_co2_toneladas" = "toneladas", "emisiones_anuales_ch4_en_co2_toneladas"="toneladas","emisiones_anuales_n2o_en_co2_toneladas"="toneladas"),
-    directorio = "data/CAMCLI/")
+    unidades = list("emisiones_anuales_co2_toneladas" = "toneladas", "emisiones_anuales_ch4_en_co2_toneladas"="toneladas","emisiones_anuales_n2o_en_co2_toneladas"="toneladas"))
