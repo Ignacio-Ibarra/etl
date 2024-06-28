@@ -24,9 +24,8 @@ agregar_fuente_raw(url = "https://ourworldindata.org/grapher/ghg-emissions-by-ga
 actualizar_fuente_raw(id_fuente=114,url = "https://ourworldindata.org/grapher/ghg-emissions-by-gas?facet=none",
                       fecha_descarga = Sys.Date())
 
-limpiar_temps()
-list.files(tempdir())
-
-fuentes() %>% 
-  view()
+# limpiar_temps()
+# list.files(tempdir())
+# fuentes() %>% 
+#   view()
 

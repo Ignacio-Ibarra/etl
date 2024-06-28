@@ -19,7 +19,7 @@ descargar_fuente_raw(id_fuente = 131, tempdir())
 
 # traigo la data 
 emis_1990_2018_arg_sector<- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
-  clean_names()
+  janitor::clean_names()
 
 #-- Parametros Generales ----
 
@@ -70,7 +70,8 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "emisiones_arg_sec_1990_2018",
+    output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R131C0"),
     analista = "",

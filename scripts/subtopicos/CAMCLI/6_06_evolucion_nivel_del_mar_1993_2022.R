@@ -59,7 +59,8 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "evolucion_nivel_del_mar_1993_2022",
+    output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R162C72"),
     analista = "",
