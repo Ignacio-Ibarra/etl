@@ -32,6 +32,7 @@ data <- data[-c(1:4),] %>%
 
 # le matcheo los nombres limpios de variabels
 data <- left_join(data, diccionario_vars, by = c("indicador" = "name"))
+view(data)
 
 # excluyo filas vacias
 data <- data %>% 

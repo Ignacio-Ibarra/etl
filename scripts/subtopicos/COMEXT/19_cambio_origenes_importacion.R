@@ -56,7 +56,7 @@ data <- data %>%
   summarize(
     export_value = sum(export_value, na.rm = TRUE),
     import_value = sum(import_value, na.rm = TRUE)
-  )
+  ) %>% collect()
 
 # Convert values to millions of USD
 data <- data %>%
@@ -67,7 +67,7 @@ data <- data %>%
 
 # Merge location names
 location_names <- location %>%
-  select(location_id, location_name_short_en) %>%  arrow::to_duckdb()
+  select(location_id, location_name_short_en) 
 
 data <- data %>%
   left_join(location_names, by = "location_id")
@@ -123,9 +123,7 @@ collapsed_data <- collapsed_data %>%
 
 df_output <- collapsed_data %>% 
   ungroup() %>% 
-  select(iso3, location_name_short_en, partner_code, partner_name_short_en, import_value_pca, import_value_pcb) %>% 
-  collect()
-
+  select(iso3, location_name_short_en, partner_code, partner_name_short_en, import_value_pca, import_value_pcb) 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive

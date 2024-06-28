@@ -29,12 +29,11 @@ df_output <- readr::read_csv(argendataR::get_temp_path(fuente1))
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("anio", "sexo"),
-  drop_output_drive = F
+  pk = c("anio", "sexo")
 )
 
 #-- Exportar Output ----
@@ -44,6 +43,7 @@ comparacion <- argendataR::comparar_outputs(
 
 df_output %>%
   argendataR::write_output(
+    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1),
