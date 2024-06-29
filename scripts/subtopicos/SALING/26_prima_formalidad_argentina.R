@@ -139,9 +139,8 @@ eph_processing <- function(years, codes_and_names, custom_wrangling){
 
 #-- Procesamiento ----
 
-dani <- eph_processing(years = anios, codes_and_names = codigos.eph, custom_wrangling = verificacion_datos)
+df_output <- eph_processing(years = anios, codes_and_names = codigos.eph, custom_wrangling = eph_prima_formalidad)
 
-dani %>% write_csv('daniel.csv')
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, 
                                             subtopico = subtopico, 
