@@ -92,7 +92,7 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c(fuente1, fuente2),
+    fuentes = c(fuente1),
     analista = "",
     pk = c("iso3", "anio","formal_def_productiva", "cat_ocup_detalle"),
     es_serie_tiempo = T,

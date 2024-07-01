@@ -81,6 +81,7 @@ df_output %>%
     fuentes = c("R131C0"),
     control = comparacion,
     analista = "",
+    control = comparacion,
     pk = c("anio","sector","subsector"),
     es_serie_tiempo = F,
     columna_indice_tiempo = "anio",

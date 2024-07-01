@@ -60,7 +60,7 @@ df_output <- emis_per_cap_co2_toneladas_long
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 comparacion <- argendataR::comparar_outputs(
-  emis_per_cap_co2_toneladas_long,
+  df_output,
   subtopico = "CAMCLI",
   entrega_subtopico = "segunda_entrega",
   nombre = output_name,
@@ -74,6 +74,7 @@ comparacion <- argendataR::comparar_outputs(
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
@@ -81,6 +82,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R123C0"),
     analista = "",
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

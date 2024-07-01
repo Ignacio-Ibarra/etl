@@ -80,6 +80,7 @@ df_output %>%
     fuentes = c("R114C0"),
     control = comparacion,
     analista = "",
+    control = comparacion,
     pk = c("fecha"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "fecha",

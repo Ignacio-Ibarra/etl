@@ -30,7 +30,7 @@ df_output <- evol_temp_aire_1850_2020
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 comparacion <- argendataR::comparar_outputs(
-  evol_temp_aire_1850_2020,
+  df_output,
   subtopico = "CAMCLI",
   entrega_subtopico = "segunda_entrega",
   nombre = output_name,
@@ -52,6 +52,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R112C28"),
     analista = "",
+    control = comparacion,
     pk = c("fecha"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "fecha",

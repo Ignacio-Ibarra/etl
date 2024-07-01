@@ -76,6 +76,7 @@ df_output %>%
     fuentes = c(fuente1, fuente2, fuente3),
     analista = "",
     aclaraciones = aclaracion,
+    control = comparacion,
     pk = c("anio", "iso3", "sexo"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

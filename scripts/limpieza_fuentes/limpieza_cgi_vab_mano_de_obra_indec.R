@@ -52,7 +52,7 @@ serie_cgi <- serie_cgi %>%
 
 # guardo el df como csv con estilo fundar
 write_csv_fundar(x = serie_cgi,
-                 file = "data/_FUENTES/clean/serie_cgi_vab_indec.csv")
+                 file = glue::glue("{tempdir()}/serie_cgi_vab_indec.csv"))
 
 # lineas de carga de fuente clean en sheet del drive
 # solo se ejecutan al cargar por primera vez la fuente clean
