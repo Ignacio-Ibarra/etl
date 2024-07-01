@@ -17,6 +17,9 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
 
 df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
 
+df_output <- df_output %>% 
+  rename(ano = año)
+
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 #-- Controlar Output ----
@@ -28,6 +31,14 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+etiquetas <- rep("sin especificar", length(colnames(df_output))) %>% 
+  as.list()
+names(etiquetas) <- colnames(df_output)
+
+unidades <- rep("sin especificar", length(colnames(df_output))) %>% 
+  as.list()
+names(unidades) <- colnames(df_output)
+
 
 df_output %>%
   argendataR::write_output(
@@ -35,11 +46,12 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",
+    control = comparacion,
     pk =  c('ano'),
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    es_serie_tiempo = T,
+    columna_indice_tiempo = "ano",
+    # nivel_agregacion =[DEFINIR],
+    # aclaraciones = [DEFINIR],
+    etiquetas_indicadores = etiquetas,
+    unidades = unidades
   )

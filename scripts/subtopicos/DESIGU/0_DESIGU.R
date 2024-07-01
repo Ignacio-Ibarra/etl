@@ -2,30 +2,29 @@ source("scripts/subtopicos/DESIGU/fuentes_DESIGU.R")
 subtopico <-  "DESIGU"
 analista <-  c("")
 
-#-- Sources -----
+entrega <- "datasets_update"
 
-# source("scripts/subtopicos/DESIGU/1_ISA_desigualdad_i1.R)"
-# source("scripts/subtopicos/DESIGU/10_ISA_desigualdad_laboral_i2.R)"
-# source("scripts/subtopicos/DESIGU/11_ISA_desigualdad_laboral_i3.R)"
-# source("scripts/subtopicos/DESIGU/12_ISA_brechas_educativas_i1.R)"
-# source("scripts/subtopicos/DESIGU/13_ISA_brechas_educativas_i2.R)"
-# source("scripts/subtopicos/DESIGU/14_ISA_brechas_educativas_i3.R)"
-# source("scripts/subtopicos/DESIGU/15_ISA_funcional_i1.R)"
-# source("scripts/subtopicos/DESIGU/16_ISA_funcional_i2.R)"
-# source("scripts/subtopicos/DESIGU/17_ISA_regiones_i1.R)"
-# source("scripts/subtopicos/DESIGU/18_ISA_regiones_i2.R)"
-# source("scripts/subtopicos/DESIGU/19_ISA_demografia_i1.R)"
-# source("scripts/subtopicos/DESIGU/2_ISA_desigualdad_i2.R)"
-# source("scripts/subtopicos/DESIGU/20_ISA_demografia_i2.R)"
-# source("scripts/subtopicos/DESIGU/21_ISA_genero_i1.R)"
-# source("scripts/subtopicos/DESIGU/22_ISA_genero_i2.R)"
-# source("scripts/subtopicos/DESIGU/23_ISA_vivienda_i1.R)"
-# source("scripts/subtopicos/DESIGU/24_ISA_vivienda_i2.R)"
-# source("scripts/subtopicos/DESIGU/25_brecha_horas_trabajadas_genero.R)"
-# source("scripts/subtopicos/DESIGU/3_ISA_desigualdad_i3.R)"
-# source("scripts/subtopicos/DESIGU/4_ISA_mundo_i1.R)"
-# source("scripts/subtopicos/DESIGU/5_ISA_mundo_i2.R)"
-# source("scripts/subtopicos/DESIGU/6_ISA_mundo_i3.R)"
-# source("scripts/subtopicos/DESIGU/7_ISA_movilidad_i1.R)"
-# source("scripts/subtopicos/DESIGU/8_ISA_movilidad_i2.R)"
-# source("scripts/subtopicos/DESIGU/9_ISA_desigualdad_laboral_i1.R)"
+archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
+scripts <- archivos[grepl("\\.R$", archivos) &
+                      ! archivos %in% c(glue::glue("0_{subtopico}.R"), glue::glue("fuentes_{subtopico}.R"))]
+
+walk(scripts[1:length(scripts)], function(x) {
+  mensaje_inicio <- paste("Procesando script n°", grep(x, scripts), "- Archivo:", x)
+  message("##############################################")
+  message(mensaje_inicio)
+  source(glue::glue("~/etl/scripts/subtopicos/{subtopico}/{x}"), local = T)
+})
+
+salidas <- list.files(tempdir(), full.names = T)[list.files(tempdir()) %in% subtopico_outputs(subtopico_nombre = subtopico,
+                                                                                              entrega_subtopico = entrega)$name]
+salidas <- c(salidas, gsub("\\.csv$", ".json", salidas))
+
+path_data <- glue::glue("~/data/{subtopico}")
+
+purrr::walk(salidas, 
+            function (x) {
+              
+              file.copy(from = x, to = path_data, overwrite = T) 
+              message(glue::glue("{x} copiado a {path_data}."))
+            })
+
