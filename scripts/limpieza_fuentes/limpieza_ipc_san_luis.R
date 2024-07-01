@@ -2,7 +2,7 @@ descargar_fuente("R124C0")
 
 archivo <- "ipc_san_luis.csv"
 
-ipc_san_luis <- readxl::read_excel(get_temp_path("R124C0"), skip = 2)
+ipc_san_luis <- readxl::read_xlsx(get_temp_path("R124C0"), skip = 2)
 
 ipc_san_luis <- ipc_san_luis %>% 
   janitor::clean_names()

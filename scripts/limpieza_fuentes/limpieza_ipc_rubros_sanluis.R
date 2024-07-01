@@ -17,6 +17,8 @@ df %>%
   write_csv_fundar(glue::glue("{tempdir()}/{archivo}"))
 
 
-agregar_fuente_clean(id_fuente_raw = 156,
-                     path_clean = archivo,script = "scripts/limpieza_fuentes/limpieza_ipc_rubros_sanluis.R", 
-                     nombre = "Índice de Precios al Consumidor (IPC) San Luis. Nivel General y Capítulos de la Canasta. Desde Octubre de 2005 en adelante")
+# agregar_fuente_clean(id_fuente_raw = 156,
+#                      path_clean = archivo,script = "scripts/limpieza_fuentes/limpieza_ipc_rubros_sanluis.R", 
+#                      nombre = "Índice de Precios al Consumidor (IPC) San Luis. Nivel General y Capítulos de la Canasta. Desde Octubre de 2005 en adelante")
+
+actualizar_fuente_clean(id_fuente_clean = 66)

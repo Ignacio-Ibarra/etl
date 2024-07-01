@@ -38,14 +38,14 @@ oyd_pctes <- oyd_pctes %>%
          unidad = "pesos constantes 2004")
 
 write_csv_fundar(x = oyd_pctes,
-                 file = "data/_FUENTES/clean/oferta_demanda_pctes.csv")
+                 file = glue::glue("{tempdir()}/oferta_demanda_pctes.csv"))
 
 # carga fuente limpia en el drive
 
-agregar_fuente_clean(id_fuente_raw = 38,
-                     path_clean = "oferta_demanda_pctes.csv",
-                     nombre = "Oferta y Demanda Globales trimestrales a precios 2004",
-                     script = "limpieza_pib_oyd_pctes_indec.R")
+# agregar_fuente_clean(id_fuente_raw = 38,
+#                      path_clean = "oferta_demanda_pctes.csv",
+#                      nombre = "Oferta y Demanda Globales trimestrales a precios 2004",
+#                      script = "limpieza_pib_oyd_pctes_indec.R")
 
 actualizar_fuente_clean(id_fuente_clean = 6)
 
@@ -90,12 +90,12 @@ pib_categoria_pcorr <- pib_categoria_pcorr %>%
   relocate(unidad, .after = trim)
 
 write_csv_fundar(x = pib_categoria_pcorr,
-                 file = "data/_FUENTES/clean/pib_categoria_pcorr.csv")
+                 file = glue::glue("{tempdir()}/pib_categoria_pcorr.csv"))
 
-agregar_fuente_clean(id_fuente_raw = 38,
-                     path_clean = "pib_categoria_pcorr.csv",
-                     nombre = "PIB por categoria de tabulacion a precios corrientes",
-                     script = "limpieza_pib_oyd_pctes_indec.R")
+# agregar_fuente_clean(id_fuente_raw = 38,
+#                      path_clean = "pib_categoria_pcorr.csv",
+#                      nombre = "PIB por categoria de tabulacion a precios corrientes",
+#                      script = "limpieza_pib_oyd_pctes_indec.R")
 
 actualizar_fuente_clean(id_fuente_clean = 7)
 
@@ -135,15 +135,15 @@ oyd_pcorr <- oyd_pcorr %>%
          unidad = "pesos corrientes")
 
 write_csv_fundar(x = oyd_pcorr,
-                 file = "data/_FUENTES/clean/oferta_demanda_pcorr.csv")
+                 file = glue::glue("{tempdir()}/oferta_demanda_pcorr.csv"))
 
 # carga fuente limpia en el drive
 
-cargar_fuente_clean(id_fuente_raw = 38,
-                     path_clean = "oferta_demanda_pcorr.csv",
-                     nombre = "Oferta y Demanda Globales trimestrales a precios corrientes",
-                     script = "limpieza_pib_oyd_pctes_indec.R",
-                    actualizar = T)
+# cargar_fuente_clean(id_fuente_raw = 38,
+#                      path_clean = "oferta_demanda_pcorr.csv",
+#                      nombre = "Oferta y Demanda Globales trimestrales a precios corrientes",
+#                      script = "limpieza_pib_oyd_pctes_indec.R",
+#                     actualizar = T)
 
 actualizar_fuente_clean(id_fuente_clean = 12)
 
