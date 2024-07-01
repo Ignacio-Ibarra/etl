@@ -32,9 +32,9 @@ df_output %>%
     analista = "",
     pk =  c('ano'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = "ano",
+    nivel_agregacion = 'pais',
     etiquetas_indicadores = list('salario' = 'Salario medio real a pesos constantes de 2014'),
     unidades = list('salario' = 'unidades')
   )
