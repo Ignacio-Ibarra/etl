@@ -13,7 +13,7 @@ gc()   #Garbage Collection
 
 
 subtopico <- "MERTRA"
-output_name <- "establecimientos_tasa_empleo_provincia"
+output_name <- "establecimientos_tasa_empleo_provincia.csv"
 fuente1 <- "R107C0" 
 fuente2 <- "R99C25"
 fuente3 <- "R49C16" 
@@ -111,25 +111,21 @@ df_output <- left_join(establ_df_gr, data_prov, by=join_by(provincia_id == prov_
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("provincia_id"),
-  drop_output_drive = F
-)
+df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
+
+comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
+                                            nombre = output_name,   pk = c("provincia_id"))
+
+
 
 #-- Exportar Output ---- (OJO MODIFICO NOMBRES DE OUTPUTSSS)
 
-# cambio nombre archivo
-
-path <- glue::glue("{tempdir()}/{output_name}.csv")
-
-df_output %>% write_csv_fundar(.,path)
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
   argendataR::write_output(
+    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2, fuente3, fuente4),

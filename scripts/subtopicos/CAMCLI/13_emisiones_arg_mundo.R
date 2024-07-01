@@ -51,8 +51,9 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "emisiones_arg_mundo",
+    output_name = output_name,
     subtopico = "CAMCLI",
+    control = comparacion,
     fuentes = c("R125C62"),
     analista = "",
     control = comparacion,

@@ -75,8 +75,9 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "emisiones_residuos_1990_2018",
+    output_name = output_name,
     subtopico = "CAMCLI",
+    control = comparacion,
     fuentes = c("R131C0"),
     analista = "",
     control = comparacion,

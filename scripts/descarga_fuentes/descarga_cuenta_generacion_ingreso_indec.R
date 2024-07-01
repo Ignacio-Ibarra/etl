@@ -12,4 +12,4 @@ download.file(serie_cgi,
 #                nombre = "Valor agregado bruto e insumo de mano de obra por sector de actividad económica"
 #                 )
 
-actualizar_fuente_raw(id_fuente = 35, fecha_descarga = Sys.Date(), path_raw = "serie_cgi.xls" )
+actualizar_fuente_raw(id_fuente = 35, fecha_descarga = Sys.Date(), path_raw = "serie_cgi.xls", url = serie_cgi )

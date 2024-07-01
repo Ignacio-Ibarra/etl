@@ -49,6 +49,7 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R132C56"),
     analista = "",

@@ -3,9 +3,6 @@ subtopico <-  "CAMCLI"
 analista <-  c("")
 entrega <- "datasets_update"
 
-#-- Sources -----
-
-
 
 archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
 scripts <- archivos[grepl("\\.R$", archivos) &
@@ -30,4 +27,3 @@ purrr::walk(salidas,
               file.copy(from = x, to = path_data, overwrite = T) 
               message(glue::glue("{x} copiado a {path_data}."))
             })
-

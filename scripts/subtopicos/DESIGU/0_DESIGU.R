@@ -1,8 +1,10 @@
-source("scripts/subtopicos/DESIGU/fuentes_DESIGU.R")
 subtopico <-  "DESIGU"
+src <- glue::glue("scripts/subtopicos/{subtopico}/fuentes_{subtopico}.R")
+source(src)
+
+entrega <- "datasets_primera_entrega"
 analista <-  c("")
 
-entrega <- "datasets_update"
 
 archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
 scripts <- archivos[grepl("\\.R$", archivos) &

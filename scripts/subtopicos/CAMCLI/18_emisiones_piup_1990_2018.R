@@ -76,9 +76,10 @@ comparacion <- argendataR::comparar_outputs(df,
 
 df_output %>%
   argendataR::write_output(
-    output_name = "emisiones_afolu_1990_2018",
+    output_name = output_name,
     subtopico = "CAMCLI",
     fuentes = c("R131C0"),
+    control = comparacion,
     analista = "",
     control = comparacion,
     pk = c("anio","sector","subsector"),

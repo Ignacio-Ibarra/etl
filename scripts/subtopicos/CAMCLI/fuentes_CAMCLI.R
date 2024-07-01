@@ -5,7 +5,6 @@
 
 #-- Fuente 1: EMISIONES GASES INV / Codigo de fuente: R82C0
 descargar_fuente_clean(26, dir = tempdir())
-descargar_fuente_clean(82, dir = tempdir())
 
 descargar_fuente(codigo = "R82C0")
 descargar_fuente(codigo = "R100C0") 
@@ -32,7 +31,7 @@ descargar_fuente(codigo = "R39C0")
 descargar_fuente(codigo = "R160C0")
 descargar_fuente(codigo = "R161C0")
 descargar_fuente(codigo = "R132C56")
-
+descargar_fuente(codigo = "R37C1")
 
 descargar_fuente_clean(51, dir = tempdir())
 descargar_fuente_clean(55, dir = tempdir())
@@ -46,8 +45,3 @@ descargar_fuente_clean(70, dir = tempdir())
 descargar_fuente_clean(71, dir = tempdir())
 descargar_fuente_clean(72, dir = tempdir())
 
-rm(list = ls())
-
-#fuentes_raw() %>% 
-#  view()
-# source("scripts/subtopicos/CAMCLI/4_evolucion_temperatura_aire_1850_2020.R)"

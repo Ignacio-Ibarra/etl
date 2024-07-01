@@ -48,6 +48,7 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R112C28"),
     analista = "",
@@ -58,7 +59,5 @@ df_output %>%
     #    columna_geo_referencia = "",
     #    nivel_agregacion = "pais",
     etiquetas_indicadores = list("anomalia_temperatura_deg_c" = "Anomalía temperatura aire en °C"),
-    unidades = list("anomalia_temperatura_deg_c" = "°C"),
-    directorio = "data/CAMCLI/"
-  )
+    unidades = list("anomalia_temperatura_deg_c" = "°C"))
 

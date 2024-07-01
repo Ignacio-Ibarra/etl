@@ -56,7 +56,7 @@ serie_cgi <- serie_cgi[,!sapply(serie_cgi, function(x) {sum(is.na(x)) == length(
 # pivoteo a la long estricto, agrego col unidades y paso valores de millones a unidades
 df_clean <- serie_cgi %>% 
   pivot_longer(cols = -c(anio, trim),
-               names_to = "indicador", values_to = "participacion", values_transform = as.numeric)
+               names_to = "indicador", values_to = "valor_agregado_bruto", values_transform = as.numeric)
 
 norm_sheet <- str_to_lower(SHEET_NAME) %>% str_replace(., " ", "_")
 
