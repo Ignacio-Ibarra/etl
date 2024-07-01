@@ -45,8 +45,3 @@ descargar_fuente_clean(70, dir = tempdir())
 descargar_fuente_clean(71, dir = tempdir())
 descargar_fuente_clean(72, dir = tempdir())
 
-rm(list = ls())
-
-#fuentes_raw() %>% 
-#  view()
-# source("scripts/subtopicos/CAMCLI/4_evolucion_temperatura_aire_1850_2020.R)"

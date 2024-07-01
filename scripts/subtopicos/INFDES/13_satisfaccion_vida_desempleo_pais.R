@@ -28,7 +28,7 @@ data <- wvs_df %>%
   )) %>% 
   filter(!is.na(estado) & a170 >= 0 & a170 < 11) %>%
   group_by(iso3c = cntry, cntry_an, anio = year, estado) %>%
-  summarise(satisfaccion_vida = weighted.mean(a170, gwght, na.rm = TRUE)) %>%
+  summarise(satisfaccion_vida = stats::weighted.mean(a170, gwght, na.rm = TRUE)) %>%
   ungroup()
 
 geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
@@ -67,6 +67,7 @@ df_output %>%
     fuentes = fuente1,
     analista = "",
     es_serie_tiempo = F,
+    control = comparacion,
     pk = c("iso3","anio",'estado'),
     nivel_agregacion = "nacional",
     etiquetas_indicadores = list("satisfaccion_vida" = "Promedio del nivel de satisfacción con la vida (valores en la escala de 0 a 10)"),

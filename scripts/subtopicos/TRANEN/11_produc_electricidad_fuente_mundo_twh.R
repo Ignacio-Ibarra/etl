@@ -80,9 +80,9 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   subtopico = "TRANEN",
-  entrega_subtopico = "datasets_segunda_entrega",
+  entrega_subtopico = "datasets_update",
   pk = c("anio", "iso3", "tipo_energia"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 
@@ -99,6 +99,7 @@ df_output %>%
     subtopico = "TRANEN",
     fuentes = c("R77C0"),
     analista = "",
+    control = comparacion,
     pk = c("anio", "iso3", "tipo_energia"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

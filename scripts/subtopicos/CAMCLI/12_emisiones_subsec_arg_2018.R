@@ -53,6 +53,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R131C55"),
     analista = "",
+    control = comparacion,
     pk = c("sector","anio","subsector"),
     es_serie_tiempo = F,
     aclaraciones = "hay una diferencia de decimales en el dato agregado en subsector -Emisiones directas e indirectas de N2O y otros-. Está mal la base del analista",

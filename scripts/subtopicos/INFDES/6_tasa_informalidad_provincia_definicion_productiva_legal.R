@@ -140,7 +140,7 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   pk = c("anio", "prov_cod","tipo_informalidad"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -154,6 +154,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
     analista = "",
+    control = comparacion,
     pk = c("anio", "prov_cod","tipo_informalidad"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

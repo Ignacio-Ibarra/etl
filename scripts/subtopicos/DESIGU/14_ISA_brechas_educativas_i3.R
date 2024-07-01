@@ -29,6 +29,15 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+etiquetas <- rep("sin especificar", length(colnames(df_output))) %>% 
+  as.list()
+names(etiquetas) <- colnames(df_output)
+
+unidades <- rep("sin especificar", length(colnames(df_output))) %>% 
+  as.list()
+names(unidades) <- colnames(df_output)
+
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
@@ -36,10 +45,10 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     pk =  c('ano','variable'),
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    es_serie_tiempo = T,
+    columna_indice_tiempo = 'ano',
+    # nivel_agregacion =[DEFINIR],
+    # aclaraciones = [DEFINIR],
+    etiquetas_indicadores = etiquetas,
+    unidades = unidades
   )

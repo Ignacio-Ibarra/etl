@@ -136,6 +136,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R157C67","R159C68","R160C70"),
     analista = "",
+    control = comparacion,
     pk = c("anio","provincia"),
     es_serie_tiempo = F,
     columna_indice_tiempo = "anio",

@@ -76,20 +76,15 @@ emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-df <- emis_anua_co2_reg_2021_long
+
+df_output <- emis_anua_co2_reg_2021_long
 
 df_anterior <- descargar_output(nombre=output_name,
                                 subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega")
+                                entrega_subtopico = "datasets_segunda_entrega", locale = locale(encoding = "Latin1"))
 
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
-
-df_output <- df
-
-comparacion <- argendataR::comparar_outputs(df,
+comparacion <- argendataR::comparar_outputs(df_output,
                                             df_anterior,
-                                            k_control_num = 3,
                                             pk = c("iso3"),
                                             drop_joined_df = F)
 
@@ -106,7 +101,8 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R119C0"),
     analista = "",
-    pk = c("anio"),
+    control = comparacion,
+    pk = c("iso3","anio"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     #    columna_geo_referencia = "",

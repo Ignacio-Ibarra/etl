@@ -1,4 +1,4 @@
-url <- "https://www.ieric.org.ar/wp-content/uploads/2024/05/IPC-Prov-San-Luis.xlsx"
+url <- "https://www.ieric.org.ar/wp-content/uploads/2024/06/IPC-Prov-San-Luis.xlsx"
 
 archivo <- glue::glue("ipc_rubros_2005_{lubridate::year(Sys.Date())}_san_luis.xlsx")
 
