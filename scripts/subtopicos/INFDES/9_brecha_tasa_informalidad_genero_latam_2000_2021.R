@@ -102,11 +102,11 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1),
     analista = "",
-    pk = c("iso3","circa"),
+    control = comparacion,
+    pk = c("iso3","anio_circa"),
     es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
+    columna_indice_tiempo = "anio_circa",
     nivel_agregacion = "pais",
-    
     aclaraciones = "La comparación entre el output del analista y el del scripting arroja muchas diferencias. Esto se debe a dos razones: a) el dato input que se debía seleccionar era el que pertenecía a la serie 'empalme' siempre que estuviera disponible (ejemplo Brasil antes tenia datos de su serie 'original'); b) SEDLAC modificó hacia atrás algunos datos (por ejemplo en Costa Rica)", 
     etiquetas_indicadores = list("brecha" = "Brecha de Género entre las tasas de informalidad legal"),
     unidades = list("brecha" = "porcentaje")

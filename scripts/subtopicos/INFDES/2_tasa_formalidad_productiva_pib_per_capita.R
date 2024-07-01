@@ -62,8 +62,9 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
-    analista = analista,
+    fuentes = c(fuente1, fuente2),
+    analista = "",
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
@@ -71,7 +72,7 @@ df_output %>%
     nivel_agregacion = "pais",
     aclaraciones = "Este dataset cuenta con un cambio. Dado que el Banco Mundial actualizó el año base (de 2017 a 2021) para el cálculo del indicador 'NY.GDP.PCAP.PP.KD' el cual es utilizado en esta fuente",
     etiquetas_indicadores = list("tasa_formalidad_productiva" = "Tasa de formalidad (definción productiva)",
-                                 "pib_per_capita_ppp" = "GDP per capita, PPP (constant 2021 international $)", ),
+                                 "pib_per_capita_ppp" = "GDP per capita, PPP (constant 2021 international $)"),
     unidades = list("tasa_formalidad_productiva" = "unidades",
                     "pib_per_capita_ppp" = "unidades")
   )

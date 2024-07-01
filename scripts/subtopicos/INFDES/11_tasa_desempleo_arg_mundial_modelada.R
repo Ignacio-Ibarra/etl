@@ -57,6 +57,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1),
     analista = "",
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

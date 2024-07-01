@@ -74,7 +74,7 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   pk = c("anio", "rango_edad","sexo"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -88,6 +88,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1),
     analista = "",
+    control = comparacion,
     pk = c("anio", "rango_edad","sexo"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

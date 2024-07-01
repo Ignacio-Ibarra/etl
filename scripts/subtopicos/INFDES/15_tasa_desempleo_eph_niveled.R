@@ -12,7 +12,6 @@ codigos.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, I
 
 # librerías
 
-require(data.table)
 
 #-- Lectura de Datos ----
 
@@ -58,12 +57,17 @@ eph_tasa_desocupacion_nivel_ed <- function(eph_data) {
     select(anio, nivel_ed_cod, nivel_ed_desc, tasa_desocupacion)
 
   return(outdf)
-  }
+}
+
+get_eph_fuente <- function(year, codes_and_names) {
+  fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
+  fuente
+}
 
 # Creo una función que levanta el dataset correspondiente a un año
 load_eph_by_year <- function(year, codes_and_names){
-  fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
-  eph_df <- fread(argendataR::get_temp_path(fuente))
+  fuente <- get_eph_fuente(year, codes_and_names)
+  eph_df <- data.table::fread(argendataR::get_temp_path(fuente))
   return(eph_df)
 }
 
@@ -72,6 +76,7 @@ cleaning_eph <- function(eph_data){
   colnames(eph_data) <- tolower(colnames(eph_data))
   return(eph_data)
 }
+
 
 # Creo una función que procesa una lista de años 
 eph_processing <- function(years, codes_and_names, custom_wrangling){
@@ -102,6 +107,8 @@ eph_processing <- function(years, codes_and_names, custom_wrangling){
 #-- Procesamiento ----
 
 df_output <- eph_processing(years = anios, codes_and_names = codigos.eph, custom_wrangling = eph_tasa_desocupacion_nivel_ed)
+lista_fuentes <- map(anios, function(x) {get_eph_fuente(x, codes_and_names = codigos.eph)})
+lista_fuentes <- as.character(lista_fuentes)
 
 #-- Controlar Output ----
 
@@ -113,7 +120,7 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   pk = c("anio", "nivel_ed_cod"),
-  drop_output_drive = F
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
@@ -125,11 +132,13 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c(fuente1),
+    fuentes = lista_fuentes,
     analista = "",
-    pk = c("anio", "rango_edad","sexo"),
+    control = comparacion,
+    pk = c("anio", "nivel_ed_cod","nivel_ed_desc"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     etiquetas_indicadores = list("tasa_desocupacion" = "Tasa de desocupación"),
     unidades = list("tasa_desocupacion" = "unidades")
   )
+
