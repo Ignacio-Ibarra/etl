@@ -66,6 +66,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R100C26","R161C71"),
     analista = "",
+    control = comparacion,
     pk = c("fecha_estimada"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "fecha_estimada",

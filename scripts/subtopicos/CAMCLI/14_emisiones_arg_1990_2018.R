@@ -20,7 +20,7 @@ descargar_fuente_raw(id_fuente = 131, tempdir())
 
 # traigo la data 
 emis_1990_2018_arg <- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
-  clean_names()
+  janitor::clean_names()
   
 #-- Parametros Generales ----
 
@@ -64,6 +64,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R131C0"),
     analista = "",
+    control = comparacion,
     pk = c("anio"),
     es_serie_tiempo = F,
     columna_indice_tiempo = "anio",

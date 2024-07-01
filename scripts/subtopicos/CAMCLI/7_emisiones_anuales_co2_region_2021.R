@@ -77,13 +77,19 @@ df_output<-emis_anua_co2_reg_2021_long
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+df_anterior <-
+  descargar_output(nombre = output_name,
+                   subtopico = "CAMCLI",
+                   entrega_subtopico = "segunda_entrega")
+
+
 comparacion <- argendataR::comparar_outputs(
-  evol_anua_co2_reg_2021,
+  df_output,
   subtopico = "CAMCLI",
   entrega_subtopico = "segunda_entrega",
   nombre = output_name,
   k_control_num = 3,
-  pk = c("iso3","anio"),
+  pk = c("iso3"),
   drop_joined_df = F
 )
 
@@ -98,6 +104,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R119C0"),
     analista = "",
+    control = comparacion,
     pk = c("iso3","anio"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

@@ -62,7 +62,7 @@ comparacion <- argendataR::comparar_outputs(
   emi_anua_co2_ch4_n20_1850_2022,
   subtopico = "CAMCLI",
   nombre = output_name,
-  entrega_subtopico = "datasets_segunda_entrega",
+  entrega_subtopico = "segunda_entrega",
   pk = c("fecha"),
   k_control_num = 3,
   drop_joined_df  = F
@@ -79,6 +79,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R114C0"),
     analista = "",
+    control = comparacion,
     pk = c("fecha"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "fecha",

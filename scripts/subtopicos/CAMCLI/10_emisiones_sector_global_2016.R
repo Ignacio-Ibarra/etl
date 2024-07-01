@@ -51,6 +51,7 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R125C51"),
     analista = "",
+    control = comparacion,
     pk = c("sector","subsector","subsubsector"),
     es_serie_tiempo = F,
     #columna_indice_tiempo = "",

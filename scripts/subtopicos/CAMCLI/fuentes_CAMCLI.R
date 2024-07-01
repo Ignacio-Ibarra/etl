@@ -31,6 +31,7 @@ descargar_fuente(codigo = "R39C0")
 descargar_fuente(codigo = "R39C0")
 descargar_fuente(codigo = "R160C0")
 descargar_fuente(codigo = "R161C0")
+descargar_fuente(codigo = "R132C56")
 
 
 descargar_fuente_clean(51, dir = tempdir())
