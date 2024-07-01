@@ -32,9 +32,9 @@ df_output %>%
     analista = "",
     pk =  c('ano','mes','variable'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = c('ano','mes'),
+    nivel_agregacion = 'pais',
     etiquetas_indicadores = list('valor' = 'Valor que toma la variable considerada'),
     unidades = list('valor' = 'unidades')
   )

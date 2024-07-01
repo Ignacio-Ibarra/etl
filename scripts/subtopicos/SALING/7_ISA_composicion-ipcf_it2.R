@@ -32,9 +32,9 @@ df_output %>%
     analista = "",
     pk =  c('year','semestre','decil','fuente'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = c('year','semestre'),
+    nivel_agregacion = 'pais',
     etiquetas_indicadores = list('proporcion' = 'Proporción representada por las distintas fuentes de ingreso en el ingreso total'),
     unidades = list('proporcion' = 'porcentaje')
   )
