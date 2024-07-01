@@ -10,7 +10,10 @@ archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
 scripts <- archivos[grepl("\\.R$", archivos) &
                       ! archivos %in% c(glue::glue("0_{subtopico}.R"), glue::glue("fuentes_{subtopico}.R"))]
 
-walk(scripts, function(x) {
+walk(scripts[1:length(scripts)], function(x) {
+  mensaje_inicio <- paste("Procesando script n°", grep(x, scripts), "- Archivo:", x)
+  message("##############################################")
+  message(mensaje_inicio)
   source(glue::glue("~/etl/scripts/subtopicos/{subtopico}/{x}"), local = T)
 })
 
