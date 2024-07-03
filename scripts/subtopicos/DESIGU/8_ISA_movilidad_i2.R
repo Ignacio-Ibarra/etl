@@ -28,14 +28,18 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
-etiquetas <- rep("sin especificar", length(colnames(df_output))) %>% 
+etiquetas <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(descripcion) %>% 
   as.list()
-names(etiquetas) <- colnames(df_output)
 
-unidades <- rep("sin especificar", length(colnames(df_output))) %>% 
-  as.list()
-names(unidades) <- colnames(df_output)
+names(etiquetas) <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(variable_nombre)
 
+pks <- meta_desigu %>% 
+  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  pull(variable_nombre)
 
 df_output %>%
   argendataR::write_output(
@@ -44,11 +48,11 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     control = comparacion,
-    pk =  c('orden','pais','code'),
+    pk =  pks,
     es_serie_tiempo = F,
     # columna_indice_tiempo = [DEFINIR],
     # nivel_agregacion =[DEFINIR],
     # aclaraciones = [DEFINIR],
     etiquetas_indicadores = etiquetas,
-    unidades = unidades
+    unidades = list("indicador" = "unidades")
   )

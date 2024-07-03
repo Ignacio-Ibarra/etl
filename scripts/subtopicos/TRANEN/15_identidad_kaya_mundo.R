@@ -45,8 +45,7 @@ data <- data %>%
   )
 
 
-df_output <- data %>% 
-  select(-emision_anual_kgco2_por_usd_ppa_2011)
+df_output <- data 
 
 #-- Controlar Output ----
 

@@ -2,8 +2,11 @@ subtopico <-  "DESIGU"
 src <- glue::glue("scripts/subtopicos/{subtopico}/fuentes_{subtopico}.R")
 source(src)
 
-entrega <- "datasets_primera_entrega"
+entrega <- "datasets_update"
 analista <-  c("")
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
 
 
 archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
