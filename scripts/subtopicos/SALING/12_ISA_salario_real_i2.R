@@ -10,9 +10,11 @@ output_name <- 'ISA_salario_real_i2.csv'
 id_fuente <- 177
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% rename(c("ano" = "año","indice" ="índice")) %>% 
+  fill(ano)
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+colnames(df_anterior) <- trimws(colnames(df_anterior))
 
 #-- Controlar Output ----
 
@@ -32,9 +34,9 @@ df_output %>%
     analista = "",
     pk =  c('mes','ano'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = c('mes','ano'),
+    nivel_agregacion = 'pais',
     etiquetas_indicadores = list('indice' = 'Valor mensual del salario calculado a partir del Índice de Salarios publicado por INDEC, en términos reales, deflactado por el IPC nivel general de INDEC (octubre 2016=100)'),
     unidades = list('indice' = 'unidades')
   )

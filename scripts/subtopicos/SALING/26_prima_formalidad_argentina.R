@@ -27,7 +27,6 @@ normalize_pp3e_tot <- function(value){
 }
 
 
-
 verificacion_datos <- function(eph_data){
   data <- eph_data %>%
       select(anio = ano4, trimestre, edad = ch06, sexo = ch04, nivel_ed, pp3e_tot, p21, cat_ocup, pp07h, region) %>%
@@ -164,6 +163,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = codigos.eph$codigo,
     analista = "",
+    control = comparacion,
     pk = c("anio", "tipo_prima"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",

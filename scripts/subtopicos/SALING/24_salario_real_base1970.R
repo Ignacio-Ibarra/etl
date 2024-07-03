@@ -118,7 +118,7 @@ df_output %>%
     control = comparacion,
     fuentes = c(fuente_ceped, fuente_cgi_puestos_anr, fuente_cgi_puestos_ar, fuente_cgi_rta, fuente_ipc),
     analista = "",
-    pk = c("anio", "iso3"),
+    pk = c("anio"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     nivel_agregacion = "pais",

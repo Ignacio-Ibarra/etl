@@ -10,9 +10,12 @@ output_name <- 'ISA_edad_genero_i3.csv'
 id_fuente <- 170
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+  rename(ano = año) %>% 
+  pivot_longer(-ano, names_to = "variable", values_to = "valor")
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+  mutate(variable = ifelse(variable == "(65-)", "(65 +)", variable))
 
 #-- Controlar Output ----
 
@@ -32,9 +35,9 @@ df_output %>%
     analista = "",
     pk =  c('ano','variable'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = 'ano',
+    nivel_agregacion ='pais',
     etiquetas_indicadores = list('valor' = 'Valor que toma la variable considerada'),
     unidades = list('valor' = 'unidades')
   )
