@@ -1,4 +1,5 @@
 library(sjlabelled)
+library(WDI)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
