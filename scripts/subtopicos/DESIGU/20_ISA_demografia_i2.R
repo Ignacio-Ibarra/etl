@@ -15,7 +15,10 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+  janitor::clean_names()
+
+
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
@@ -29,17 +32,30 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+etiquetas <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(descripcion) %>% 
+  as.list()
+
+names(etiquetas) <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(variable_nombre)
+
+pks <- meta_desigu %>% 
+  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  pull(variable_nombre)
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",
-    pk =  c('ano'),
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
-    aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list([DEFINIR] = [DEFINIR]),
-    unidades = list([DEFINIR] = [DEFINIR])
+    pk =  pks,
+    es_serie_tiempo = T,
+    columna_indice_tiempo = 'ano',
+    # nivel_agregacion =[DEFINIR],
+    # aclaraciones = [DEFINIR],
+    etiquetas_indicadores = etiquetas,
+    unidades = list("indice" = "valor")
   )

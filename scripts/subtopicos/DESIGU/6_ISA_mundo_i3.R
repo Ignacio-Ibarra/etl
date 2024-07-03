@@ -17,6 +17,14 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
 
 df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
 
+df_output <- df_output %>% 
+  pivot_longer(-region, names_to = "ano", values_to = "valor") %>% 
+  rename(variable = region) %>% 
+  mutate(variable = case_when(
+    variable == "América Latina" ~ "americalatina",
+    variable == "Argentina" ~ "argentina "),
+    ano = as.numeric(ano)) 
+
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 #-- Controlar Output ----
@@ -28,14 +36,18 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
-etiquetas <- rep("sin especificar", length(colnames(df_output))) %>% 
+etiquetas <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(descripcion) %>% 
   as.list()
-names(etiquetas) <- colnames(df_output)
 
-unidades <- rep("sin especificar", length(colnames(df_output))) %>% 
-  as.list()
-names(unidades) <- colnames(df_output)
+names(etiquetas) <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(variable_nombre)
 
+pks <- meta_desigu %>% 
+  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  pull(variable_nombre)
 
 df_output %>%
   argendataR::write_output(
@@ -44,11 +56,11 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     control = comparacion,
-    pk =  c('ano','variable'),
+    pk =  pks,
     es_serie_tiempo = T,
-    columna_indice_tiempo = ano,
+    columna_indice_tiempo = "ano",
     # nivel_agregacion =[DEFINIR],
     # aclaraciones = [DEFINIR],
     etiquetas_indicadores = etiquetas,
-    unidades = unidades
+    unidades = list("valor" = "unidades")
   )

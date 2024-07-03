@@ -29,6 +29,19 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+etiquetas <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(descripcion) %>% 
+  as.list()
+
+names(etiquetas) <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(variable_nombre)
+
+pks <- meta_desigu %>% 
+  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  pull(variable_nombre)
+
 
 df_output %>%
   argendataR::write_output(
@@ -37,11 +50,11 @@ df_output %>%
     fuentes = c(fuente_raw1),
     analista = "",
     control = comparacion,
-    pk =  c('decil','variable'),
+    pk =  pks,
     es_serie_tiempo = F,
     # columna_indice_tiempo = [DEFINIR],
     # nivel_agregacion =[DEFINIR],
     # aclaraciones = [DEFINIR],
-    etiquetas_indicadores = list("variable" = "variable"),
-    unidades = list("variable" = "unidades")
+    etiquetas_indicadores = etiquetas,
+    unidades = list("valor" = "unidades")
   )
