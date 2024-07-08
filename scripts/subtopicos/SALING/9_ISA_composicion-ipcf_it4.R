@@ -32,9 +32,9 @@ df_output %>%
     analista = "",
     pk =  c('year','semestre','genero'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = c('year','semestre'),
+    nivel_agregacion = 'pais',
     etiquetas_indicadores = list('proporcion' = 'Proporción del ingreso total familiar representada por el ingreso laboral'),
     unidades = list('proporcion' = 'porcentaje')
   )

@@ -32,9 +32,9 @@ df_output %>%
     analista = "",
     pk =  c('year','semestre','region'),
     control = comparacion, 
-    es_serie_tiempo = [DEFINIR],
-    columna_indice_tiempo = [DEFINIR],
-    nivel_agregacion =[DEFINIR],
+    es_serie_tiempo = T,
+    columna_indice_tiempo = c('year','semestre'),
+    nivel_agregacion ='pais',
     etiquetas_indicadores = list('indice' = 'Valor relativo del ingreso regional respecto al nacional en 2003-II'),
     unidades = list('indice' = 'unidades')
   )

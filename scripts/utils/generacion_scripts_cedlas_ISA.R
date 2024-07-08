@@ -5,7 +5,7 @@ limpiar_temps()
 
 # source("scripts/utils/funciones_descarga_cedlas_desde_metadata.R")
 
-SUBTOP <- "SALING"
+SUBTOP <- "POBREZ"
 scripts.folder <- glue::glue("scripts/subtopicos/{SUBTOP}")
 scripts.files <- list.files(scripts.folder)
 scripts.df <- data.frame(scripts_names = scripts.files[grepl(".R$", scripts.files)]) %>% 
