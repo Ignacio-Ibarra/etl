@@ -56,6 +56,7 @@ df_ipc <- bind_rows(ipc_fyns, ipc_sanluis, ipc_indec) %>%
 
 max_anio <- max(df_ipc$anio)
 
+
 paises_sel <- ipc_weo %>% 
   group_by(iso3) %>% 
   filter(weo_subject_code == "LP" & !is.na(valor)) %>% 
@@ -70,7 +71,11 @@ ipc_weo <- ipc_weo %>%
 
 paises_excl_by_na <- ipc_weo %>% 
   filter(is.na(valor)) %>% 
-  pull(iso3) %>% unique()
+  count(iso3) %>%
+  filter(n > 3) %>% 
+  pull(iso3) %>%  unique()
+
+paises_excl_by_na <- paises_excl_by_na[!paises_excl_by_na %in% "ZWE"]
 
 ipc_weo <- ipc_weo %>% 
   filter(! iso3 %in% paises_excl_by_na)
@@ -80,7 +85,7 @@ df_ipc <- df_ipc %>%
 
 df_ipc <- df_ipc %>% 
   group_by(iso3) %>% 
-  summarise(inflacion_prom_07_22 = mean(valor)) %>% 
+  summarise(inflacion_prom_07_22 = mean(valor, na.rm = T)) %>% 
   ungroup()
 
 df_ipc <- df_ipc %>% 
