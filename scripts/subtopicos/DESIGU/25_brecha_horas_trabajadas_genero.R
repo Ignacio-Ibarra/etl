@@ -95,6 +95,19 @@ comparacion <- argendataR::comparar_outputs(
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+etiquetas <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(descripcion) %>% 
+  as.list()
+
+names(etiquetas) <- meta_desigu %>% 
+  filter(dataset_archivo == output_name) %>% 
+  pull(variable_nombre)
+
+pks <- meta_desigu %>% 
+  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  pull(variable_nombre)
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
