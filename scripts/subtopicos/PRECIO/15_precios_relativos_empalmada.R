@@ -189,7 +189,8 @@ ipc_capitulos_gba_abril_2016 <- ipc_capitulos_gba_abril_2016 %>%
 
 ipc_capitulos_gba_abril_2016 <- ipc_capitulos_gba_abril_2016 %>%
   group_by(rubro) %>% 
-  mutate(indice_empalme = indice_gba*coef_sl_gba[!is.na(coef_sl_gba)])
+  mutate(indice_empalme = indice_gba*coef_sl_gba[!is.na(coef_sl_gba)]) %>% 
+  ungroup()
 
 
 # empalme ipc nac 2016 con gba empalmada -------------------------------------------------------------------------
@@ -221,11 +222,26 @@ df <- ipc_san_luis %>%
   bind_rows(ipc_total_regiones_divisiones_indec)
 
 df %>% 
-  count(fecha, rubro, indice_empalme) %>% 
+  count(fecha, rubro) %>% 
+  filter(n > 1)
+
+df <- df %>%
+  mutate(indice_empalme = round(indice_empalme,4))
+
+df %>% 
+  distinct(fecha, rubro, indice_empalme) %>%
+  count(fecha, rubro) %>% 
   filter(n > 1)
 
 df <- df %>% 
   distinct(fecha, rubro, indice_empalme)
+
+
+df %>% 
+  mutate(anio = year(fecha)) %>% 
+  count(anio, rubro) %>% 
+  filter(n != 12)
+
 
 df <- df %>% 
   mutate(anio = year(fecha)) %>% 
@@ -326,6 +342,7 @@ df_output %>%
     fuentes = c("R120C52", "R120C49", "R156C66", "R117C65", "R127C54", "R127C54", "R117C29"),
     analista = "",
     pk = c("anio", "rubro"),
+    control = comparacion,
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     # columna_geo_referencia = "iso3",
