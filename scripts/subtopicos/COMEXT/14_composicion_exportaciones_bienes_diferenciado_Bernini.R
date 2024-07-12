@@ -35,7 +35,8 @@ df_output <- comex_baci_diferenciados_berinini %>%
     microd == "D" ~ 'Diferenciado', TRUE ~ 'No diferenciado'), 
                 microd = dplyr::case_when(
                   microd == "D" ~ 1, TRUE ~ 2)) %>% 
-  dplyr::select(year, iso3, country_name_abbreviation = country_name, microd, microd_name, export_value_pc)
+  group_by(year, iso3, country_name_abbreviation = country_name, microd, microd_name) %>% 
+  summarise(export_value_pc = sum(export_value_pc, na.rm = T))
 
 #-- Controlar Output ----
 

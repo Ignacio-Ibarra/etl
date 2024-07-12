@@ -25,17 +25,14 @@ emisiones_globales_2016_sector<-readr::read_csv(argendataR::get_temp_path("R125C
 
 df_output <- emisiones_globales_2016_sector
 
-#-- Controlar Output ----
+df_anterior <- descargar_output(nombre = output_name, 
+                                subtopico = "CAMCLI", 
+                                entrega_subtopico = "datasets_segunda_entrega")
 
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
 
 comparacion <- argendataR::comparar_outputs(
-  emisiones_globales_2016_sector,
-  subtopico = "CAMCLI",
-  entrega_subtopico = "segunda_entrega",
-  nombre = output_name,
-  k_control_num = 3,
+  df = df_output,
+  df_anterior = df_anterior,
   pk = c("sector","subsector","subsubsector"),
   drop_joined_df = F
 )
@@ -52,13 +49,12 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R125C51"),
     analista = "",
-    control = comparacion,
     pk = c("sector","subsector","subsubsector"),
     es_serie_tiempo = F,
     #columna_indice_tiempo = "",
     #columna_geo_referencia = "",
     nivel_agregacion = "global",
-    aclaraciones = "ver como definir sector, subsector, subsubsector",
+    aclaraciones = "ver como definir sector, subsector, subsubsector. La comparacion la devuelve con muchos NA pero porque viene encodeado el df_anterior en algo que no es UTF-8",
     etiquetas_indicadores = list("valor_en_porcent"="valor en porcentaje de las emisiones por sector"),
     unidades = list("valor_en_porcent" = "porcentaje")
   )
