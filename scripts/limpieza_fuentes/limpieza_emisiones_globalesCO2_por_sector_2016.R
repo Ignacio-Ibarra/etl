@@ -7,13 +7,13 @@ emis_global_co2_sector_2016 <- readxl::read_xlsx(get_temp_path("R125C0"),
                                sheet = 1)
 
 # limpio nombre variables y cambio nombre sub_sector
-emis_global_co2_sector_2016<-clean_names(emis_global_co2_sector_2016) %>%
+emis_global_co2_sector_2016<-janitor::clean_names(emis_global_co2_sector_2016) %>%
   rename(sub_sector_ingles=sub_sector)
 
 # la base raw tiene solo sub_sector en ingles y la base que sibió analista, sector, subsector y subsubsector (castellano)
 # genero las variables con los valores de ingles a castellano
 
-emis_global_co2_sector_2016 <- emis_global_co2_sector_2016 %>%
+emis_global_co2_sector_2016_final <- emis_global_co2_sector_2016 %>%
   mutate(
     sub_sector_castellano = case_when(
       sub_sector_ingles == "Road" ~ "Carretera",
@@ -83,13 +83,13 @@ emis_global_co2_sector_2016 <- emis_global_co2_sector_2016 %>%
     sub_subsector = case_when(
       sub_sector_ingles %in% c("Road", "Aviation","Rail", "Pipeline", "Ship") ~ "Transporte",
       sub_sector_ingles %in% c("Residential", "Commercial") ~ "Edificaciones",
-      sub_sector_ingles %in% c("Iron & Steel",
-                               "Non-ferous metals",
-                               "Machinery",
-                               "Food and tobacco",
-                               "Paper, pulp & printing",
-                               "Chemical & petrochemical (energy)",
-                               "Other industry") ~ "Edificaciones",
+      # sub_sector_ingles %in% c("Iron & Steel",
+      #                          "Non-ferous metals",
+      #                          "Machinery",
+      #                          "Food and tobacco",
+      #                          "Paper, pulp & printing",
+      #                          "Chemical & petrochemical (energy)",
+      #                          "Other industry") ~ "Edificaciones",
       sub_sector_ingles %in% c("Iron & Steel",
                                "Non-ferous metals",
                                "Machinery",
@@ -112,7 +112,7 @@ emis_global_co2_sector_2016 <- emis_global_co2_sector_2016 %>%
   ))
 
 # me quedo con las columnas año y co2 y multiplico año *-1
-emis_global_co2_sector_2016_final <- emis_global_co2_sector_2016 %>% 
+emis_global_co2_sector_2016_final <- emis_global_co2_sector_2016_final %>% 
   select(4,5,3,2) %>%
   rename(subsector=sub_subsector,
          subsubsector=sub_sector_castellano,
@@ -124,11 +124,11 @@ write_csv_fundar(x = emis_global_co2_sector_2016_final,
                  file = glue::glue("{tempdir()}/emis_global_co2_sector_2016.csv"))
 
 # agrego fuente clean
-agregar_fuente_clean(id_fuente_raw = 125, 
-                     dir = tempdir(),
-                     path_clean = "emis_global_co2_sector_2016.csv",
-                     nombre = "Emisiones globales CO2 por sector año 2016",
-                     script = "limpieza_emisiones_globalesCO2_por_sector_2016.R")
+# agregar_fuente_clean(id_fuente_raw = 125, 
+#                      dir = tempdir(),
+#                      path_clean = "emis_global_co2_sector_2016.csv",
+#                      nombre = "Emisiones globales CO2 por sector año 2016",
+#                      script = "limpieza_emisiones_globalesCO2_por_sector_2016.R")
 
 # actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 51)
+actualizar_fuente_clean(id_fuente_clean = 51, directorio = tempdir())
