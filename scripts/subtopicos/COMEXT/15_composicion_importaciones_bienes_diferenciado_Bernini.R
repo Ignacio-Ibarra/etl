@@ -9,7 +9,7 @@
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
-
+subtopico <- "COMEXT"
 output_name <- stringr::str_sub(string = code_name, start = 4, end = -3)
 
 #-- Librerias ----
@@ -30,12 +30,14 @@ comex_baci_diferenciados_berinini <- readr::read_csv(argendataR::get_temp_path("
 #-- Procesamiento ----
 
 df_output <- comex_baci_diferenciados_berinini %>% 
-  dplyr::filter(!is.na(microd)) %>% 
+  # dplyr::filter(!is.na(microd)) %>% 
   dplyr::mutate(microd_name = dplyr::case_when(
     microd == "D" ~ 'Diferenciado', TRUE ~ 'No diferenciado'), 
     microd = dplyr::case_when(
       microd == "D" ~ 1, TRUE ~ 2)) %>% 
-  dplyr::select(year, iso3, country_name_abbreviation = country_name, microd, microd_name, import_value_pc)
+  group_by(year, iso3, country_name_abbreviation = country_name, microd, microd_name) %>% 
+  summarise(import_value_pc = sum(import_value_pc, na.rm = T))
+  # dplyr::select(year, iso3, country_name_abbreviation = country_name, microd, microd_name, import_value_pc)
 
 #-- Controlar Output ----
 
@@ -50,7 +52,7 @@ df_anterior <- df_anterior %>%
 
 
 comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
-                                            pk = c("year", "iso3", 'country_name_abbreviation', 'microd', 'microd_name'))
+                                            pk = c("year", "iso3", 'microd_name'))
 
 
 #-- Exportar Output ----
@@ -59,16 +61,16 @@ comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_ant
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 df_output %>%
-  argendataR::write_output(directorio = 'data/COMEXT/',
-                           control = comparacion,
+  argendataR::write_output(directorio = tempdir(),
                            output_name = output_name,
                            subtopico = subtopico,
                            fuentes = c("R113C57"),
-                           analista = analista,
+                           analista = "",
                            pk = c("year", "iso3", 'country_name_abbreviation', 'microd', 'microd_name'),
                            es_serie_tiempo = FALSE,
-                           columna_indice_tiempo = "anio",
+                           columna_indice_tiempo = "year",
                            columna_geo_referencia = "iso3",
+                           control = comparacion, 
                            nivel_agregacion = "pais",
                            etiquetas_indicadores = list("import_value_pc" = "Importaciones de bienes (% del total importado en bienes)"),
                            unidades = list("import_value_pc" = "porcentaje"), 
