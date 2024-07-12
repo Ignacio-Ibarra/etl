@@ -151,6 +151,10 @@ hs07_arg_2020 <- arrow::read_parquet(glue::glue("{directory_path}/BACI_HS07/BACI
 
 country_codes <- arrow::read_parquet(glue::glue("{directory_path}/BACI_HS07/country_codes_V202401b.csv"))  %>% arrow::to_duckdb()
 
+country_codes <- country_codes %>% collect()
+country_codes[country_codes$country_code == 490, "country_iso3" ] <- "TWN"
+country_codes <- country_codes %>% arrow::to_duckdb()
+
 
 #-- Procesamiento ----
 
@@ -329,4 +333,4 @@ write_csv_fundar(imports_exports_micro_D_berinini,
 #                    nombre = "Composición de las exportaciones e importaciones de Argentina según grado de diferenciación del producto. En porcentaje del total. Año 2020",
 #                    script = code_name)
 
-argendataR::actualizar_fuente_clean(id_fuente_clean = "R113C59")
+argendataR::actualizar_fuente_clean(id_fuente_clean = 59)

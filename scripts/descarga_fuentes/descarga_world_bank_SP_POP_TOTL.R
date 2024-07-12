@@ -1,4 +1,5 @@
 library(sjlabelled)
+library(WDI)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
@@ -28,7 +29,7 @@ database_abb <- "WDI"
 
 download_filename <- make_filename(database_abb, indicator_label = ind_label)
 
-data %>% write_csv_fundar(sprintf("data/_FUENTES/raw/%s",download_filename))
+data %>% write_csv_fundar(glue::glue("{tempdir()}/{download_filename}"))
 
 # agregar_fuente_raw(url = url,
 #                    nombre = ind_label,
@@ -40,4 +41,4 @@ data %>% write_csv_fundar(sprintf("data/_FUENTES/raw/%s",download_filename))
 #                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 46, actualizable = T, dir = "data/_FUENTES/raw/")
+actualizar_fuente_raw(id_fuente = 46, actualizable = T, dir = tempdir())
