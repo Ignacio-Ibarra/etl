@@ -1,6 +1,10 @@
-# argendata - ETL
+![etl-w](https://github.com/user-attachments/assets/9874cf4b-10d5-4cce-b13d-229f411f4bb4)
 
-Este proyecto busca sistematizar los procesos de generación de los outputs utilizados en argendata de la forma más reproducible posible.
+Este repositorio contiene los _scripts_ en R utilizados para producir los datasets crudos de manera programática. Esta sección
+tiene como objetivo que la generación y extracción de datos sea reproducible y sistemática, permitiendo así la actualización constante
+y automática a través de un proceso armonizado.
+
+El _output_ de los mismos se almacena en [data/](https://github.com/argendatafundar/data). 
 
 ## Flujo de trabajo
 
