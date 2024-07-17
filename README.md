@@ -1,4 +1,12 @@
-![etl-w](https://github.com/user-attachments/assets/9874cf4b-10d5-4cce-b13d-229f411f4bb4)
+<div align='left'>
+    <a href="https://fund.ar">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/9874cf4b-10d5-4cce-b13d-229f411f4bb4">
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/7eee7213-2b1c-4304-b6ff-f384042e19d7">
+    <img src="fund.ar" width="200"></img>
+  </picture>
+</a>
+</div>
 
 Este repositorio contiene los _scripts_ en R utilizados para producir los datasets crudos de manera programática. Esta sección
 tiene como objetivo que la generación y extracción de datos sea reproducible y sistemática, permitiendo así la actualización constante
