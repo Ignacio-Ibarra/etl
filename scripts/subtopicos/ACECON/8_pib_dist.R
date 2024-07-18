@@ -1,94 +1,104 @@
-# 8_pib_dist
-# descripcion
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-# vars config del script
-output_name <- "8_pib_dist"
-# periodo, etc.,
+limpiar_temps()
 
-# Descargas -------
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+subtopico <- 'ACECON'
+output_name <- '8_pib_dist.csv'
 
-# Valor agregado bruto e insumo de mano de obra por sector de actividad económica. Serie CGI indec
-download.file("https://www.indec.gob.ar/ftp/cuadros/economia/serie_cgi_01_24.xls",
-              mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
-              destfile = glue::glue("data/{subtopico}/datasets/raw/serie_cgi.xls"))
 
-# Lectura -------
+fuente_1 <- "R210C0"
+fuente_2 <- "R35C76"
+fuente_3 <- "R211C77"
 
-# rta como % pbi - cgi indec
-serie_cgi <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/serie_cgi.xls"), sheet = "RTA pp")
 
-# Remuneración al trabajo asalariado como porcentaje del PIB desde 1935 hasta 2020.
-ceped <- readxl::read_excel(glue::glue("data/{subtopico}/datasets/raw/ceped.xlsx"))
 
-# Procesamiento -------
+# Participación en el Valor Agregado Bruto a precios básicos (por sector o total de la economía)
+ceped_df <- readxl::read_excel(argendataR::get_temp_path(fuente_1)) %>% 
+  dplyr::filter(variable == "particip.vab.pb") %>% 
+  select(anio = Anio, particip_vab_pb_total = Total)
 
-# la participación de la remuneración al trabajo asalariado en 2020, 2021 y 2022.
-serie_cgi <- tidy_indec(x = serie_cgi, tabla = "serie_cgi")
+# Cuenta Generacion del Ingeso (RTA pp) - INDEC
+cgi_df <- read_csv(argendataR::get_temp_path(fuente_2)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  dplyr::filter(indicador == "Total general") %>% 
+  select(anio, participacion)
 
-# seleccion de anios de interes para la expansion de serie ceped
-serie_cgi <- serie_cgi %>% 
-  filter(trim == "Total" & anio %in% 2020:2022) %>% 
-  select(anio, total_general)
+grania_df <- read_csv(argendataR::get_temp_path(fuente_3)) %>% select(anio, masa_salarial)
 
-# calculo variaciones ia
-serie_cgi <- serie_cgi %>% 
-  mutate(across(everything(), as.numeric)) %>% 
+
+data_total <- grania_df %>% 
+  full_join(., ceped_df, by=join_by(anio)) %>% 
+  full_join(., cgi_df, by=join_by(anio)) %>%
+  arrange(-anio)
+
+
+data_total_shifted <- as.data.frame(lapply(data_total %>% select(-anio), function(x) lead(x,1)))
+
+X <- data_total %>% bind_cols(data_total_shifted)
+
+X <- X %>% 
+  mutate(
+    relat = case_when(
+      anio > 2016 ~ `participacion...4` / `participacion...7`,
+      anio <= 2016 & anio > 1993 ~ `particip_vab_pb_total...3` / `particip_vab_pb_total...6`,
+      TRUE  ~  `masa_salarial...2`/ `masa_salarial...5`
+    )
+  )
+
+
+X$relat <- c(1, X$relat[1:(length(X$relat)-1)])
+
+
+
+hacer_empalme = function(tasas, comienzo){
+  empalme <- c()
+  valor <- comienzo
+  for (t in tasas){
+    valor <- valor/t
+    empalme <- c(empalme, valor)
+  }
+  return(empalme)
+}
+
+
+X$part_salarial_vab <- hacer_empalme(X$relat, X$participacion...4[[1]])
+
+
+df_output <- X %>% 
+  select(anio, remuneracion_al_trabajo_asalariado = part_salarial_vab) %>% 
   arrange(anio) %>% 
-  mutate(var = total_general/lag(total_general))
-
-# seleccion de anios con variaciones
-serie_cgi <- serie_cgi %>% 
-  filter(anio > 2020)
-
-# renombro variables segun output
-colnames(ceped) <- c("anio", "remuneracion_al_trabajo_asalariado")
-
-# a numerico
-ceped <- ceped %>% 
-  mutate(across(everything(), as.numeric))
-
-# elimino filas de encabezado
-ceped <- ceped %>% 
-  filter(!is.na(anio))
-
-# uno las series
-ceped <- ceped %>% 
-  bind_rows(serie_cgi)
-
-# expando ceped x vars indec cgi
-ceped <- ceped %>% 
-  mutate(remuneracion_al_trabajo_asalariado = expansor_xvar(remuneracion_al_trabajo_asalariado, var))
-
-# seleccion de columnas finales y calculo del complemento del RTA como % pbi
-df_output <- ceped %>% 
-  select(-c(total_general, var)) %>% 
   mutate(otros = 100 - remuneracion_al_trabajo_asalariado)
 
-# Control vs output previo -------
+df_anterior <- argendataR::descargar_output(nombre ='8_pib_dist', 
+                                            subtopico = subtopico, 
+                                            entrega_subtopico = "datasets_primera_entrega")
 
-# descargo outout primera entrega del drive
-# se puede leer outoput del drive directo desde la url
-out_prev <- read.csv2(file = glue::glue("https://drive.usercontent.google.com/download?id={outputs$id[grepl(output_name, outputs$name)]}"))
-
-out_prev <- out_prev %>% 
-  mutate(across(-c(), as.numeric))
-
-vs <- out_prev %>% 
-  left_join(df_output, by = c("anio"))
-
-diff <-  comparar_cols(vs)
-
-diff <- diff %>% 
-  filter(if_any(-anio, \(x) round(x,2) != 0))
+comparacion <- argendataR::comparar_outputs(
+  df_output,
+  df_anterior,
+  pk = c("anio"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df = F
+)
 
 
-diff %>% 
-  write_argendata(file_name = glue::glue("_diff_{output_name}.csv"),
-  subtopico =  subtopico)
-
-# Write output ------
+#-- Exportar Output ----
 
 
-df_output %>% 
-  write_argendata(file_name = glue::glue("{output_name}.csv"),
-  subtopico = subtopico)
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = c(fuente_1, fuente_2, fuente_3),
+    analista = "",
+    pk = ('anio'),
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = "anio",
+    etiquetas_indicadores = list("remuneracion_al_trabajo_asalariado" = "Participación de la masa salarial en el Valor Agregado Bruto a precios básicos",
+                                 "otros" = "Participación del resto de los factores de la produccion en el Valor Agregado Bruto a precios básicos"),
+    unidades = list("remuneracion_al_trabajo_asalariado" = "porcentaje",
+                    "otros" = "porcentaje")
+  )
