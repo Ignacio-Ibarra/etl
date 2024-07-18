@@ -237,6 +237,7 @@ df_output %>%
   write_output(output_name = output_name, fuentes = c("R36C13", "R36C9", "R38C7"),
                subtopico = "ACECON",
                analista = "",
+               control = comparacion, 
                pk = c("anio", "sector"),es_serie_tiempo = T, columna_indice_tiempo = "anio", nivel_agregacion = "pais",
                etiquetas_indicadores =  list("sector" = "Sector"),
                unidades = list("valor"="Porcentaje del PIB a precios básicos") )
