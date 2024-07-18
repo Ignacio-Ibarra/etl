@@ -3,6 +3,7 @@
 
 # vars config del script
 output_name <- "7_pib_comp_va"
+subtopico <- "ACECON"
 # periodo, etc.,
 
 # Insumos -------
@@ -204,6 +205,7 @@ df_output <- pbisectores_fnys %>%
 
 
 df_output <- df_output %>% 
+  select(-pib_pbpm) %>% 
   pivot_longer(cols = -c(anio), names_to = "sector", values_to = "valor") %>% 
   mutate(sector = case_when(
     grepl("agricultura", sector) ~ "Agricultura caza silvicultura y pesca",
@@ -214,9 +216,19 @@ df_output <- df_output %>%
     T ~ NA_character_
   ))
 
-comparacion <- df_output %>% 
-  comparar_outputs(nombre = output_name,pk = c("anio", "sector"),
-                   drop_output_drive = F)
+
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+
+#-- Controlar Output ----
+
+comparacion <- argendataR::comparar_outputs(
+  df_output,
+  df_anterior,
+  pk = c("anio", "sector"),
+  drop_joined_df = F
+)
+
+
 
 # Write output ------
 
