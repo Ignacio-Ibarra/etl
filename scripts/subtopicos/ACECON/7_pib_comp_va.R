@@ -210,7 +210,7 @@ df_output <- df_output %>%
   mutate(sector = case_when(
     grepl("agricultura", sector) ~ "Agricultura caza silvicultura y pesca",
     grepl("cantera", sector) ~ "Explotacion minas y canteras",
-    grepl("construccion", sector) ~ "Construccion y ega",
+    grepl("construccion", sector) ~ "Construccion y Electricidad, Gas y Agua",
     grepl("comercio", sector) ~ "Comercio y servicios",
     grepl("industria", sector) ~ "Industria manufacturera",
     T ~ NA_character_
