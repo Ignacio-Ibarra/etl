@@ -41,5 +41,10 @@ descargar_fuente("R38C12")
 descargar_fuente("R38C7")
 
 
+# Fuentes para calcular dist.funcional del ingreso
+descargar_fuente("R210C0")
+descargar_fuente("R35C76")
+descargar_fuente("R211C77")
+
 
 
