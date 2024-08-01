@@ -10,7 +10,7 @@ descargar_fuente_raw(id_fuente = 160, tempdir())
 
 #traigo la data
 df_pbi_per_capita <- readxl::read_excel(glue::glue("{tempdir()}/pbg por provincia_R160C0.xlsx"), sheet = "serie empalmada PIBpc") %>% 
-    clean_names()
+    janitor::clean_names()
 
 # Identificar las columnas que contienen años con prefijo
 columnas_años <- grep("^x\\d{4}$", names(df_pbi_per_capita), value = TRUE)
