@@ -11,7 +11,7 @@ descargar_fuente_raw(id_fuente = 157, tempdir())
 # Función para procesar cada hoja
 procesar_hoja <- function(hoja) {
   df <- readxl::read_excel(glue::glue("{tempdir()}/emis_arg_prov_2010_2018_R157C0.xlsx"), sheet = hoja) %>% 
-    clean_names()
+    janitor::clean_names()
   
   # Asignar nombres de columna desde la tercera fila
   columnas <- df[3,]
@@ -22,7 +22,7 @@ procesar_hoja <- function(hoja) {
   
   # Limpiar nombres de columnas y crear la nueva columna 'sector'
   df <- df %>% 
-    clean_names() %>% 
+    janitor::clean_names() %>% 
     mutate(sector = case_when(
       grepl("1. Sector Energía", sector_categoria) ~ "Energía",
       grepl("2. Sector Procesos industriales y uso de productos", sector_categoria) ~ "PIUP",
@@ -37,7 +37,7 @@ procesar_hoja <- function(hoja) {
 }
 
 # Obtener todas las hojas del archivo
-hojas <- excel_sheets(glue::glue("{tempdir()}/emis_arg_prov_2010_2018_R157C0.xlsx"))
+hojas <- readxl::excel_sheets(glue::glue("{tempdir()}/emis_arg_prov_2010_2018_R157C0.xlsx"))
 
 # Procesar todas las hojas a partir de la hoja 3
 resultados <- lapply(hojas[3:length(hojas)], procesar_hoja)
@@ -47,7 +47,7 @@ df_final <- bind_rows(resultados)
 
 ## modifico variables
 df_final_final <- df_final %>%
-  mutate_at(vars(2:10), ~ round(as.numeric(.), 2)) %>% 
+  mutate_at(vars(2:10), ~ round(as.numeric(.), 4)) %>% 
   mutate(codigo = substr(provincia, 1, 3),  # Crear la variable 'codigo' con los primeros 3 caracteres
          provincia_final = substr(provincia, 4, nchar(provincia))) %>% 
 select(2:11,14)
