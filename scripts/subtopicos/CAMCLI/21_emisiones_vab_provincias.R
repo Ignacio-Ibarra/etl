@@ -88,7 +88,7 @@ poblacion_prov_2018 <- readxl::read_excel(glue::glue("{tempdir()}/pbg por provin
   select(2,4)
 
 ## junto las tres bases para poder hacer los cálculos
-data_combinada <- pbi_per_capita_2018 %>%
+df_output <- pbi_per_capita_2018 %>%
   full_join(vab_provincias_2018, by = "provincia") %>%
   full_join(emisiones_provincias_2018, by = "provincia") %>% 
   full_join(poblacion_prov_2018, by = "provincia") %>% 
@@ -104,23 +104,22 @@ select (6,1,7,2)
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df <- data_combinada
 
 df_anterior <- descargar_output(nombre=output_name,
                                 subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega")
+                                entrega_subtopico = "datasets_segunda_entrega") %>% 
+  mutate(provincia = df$provincia)
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-df_output <- df
 
-comparacion <- argendataR::comparar_outputs(df,
+comparacion <- argendataR::comparar_outputs(df_output,
                                             df_anterior,
                                             k_control_num = 3,
-                                            pk = c("anio"),
+                                            pk = c("anio","provincia"),
                                             drop_joined_df = F)
 
 

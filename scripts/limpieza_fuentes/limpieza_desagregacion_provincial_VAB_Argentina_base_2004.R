@@ -12,7 +12,7 @@ descargar_fuente_raw(id_fuente = 159, tempdir())
 
 vab_provincia_2004 <- readxl::read_xlsx(get_temp_path("R159C0"),
                                                  sheet = 1,skip = 4,n_max = 25) %>% 
-  clean_names()
+  janitor::clean_names()
 
 # Identificar las columnas que contienen años con prefijo "x" y "_"
 columnas_años <- grep("^x\\d{4}(_\\d+)?$", names(vab_provincia_2004), value = TRUE)
