@@ -2,7 +2,7 @@
 # descripcion
 
 # vars config del script
-output_name <- "7_pib_comp_va"
+output_name <- "7_pib_comp_va.csv"
 subtopico <- "ACECON"
 # periodo, etc.,
 
@@ -19,19 +19,25 @@ pbisectores_indec <- read_csv(get_temp_path("R38C7"))
 
 # Procesamiento -------
 
-#2 me quedo solo con los datos de total anual
+# me quedo solo con los datos de total anual
 pbisectores_indec <- pbisectores_indec %>% 
   filter(trim == "Total") %>% 
   select(-trim) 
 
-#3 selecciono anios que corresponden a la expansion
+# selecciono anios que corresponden a la expansion
 pbisectores_indec <- pbisectores_indec %>%
-  filter(anio %in% 2018:2022)
+  filter(anio %in% 2004:max(anio))
 
-#4 seleccion de variables de interes
+# seleccion de variables de interes
+pbisectores_indec %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  colnames()
+
 pbisectores_indec <- pbisectores_indec %>%
   pivot_wider(names_from = indicador, values_from = valor) %>% 
-  select(anio, producto_interno_bruto, a_agricultura_ganaderia_caza_y_silvicultura,
+  select(anio,
+         valor_agregado_bruto_a_precios_basicos,
+         a_agricultura_ganaderia_caza_y_silvicultura,
          b_pesca, c_explotacion_de_minas_y_canteras, d_industria_manufacturera,
          e_electricidad_gas_y_agua, f_construccion,
          g_comercio_mayorista_minorista_y_reparaciones,h_hoteles_y_restaurantes, i_transporte_almacenamiento_y_comunicaciones,
@@ -41,192 +47,152 @@ pbisectores_indec <- pbisectores_indec %>%
          o_otras_actividades_de_servicios_comunitarias_sociales_y_personales, p_hogares_privados_con_servicio_domestico)
 
 
-
-#6 se agrupan subsectores en sectores que coinciden con la serie de fund norte y sur
-pbisectores_indec <- pbisectores_indec %>% 
-  group_by(anio) %>% 
-  mutate(agricultura_caza_silvicultura_y_pesca = sum(c(a_agricultura_ganaderia_caza_y_silvicultura,
-                                                     b_pesca), na.rm = T),
-         construccion_y_ega = sum(c(f_construccion,
-                                    e_electricidad_gas_y_agua), na.rm = T),
-         comercio_y_servicios = sum(pick(g_comercio_mayorista_minorista_y_reparaciones:p_hogares_privados_con_servicio_domestico),
-                                    na.rm = T)
-         ) %>% 
-  ungroup()
-
-#7 seleccion de datos nivel agregado
-pbisectores_indec <- pbisectores_indec %>% 
-  select(anio, producto_interno_bruto, agricultura_caza_silvicultura_y_pesca,
-         explotacion_minas_y_canteras = c_explotacion_de_minas_y_canteras,
-         industria_manufacturera = d_industria_manufacturera,
-         construccion_y_ega, comercio_y_servicios)
-
-#8 calculo de proporciones de vab por sector respecto al pib
+# calculo de proporciones de vab por sector respecto al vab total
 pbisectores_indec <- pbisectores_indec %>%
-  mutate(across(-anio, function(x) 100*x/producto_interno_bruto,
+  mutate(across(-anio, function(x) 100*x/valor_agregado_bruto_a_precios_basicos,
                 .names = "prop_{.col}"))
 
-#9 calculo las variaciones interanuales de las prop
-pbisectores_indec <- pbisectores_indec %>%
-  mutate(across(-c(anio, matches("prop_")), function(x) x/lag(x), .names = "var_{.col}"))
 
-# pib bruto 2018
-#10 se pasa la unidad de miles de pesos a pesos
-pbiusd_fnys <- pbiusd_fnys %>% 
-  filter(anio == 2018  & indicador == "PIB a precios de mercado" &
-           unidad == "miles de US$") %>% 
-  select(anio, iso3, pib = valor) %>% 
-  mutate(pib = pib*1000)
-
-#11 seleccion de variables de interes
+## datos fnys 
+# seleccion de variables de interes
 pbisectores_fnys <- pbisectores_fnys %>% 
-  filter(indicador %in% c(
-    "PIB a costo de factores / precios básicos",
-    "Agricultura, caza y silvicultura",
-    "Pesca",
-    "Explotación de minas y canteras",
-    "Industrias Manufactureras",
-    "Electricidad, Gas y Agua",
-    "Construcción",
-    "Comercio al por mayor y menor, y hoteles y restaurantes",
-    "Transporte, almacenamiento y comunicaciones",
-    "Intermediación financiera y actividades inmobiliarias - Total",
-    "Administrac. pública y defensa y servicios sociales, comunales y personales - Total"
+  filter(! indicador %in% c(
+    "PIB Total a precios de mercado",
+    "PIB a costo de factores / precios básicos"
   ))
 
 
-#14 filtro anios de interes (la serie llega a 2018)
+# filtro anios de interes (la serie llega a 2018)
 pbisectores_fnys <- pbisectores_fnys %>%
-  filter(anio %in% 1935:2018)
+  filter(anio %in% 1935:2004)
 
+# pivot
 pbisectores_fnys <- pbisectores_fnys %>%
   pivot_wider(names_from = indicador, values_from = valor) %>% 
   janitor::clean_names()
 
-#15 completo valores faltantes en pib_pmpb
-# los años de 1970 a 1979 no tienen datos en la columna PIBpm%pb.
-# Entiendo que esto es porque para esos años PIBpb%pm = 100,
-# según se deduce de que la suma de los %pm de los sectores para esos años da igual a 100%
-pbisectores_fnys <- pbisectores_fnys %>%
-  rename(pib_pbpm = pib_a_costo_de_factores_precios_basicos) %>% 
-  group_by(anio) %>% 
-  mutate(pib_pbpm = ifelse(is.na(pib_pbpm), sum(c_across(-c(pib_pbpm)), na.rm = T ),
-                           pib_pbpm)) %>% 
-  ungroup()
 
-#16 agrupo subsectores en grandes sectores
-pbisectores_fnys <- pbisectores_fnys %>%
-  group_by(anio) %>% 
-  mutate(agricultura_caza_silvicultura_y_pesca = sum(c(agricultura_caza_y_silvicultura,pesca), na.rm = T),
-         construccion_y_ega = sum(c(construccion,electricidad_gas_y_agua), na.rm = T),
-         comercio_y_servicios = sum(c(comercio_al_por_mayor_y_menor_y_hoteles_y_restaurantes, 
-                                      transporte_almacenamiento_y_comunicaciones,
-                                      intermediacion_financiera_y_actividades_inmobiliarias_total,
-                                      administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total), na.rm = T)) %>% 
-  select(anio, pib_pbpm, agricultura_caza_silvicultura_y_pesca,
-         explotacion_minas_y_canteras = explotacion_de_minas_y_canteras,
-         industria_manufacturera = industrias_manufactureras,
-         construccion_y_ega, comercio_y_servicios)
+# la serie de pesca tiene datos faltantes
+# se imputan con extrapolacion lineal
+pbisectores_fnys$pesca2 <- pbisectores_fnys$pesca
+pbisectores_fnys$pesca2[which(is.na(pbisectores_fnys$pesca))] <-  zoo::na.approx(pbisectores_fnys$pesca, xout = which(is.na(pbisectores_fnys$pesca)))
 
+# en los anios donde habia datos faltantes para pesca es necesario restar el valor imputado a agricultura
+# esto es xq entendemos que al sector agro se le sumo el dato de pesca para esos anios 
+pbisectores_fnys$agricultura_caza_y_silvicultura[which(is.na(pbisectores_fnys$pesca))] <- pbisectores_fnys$agricultura_caza_y_silvicultura[which(is.na(pbisectores_fnys$pesca))] -pbisectores_fnys$pesca2[which(is.na(pbisectores_fnys$pesca))] 
 
-#17 le agrego a los datos % de composicion de pib el dato de pib bruto 2018: columna pib
-pbisectores_fnys <- left_join(pbisectores_fnys, pbiusd_fnys)
-
-#18 calculo para anio 2018 el vab en millones de pesos como  % de sector a pb/pm /100 * valor pib pm bruto 
+# en algunos subsectores habia datos faltantes
+# se calcula la proporcion del subsector sobre el sector y se extrapola la proporcion para datos faltantes
+# se recalcula el valor del subsector como proporcion*total sector
 pbisectores_fnys <- pbisectores_fnys %>% 
-  ungroup() %>% 
-  mutate(across(-c(anio, iso3,  pib), function(x) {x/100*pib},
-                .names = "bruto_{.col}"))
+  mutate(prop_intermediacion_finan = intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera/intermediacion_financiera_y_actividades_inmobiliarias_total,
+         prop_actividades_inmobiliarias = intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler/intermediacion_financiera_y_actividades_inmobiliarias_total,
+         prop_admin_pub = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr/administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total,
+         prop_servicios_soc = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios/administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total) 
 
-#19 reuno dataset fnys 1935:2018 con dataset de variaciones ia de indec 2019:2022
+
+columnas_prop <- grep("^prop_",colnames(pbisectores_fnys), value = T)
+
+
+for(i in columnas_prop) {
+  
+    pbisectores_fnys[which(is.na(pbisectores_fnys[i])),i] <- zoo::na.approx(pbisectores_fnys[[i]],
+                                                                            xout = which(is.na(pbisectores_fnys[[i]])))
+
+  }
+
+
 pbisectores_fnys <- pbisectores_fnys %>% 
-  bind_rows(pbisectores_indec %>% filter(anio > 2018) %>% 
-              select(anio, matches("var")))
-
-#20 expando la serie de valores brutos de fnys usando las variaciones calculadas con dataset indec
-# ver funcion expansor_xvar en aux_functions.R
-pbisectores_fnys <- pbisectores_fnys %>%
-  ungroup() %>% 
-  arrange(anio) %>% 
-  mutate(pib = expansor_xvar(pib, var_producto_interno_bruto),
-         bruto_agricultura_caza_silvicultura_y_pesca = expansor_xvar(bruto_agricultura_caza_silvicultura_y_pesca,
-                                                                     var_agricultura_caza_silvicultura_y_pesca),
-         bruto_explotacion_minas_y_canteras = expansor_xvar(bruto_explotacion_minas_y_canteras,
-                                                                     var_explotacion_minas_y_canteras),
-         bruto_industria_manufacturera = expansor_xvar(bruto_industria_manufacturera,
-                                                            var_industria_manufacturera),
-         bruto_construccion_y_ega = expansor_xvar(bruto_construccion_y_ega,
-                                                       var_construccion_y_ega),
-         bruto_comercio_y_servicios = expansor_xvar(bruto_comercio_y_servicios,
-                                                  var_comercio_y_servicios)
-         )
-
- 
-#21 completo las vars de sector a pb como % de pib pm a partir de los valores brutos sectoriales expandidos con indec para 2019-2022 dividos valor pib pm bruto
-pbisectores_fnys <- pbisectores_fnys %>%
-  mutate(agricultura_caza_silvicultura_y_pesca = ifelse(is.na(agricultura_caza_silvicultura_y_pesca),
-                                                        bruto_agricultura_caza_silvicultura_y_pesca/pib*100,
-                                                        agricultura_caza_silvicultura_y_pesca),
-         explotacion_minas_y_canteras = ifelse(is.na(explotacion_minas_y_canteras),
-                                                        bruto_explotacion_minas_y_canteras/pib*100,
-                                               explotacion_minas_y_canteras),
-        industria_manufacturera = ifelse(is.na(industria_manufacturera),
-                                         bruto_industria_manufacturera/pib*100,
-                                                        industria_manufacturera),
-        construccion_y_ega = ifelse(is.na(construccion_y_ega),
-                                    bruto_construccion_y_ega/pib*100,
-                                                        construccion_y_ega),
-         comercio_y_servicios = ifelse(is.na(comercio_y_servicios),
-                                                        bruto_comercio_y_servicios/pib*100,
-                                                        comercio_y_servicios),
-                                                        )
-
-#22 completo 2019-2022 %pib pb/pm con la suma de los % de los sectores 
-pbisectores_fnys <- pbisectores_fnys %>%
-  group_by(anio) %>% 
-  mutate(pib_pbpm = ifelse(is.na(pib_pbpm),
-                                      sum(c_across(agricultura_caza_silvicultura_y_pesca:comercio_y_servicios)),
-                           pib_pbpm)) %>% 
-  ungroup() 
-
-# seleccion variables
-pbisectores_fnys <- pbisectores_fnys %>%
-  select(anio, pib_pbpm, agricultura_caza_silvicultura_y_pesca:comercio_y_servicios)
+  mutate(
+    intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera = prop_intermediacion_finan*intermediacion_financiera_y_actividades_inmobiliarias_total,
+    intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler = prop_actividades_inmobiliarias*intermediacion_financiera_y_actividades_inmobiliarias_total,
+    administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr = prop_admin_pub*administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total,
+    administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios = prop_servicios_soc*administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total
+    
+  )
 
 
-#23 transformo los % de sector pb respecto pib pm a % sector pb respecto pib pb
-df_output <- pbisectores_fnys %>%
-  mutate(across(-c(anio, pib_pbpm), function(x) x/pib_pbpm*100)) %>% 
-  ungroup() 
+pbisectores_fnys <- pbisectores_fnys %>% 
+  mutate(pesca = pesca2) %>% 
+  select(-c("pesca2", 
+            starts_with("prop_"), ends_with("_total")))
+
+# se calcula la proporcion de cada sector sobre el total vab
+pbisectores_fnys <- pbisectores_fnys %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(-anio)))
+
+pbisectores_fnys <- pbisectores_fnys %>% 
+  mutate(across(-c(anio, total), function(x) 100*x/total)) %>% 
+  select(-total)
 
 
 
-# Control vs output previo -------
+# junto las series
+# seleccion de columnas limpieza de nombres y pivot longer
+pbisectores_indec <- pbisectores_indec %>% 
+  select(anio, starts_with("prop"))
 
+pbisectores_indec <- pbisectores_indec %>% 
+  rowwise() %>% 
+  mutate(prop_comercio_mayorista_minorista_hoteles_restaurantes = sum(c_across(c(prop_h_hoteles_y_restaurantes, 
+                                                                                 prop_g_comercio_mayorista_minorista_y_reparaciones))),
+         prop_otros_servicios = sum(c_across(prop_m_ensenanza:prop_p_hogares_privados_con_servicio_domestico)))
+
+pbisectores_indec <- pbisectores_indec %>% 
+  select(-c(prop_g_comercio_mayorista_minorista_y_reparaciones,
+            prop_h_hoteles_y_restaurantes, prop_m_ensenanza:prop_p_hogares_privados_con_servicio_domestico))
+
+colnames(pbisectores_indec) <- gsub("prop_._|prop_", "",
+     colnames(pbisectores_indec))
+
+pbisectores_indec <- pbisectores_indec %>% 
+  select(-producto_interno_bruto)
+
+pbisectores_fnys <- pbisectores_fnys %>% 
+  rename( otros_servicios = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios,
+         administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr,
+         intermediacion_financiera = intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera,
+         actividades_inmobiliarias_empresariales_y_de_alquiler = intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler,
+         comercio_mayorista_minorista_hoteles_restaurantes = comercio_al_por_mayor_y_menor_y_hoteles_y_restaurantes,
+         industria_manufacturera =industrias_manufactureras,
+         agricultura_ganaderia_caza_y_silvicultura = agricultura_caza_y_silvicultura,
+          )
+
+
+
+df_output <- bind_rows(pbisectores_fnys,
+                        pbisectores_indec) 
+
+
+df_output %>% 
+  filter(anio == 2004) %>% 
+  pivot_longer(cols = -anio) %>% 
+  group_by(name) %>% 
+  summarise(sd = stats::sd(value)/mean(value))
 
 df_output <- df_output %>% 
-  select(-pib_pbpm) %>% 
-  pivot_longer(cols = -c(anio), names_to = "sector", values_to = "valor") %>% 
-  mutate(sector = case_when(
-    grepl("agricultura", sector) ~ "Agricultura caza silvicultura y pesca",
-    grepl("cantera", sector) ~ "Explotacion minas y canteras",
-    grepl("construccion", sector) ~ "Construccion y Electricidad, Gas y Agua",
-    grepl("comercio", sector) ~ "Comercio y servicios",
-    grepl("industria", sector) ~ "Industria manufacturera",
-    T ~ NA_character_
-  ))
+  pivot_longer(cols = -anio, names_to = "sector", values_to = "valor")
+
+df_output <- df_output %>% 
+  mutate(valor = round(valor, 4)) %>% 
+  distinct()
 
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+# el control por el momento no tiene version previa de comparacion
 
-#-- Controlar Output ----
-
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  df_anterior,
-  pk = c("anio", "sector"),
-  drop_joined_df = F
-)
+# df_anterior <- argendataR::descargar_output(nombre = output_name,
+#                                             subtopico = subtopico,
+#                                             entrega_subtopico = "primera_entrega")
+# 
+# #-- Controlar Output ----
+# 
+# comparacion <- argendataR::comparar_outputs(
+#   df_output,
+#   df_anterior,
+#   pk = c("anio", "sector"),
+#   drop_joined_df = F
+# )
 
 
 
@@ -234,10 +200,13 @@ comparacion <- argendataR::comparar_outputs(
 
 
 df_output %>% 
-  write_output(output_name = output_name, fuentes = c("R36C13", "R36C9", "R38C7"),
+  write_output(output_name = output_name,
+               fuentes = c("R36C13", "R36C9", "R38C7"),
                subtopico = "ACECON",
                analista = "",
-               control = comparacion, 
-               pk = c("anio", "sector"),es_serie_tiempo = T, columna_indice_tiempo = "anio", nivel_agregacion = "pais",
+               pk = c("anio", "sector"),
+               es_serie_tiempo = T,
+               columna_indice_tiempo = "anio",
+               nivel_agregacion = "pais",
                etiquetas_indicadores =  list("sector" = "Sector"),
                unidades = list("valor"="Porcentaje del PIB a precios básicos") )
