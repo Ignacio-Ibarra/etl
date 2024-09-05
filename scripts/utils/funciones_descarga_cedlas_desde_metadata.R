@@ -26,7 +26,8 @@ subir.cedlas <- function(links.df, fuentes_raw.df , directorio_descarga, code_na
       
       actualizar_fuente_raw(id_fuente = id_fuente_raw, 
                             dir = directorio_descarga, 
-                            nombre = glue::glue("Indicadores Sociales de Argentina: {nombre}"))
+                            nombre = glue::glue("Indicadores Sociales de Argentina: {nombre}"),
+                            prompt = F)
       
     }else{
       
@@ -38,8 +39,7 @@ subir.cedlas <- function(links.df, fuentes_raw.df , directorio_descarga, code_na
                          fecha_descarga = Sys.Date(),
                          directorio = directorio_descarga,
                          path_raw = filename,
-                         script = code_name
-      )
+                         script = code_name)
       cat(filename, "\n")
     }
     
