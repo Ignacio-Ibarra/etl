@@ -5,8 +5,13 @@
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
+
+library(httr)
+library(dplyr)
+library(tidyr)
 require(WDI)
 library(sjlabelled)
+library(stringr)
 
 subtopico <- "CRECIM"
 output_name <- "pib_vs_expectativa"
@@ -19,38 +24,48 @@ indicator_code <- str_split_1(url, "/") %>% tail(.,1)
 
 # Descargo data usando wrapper https://github.com/vincentarelbundock/WDI
 data_pibpc_ppp <- WDI(indicator=indicator_code, country = 'all') %>% 
-  select(iso3 = iso3c, anio = year, pib_pc_ppp=`NY.GDP.PCAP.PP.KD`) %>% 
+  select(iso3 = iso3c, anio = year, pib_pc =`NY.GDP.PCAP.PP.KD`) %>% 
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(pib_pc_ppp)) %>% 
   dplyr::filter(!is.na(iso3)) %>% 
   sjlabelled::zap_labels() 
-
-library(httr)
 
 url_le <- "https://population.un.org/wpp/Download/Files/1_Indicator%20(Standard)/EXCEL_FILES/4_Mortality/WPP2024_MORT_F05_1_LIFE_EXPECTANCY_BY_AGE_BOTH_SEXES.xlsx"
 
 # Desactivo la verificacion de SSL
 options(download.file.method="libcurl"
         # , download.file.extra="-k -L --ssl-allow-unsafe-legacy-renegotiation"
-        )
+)
 
 
 destfile <- glue::glue("{tempdir()}/WPP2024_MORT_F05_1_LIFE_EXPECTANCY_BY_AGE_BOTH_SEXES.xlsx")
 
 download.file(url_le, destfile = destfile, mode = "wb")
 
-httr::GET(url_le, write_disk(destfile, overwrite = TRUE), config(ssl_verifypeer = FALSE))
+data_raw <- readxl::read_excel(destfile)
 
-data_life_exp <- readxl::read_excel(destfile)
+cols <- data_raw[12,] %>% as.matrix()
+
+data_raw <- data_raw[13:nrow(data_raw),]
+
+names(data_raw) <- cols
+
+data_clean <- data_raw %>% rename(iso3 = `ISO3 Alpha-code`, anio = Year) %>% 
+  select(all_of(c('iso3','anio',0:99,"100+"))) %>% 
+  dplyr::filter(!is.na(iso3)) %>% 
+  mutate(anio = as.integer(anio)) %>% 
+  pivot_longer(-one_of(c("iso3","anio")),
+               names_to = "edad",
+               values_to = "expectativa_vida")
 
 
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-df_output <- proceso
+df_output <- data_pibpc_ppp %>% 
+  left_join(data_clean %>% 
+              dplyr::filter(edad == "0") %>% 
+              select(-edad), by=join_by(iso3, anio)) %>% 
+  dplyr::filter(!is.na(expectativa_vida)) %>% 
+  dplyr::filter(!is.na(pib_pc_ppp)) %>% 
+  rename(expectativa_al_nacer = expectativa_vida)
 
 #-- Controlar Output ----
 
@@ -58,11 +73,15 @@ df_output <- proceso
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+
+
 comparacion <- argendataR::comparar_outputs(
   df_output,
+  df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  pk = c("iso3", "anio"), 
+  drop_joined_df = F
 )
 
 #-- Exportar Output ----
