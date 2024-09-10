@@ -3,6 +3,18 @@ library(sjlabelled)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
+next_update <- function(n_months){
+  periodicidad <- months(n_months)
+  fecha_actual <- Sys.Date()
+  ultima_fecha_mes <- lubridate::ceiling_date(fecha_actual, "month") - days(1)
+  fecha_actualizar <- ultima_fecha_mes + periodicidad
+  return(fecha_actualizar)
+  
+}
+
+periodicidad <- 4
+fecha_actualizar <- next_update(n_months = periodicidad)
+
 url <- "https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD"
 indicator_code <- str_split_1(url, "/") %>% tail(.,1)
 
@@ -28,7 +40,7 @@ database_abb <- "WDI"
 
 download_filename <- make_filename(database_abb, indicator_label = ind_label)
 
-data %>% write_csv_fundar(sprintf("data/_FUENTES/raw/%s",download_filename))
+data %>% write_csv_fundar(glue::glue("{tempdir()}/{download_filename}"))
 
 # agregar_fuente_raw(url = url,
 #                    nombre = ind_label,
@@ -40,4 +52,7 @@ data %>% write_csv_fundar(sprintf("data/_FUENTES/raw/%s",download_filename))
 #                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 12, actualizable = T, dir = "data/_FUENTES/raw/")
+actualizar_fuente_raw(id_fuente = 126,
+                      fecha_actualizar = as.character(fecha_actualizar),
+                      path_raw = download_filename
+)
