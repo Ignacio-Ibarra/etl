@@ -32,7 +32,8 @@ df_clean <- data_raw %>% rename(iso3 = `ISO3 Alpha-code`, anio = Year) %>%
   mutate(anio = as.integer(anio)) %>% 
   pivot_longer(-one_of(c("iso3","anio")),
                names_to = "edad",
-               values_to = "expectativa_vida")
+               values_to = "expectativa_vida",
+               values_transform = as.numeric)
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
                                     filter(codigo == fuente_raw) %>% 
@@ -47,11 +48,10 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
-agregar_fuente_clean(id_fuente_raw = id_fuente,
-                     path_clean = clean_filename,
-                     dir = tempdir(),
-                     nombre = "Life expectancy at exact age, both sexes (estimates)",
-                     script = code_name)
+# agregar_fuente_clean(id_fuente_raw = id_fuente,
+#                      df = df_clean, 
+#                      path_clean = clean_filename,
+#                      nombre = "Life expectancy at exact age, both sexes (estimates)",
+#                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 33,
-                        dir = tempdir())
+actualizar_fuente_clean(id_fuente_clean = 86, df=df_clean, path_clean = clean_filename)
