@@ -11,24 +11,21 @@ library(sjlabelled)
 subtopico <- "CRECIM"
 output_name <- "pib_absoluto_per_capita"
 analista = "Pablo Sonzogni"
-fuente1 <- ""
-fuente2 <- ""
+fuente1 <- "R214C0"
+fuente2 <- "R213C0"
 
 #-- Librerias ----
 
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-# readr::read_csv(argendataR::get_temp_path("RXXCX"))
-
-
-url <- "https://data.worldbank.org/indicator/NY.GDP.PCAP.CD"
-indicator_code <- str_split_1(url, "/") %>% tail(.,1)
+get_raw_path <- function(codigo){
+  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  df_fuentes_raw <- fuentes_raw() 
+  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
+  return(paste0(prefix, path_raw))
+}
 
 
 # Descargo data usando wrapper https://github.com/vincentarelbundock/WDI
-data_pibpc <- WDI(indicator=indicator_code, country = 'all') %>% 
+data_pibpc <- read_csv(get_raw_path(fuente1)) %>% 
   select(iso3 = iso3c, anio = year, pib_pc=`NY.GDP.PCAP.CD`) %>% 
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(pib_pc)) %>% 
@@ -37,12 +34,8 @@ data_pibpc <- WDI(indicator=indicator_code, country = 'all') %>%
   # dplyr::filter(!is.na(iso3) && !is.na(pib_pc) && iso3 != "")
 
 
-url <- "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD"
-indicator_code <- str_split_1(url, "/") %>% tail(.,1)
-
-
 # Descargo data usando wrapper https://github.com/vincentarelbundock/WDI
-data_pib <- WDI(indicator=indicator_code, country = 'all') %>% 
+data_pib <-read_csv(get_raw_path(fuente2)) %>% 
   select(iso3 = iso3c, anio = year, pib=`NY.GDP.MKTP.CD`) %>% 
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(pib)) %>% 
@@ -74,18 +67,6 @@ df_comparar <- data %>%
   
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
 
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-df_output <- data %>% 
-  filter(anio == max(anio)) %>% 
-  select(-anio, -pib, -pib_pc) %>% 
-  mutate(ranking_pib = as.numeric(ranking_pib),
-         ranking_pib_pc = as.numeric(ranking_pib_pc))
-
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
@@ -100,6 +81,16 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+#-- Procesamiento ----
+
+df_output <- data %>% 
+  filter(anio == max(anio)) %>% 
+  select(-anio, -pib, -pib_pc) %>% 
+  mutate(ranking_pib = as.numeric(ranking_pib),
+         ranking_pib_pc = as.numeric(ranking_pib_pc))
+
+
+
 #-- Exportar Output ----
 
 # Usar write_output con exportar = T para generar la salida
@@ -110,7 +101,7 @@ df_output %>%
     output_name = output_name,
     subtopico = subtopico,
     control = comparacion, 
-    fuentes = c(""),
+    fuentes = c(fente1, fuente2),
     analista = analista,
     pk = c("iso3"),
     columna_geo_referencia = "iso3",

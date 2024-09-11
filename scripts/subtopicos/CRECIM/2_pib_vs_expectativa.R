@@ -13,59 +13,59 @@ require(WDI)
 library(sjlabelled)
 library(stringr)
 
+
+
+get_raw_path <- function(codigo){
+  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  df_fuentes_raw <- fuentes_raw() 
+  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
+  return(paste0(prefix, path_raw))
+}
+
+get_clean_path <- function(codigo){
+  prefix <- "/srv/shiny-server/static/etl-fuentes2/clean/"
+  df_fuentes_clean <- fuentes_clean() 
+  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
+  return(paste0(prefix, path_clean))
+}
+
+
+
 subtopico <- "CRECIM"
 output_name <- "pib_vs_expectativa"
 analista = "Pablo Sonzogni"
-fuente1 <- ""
-
-url <- "https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD"
-indicator_code <- str_split_1(url, "/") %>% tail(.,1)
+fuente1 <- "R126C0"
+fuente2 <- "R215C86"
 
 
-# Descargo data usando wrapper https://github.com/vincentarelbundock/WDI
-data_pibpc_ppp <- WDI(indicator=indicator_code, country = 'all') %>% 
+# Cargo data desde server
+data_pibpc_ppp <- read_csv(get_raw_path(fuente1)) %>% 
   select(iso3 = iso3c, anio = year, pib_pc =`NY.GDP.PCAP.PP.KD`) %>% 
   dplyr::filter(iso3!="") %>% 
-  dplyr::filter(!is.na(pib_pc_ppp)) %>% 
+  dplyr::filter(!is.na(pib_pc)) %>% 
   dplyr::filter(!is.na(iso3)) %>% 
   sjlabelled::zap_labels() 
 
-url_le <- "https://population.un.org/wpp/Download/Files/1_Indicator%20(Standard)/EXCEL_FILES/4_Mortality/WPP2024_MORT_F05_1_LIFE_EXPECTANCY_BY_AGE_BOTH_SEXES.xlsx"
-
-# Desactivo la verificacion de SSL
-options(download.file.method="libcurl"
-        # , download.file.extra="-k -L --ssl-allow-unsafe-legacy-renegotiation"
-)
 
 
-destfile <- glue::glue("{tempdir()}/WPP2024_MORT_F05_1_LIFE_EXPECTANCY_BY_AGE_BOTH_SEXES.xlsx")
+data_le <- arrow::read_parquet(get_clean_path(fuente2)) %>% 
+  mutate(expectativa_vida = as.numeric(expectativa_vida))
 
-download.file(url_le, destfile = destfile, mode = "wb")
 
-data_raw <- readxl::read_excel(destfile)
-
-cols <- data_raw[12,] %>% as.matrix()
-
-data_raw <- data_raw[13:nrow(data_raw),]
-
-names(data_raw) <- cols
-
-data_clean <- data_raw %>% rename(iso3 = `ISO3 Alpha-code`, anio = Year) %>% 
-  select(all_of(c('iso3','anio',0:99,"100+"))) %>% 
-  dplyr::filter(!is.na(iso3)) %>% 
-  mutate(anio = as.integer(anio)) %>% 
-  pivot_longer(-one_of(c("iso3","anio")),
-               names_to = "edad",
-               values_to = "expectativa_vida")
+geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+  select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar, nivel_agregacion, es_iso) %>% 
+  dplyr::filter(es_iso == 1) %>% 
+  select(-es_iso)
 
 
 df_output <- data_pibpc_ppp %>% 
-  left_join(data_clean %>% 
+  left_join(data_le %>% 
               dplyr::filter(edad == "0") %>% 
               select(-edad), by=join_by(iso3, anio)) %>% 
   dplyr::filter(!is.na(expectativa_vida)) %>% 
-  dplyr::filter(!is.na(pib_pc_ppp)) %>% 
-  rename(expectativa_al_nacer = expectativa_vida)
+  dplyr::filter(!is.na(pib_pc)) %>% 
+  rename(expectativa_al_nacer = expectativa_vida) %>% 
+  left_join(geonomenclador, join_by(iso3))
 
 #-- Controlar Output ----
 
@@ -93,7 +93,7 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c(fuente1, fuente2),
     analista = analista,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
