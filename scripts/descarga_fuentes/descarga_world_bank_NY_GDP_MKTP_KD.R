@@ -2,25 +2,16 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-
-library(WDI)
 library(sjlabelled)
+library(WDI)
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
-next_update <- function(n_months){
-  periodicidad <- months(n_months)
-  fecha_actual <- Sys.Date()
-  ultima_fecha_mes <- lubridate::ceiling_date(fecha_actual, "month") - days(1)
-  fecha_actualizar <- ultima_fecha_mes + periodicidad
-  return(fecha_actualizar)
-  
-}
+periodicidad <- months(12)
+fecha_ultima_actualizacion <- as.Date("2024-07-31")
+fecha_actualizar <- fecha_ultima_actualizacion + periodicidad
 
-periodicidad <- 4
-fecha_actualizar <- next_update(n_months = periodicidad)
-
-url <- "https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD"
+url <- "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD"
 indicator_code <- str_split_1(url, "/") %>% tail(.,1)
 
 
@@ -41,6 +32,7 @@ make_filename <- function(database_abb, indicator_label){
 }
 
 
+
 database_abb <- "WDI"
 
 download_filename <- make_filename(database_abb, indicator_label = ind_label)
@@ -51,13 +43,12 @@ data %>% write_csv_fundar(glue::glue("{tempdir()}/{download_filename}"))
 #                    nombre = ind_label,
 #                    institucion = "Banco Mundial",
 #                    actualizable = T,
-#                    dir = "data/_FUENTES/raw/",
+#                    fecha_actualizar = as.character(fecha_actualizar),
 #                    path_raw = download_filename,
 #                    script = code_name,
 #                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 126,
-                      fecha_actualizar = as.character(fecha_actualizar),
-                      path_raw = download_filename
+actualizar_fuente_raw(id_fuente = 218,
+                      fecha_actualizar = as.character(fecha_actualizar) 
 )

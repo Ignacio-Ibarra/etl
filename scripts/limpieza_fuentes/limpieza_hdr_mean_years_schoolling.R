@@ -2,6 +2,7 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
+require(purrr)
 
 
 get_raw_path <- function(codigo){
@@ -13,34 +14,25 @@ get_raw_path <- function(codigo){
 
 
 
-id_fuente <- 215
+id_fuente <- 216
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 
 
-data_raw <- readxl::read_excel(get_raw_path(fuente_raw))
+df_raw <- read_csv(get_raw_path(fuente_raw)) 
 
-cols <- data_raw[12,] %>% as.matrix()
+indicator_name <- df_raw %>% distinct(indicator) %>% pull() %>% sub(".*- ","",.)
 
-data_raw <- data_raw[13:nrow(data_raw),]
-
-names(data_raw) <- cols
-
-df_clean <- data_raw %>% rename(iso3 = `ISO3 Alpha-code`, anio = Year) %>% 
-  select(all_of(c('iso3','anio',0:99,"100+"))) %>% 
-  dplyr::filter(!is.na(iso3)) %>% 
-  mutate(anio = as.integer(anio)) %>% 
-  pivot_longer(-one_of(c("iso3","anio")),
-               names_to = "edad",
-               values_to = "expectativa_vida",
-               values_transform = as.numeric)
+df_clean <- df_raw %>% 
+  mutate(iso3 = purrr::map_chr(country, .f = function(x){sub(" -.*","",x)}) ) %>% 
+  select(iso3, anio=year, mean_years_schoolling = value)
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
                                     filter(codigo == fuente_raw) %>% 
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-clean_filename <- glue::glue("{nombre_archivo_raw}_Estimaciones_CLEAN.parquet")
+clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
@@ -49,9 +41,9 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
-#                      df = df_clean, 
+#                      df = df_clean,
 #                      path_clean = clean_filename,
-#                      nombre = "Life expectancy at exact age, both sexes (estimates)",
+#                      nombre = indicator_name,
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 86, df=df_clean, path_clean = clean_filename)
+actualizar_fuente_clean(id_fuente_clean = 87, path_clean = clean_filename, directorio = tempdir())

@@ -17,11 +17,13 @@ fuente2 <- "R213C0"
 #-- Librerias ----
 
 get_raw_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
   df_fuentes_raw <- fuentes_raw() 
   path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
   return(paste0(prefix, path_raw))
 }
+
+
 
 
 # Descargo data usando wrapper https://github.com/vincentarelbundock/WDI
@@ -101,7 +103,7 @@ df_output %>%
     output_name = output_name,
     subtopico = subtopico,
     control = comparacion, 
-    fuentes = c(fente1, fuente2),
+    fuentes = c(fuente1, fuente2),
     analista = analista,
     pk = c("iso3"),
     columna_geo_referencia = "iso3",
