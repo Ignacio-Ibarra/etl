@@ -17,7 +17,7 @@ options(download.file.method="libcurl"
 
 download_filename <- "WPP2024_MORT_F05_1_LIFE_EXPECTANCY_BY_AGE_BOTH_SEXES.xlsx"
 
-destfile <- glue::glue("{tempdir()}/{filename}")
+destfile <- glue::glue("{tempdir()}/{download_filename}")
 
 download.file(url, destfile = destfile, mode = "wb")
 
