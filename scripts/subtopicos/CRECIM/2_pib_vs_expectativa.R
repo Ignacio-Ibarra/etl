@@ -16,14 +16,13 @@ library(stringr)
 
 
 get_raw_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
   df_fuentes_raw <- fuentes_raw() 
   path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
   return(paste0(prefix, path_raw))
 }
-
 get_clean_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/clean/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
   df_fuentes_clean <- fuentes_clean() 
   path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
   return(paste0(prefix, path_clean))
@@ -100,7 +99,9 @@ df_output %>%
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios constantes internacionales de 2021)",
+                                 "expectativa_al_nacer" = "Número promedio de años de vida restantes esperados por una cohorte hipotética de individuos al nacer que estarían sujetos durante el resto de sus vidas a las tasas de mortalidad de un año determinado"),
+    unidades = list('pib_pc' = "unidades",
+                    'expectativa_al_nacer' = "cantidad de años")
   )
 
