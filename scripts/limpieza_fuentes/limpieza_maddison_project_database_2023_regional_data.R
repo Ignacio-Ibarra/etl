@@ -17,6 +17,26 @@ fuente_raw <- sprintf("R%sC0",id_fuente)
 sheet_name = "Regional data"
 
 
+lookup <-c('East Asia' = 'EAS_MPD',
+              'Eastern Europe' = 'EEU_MPD',
+              'Latin America' = 'LAC_MPD',
+              'Middle East and North Africa' = 'MNA_MPD',
+              'South and South East Asia' = 'SEA_MPD',
+              'Sub Saharan Africa' = 'SSA_MPD',
+              'Western Europe' = 'WEU_MPD',
+              'Western Offshoots' = 'WOF_MPD',
+              'World' = 'WLD')
+
+regiones_MDP <- c("EAS_MPD" = "Asia Oriental (Maddison Project Database)",
+                  "EEU_MPD" = "Europa Oriental (Maddison Project Database)",
+                  "LAC_MPD" = "América Latina (Maddison Project Database)",
+                  "MNA_MPD" = "Medio Oriente y África del Norte (Maddison Project Database)",
+                  "SEA_MPD" = "Asia del Sur y Sudeste (Maddison Project Database)",
+                  "SSA_MPD" = "África Subsahariana (Maddison Project Database)",
+                  "WEU_MPD" = "Europa Occidental (Maddison Project Database)",
+                  "WOF_MPD" = "Ramificaciones de Occidente (Maddison Project Database)",
+                  "WLD" = "Mundo")
+
 
 df_raw <- readxl::read_excel(get_raw_path(fuente_raw), sheet = sheet_name, col_names = FALSE) 
 
@@ -33,13 +53,23 @@ df_raw_pop <- df_raw[3:nrow(df_raw), c(1,12:20)]
 cols <- c("anio", df_raw[2,12:19] %>% as.character(), "World")
 colnames(df_raw_pop) <- cols
 
+
 df_clean_pop <- df_raw_pop %>% 
   pivot_longer(cols = -anio, names_to = "region", values_to = 'pop') %>% 
-  dplyr::filter(!is.na(pop))
+  dplyr::filter(!is.na(pop)) %>% 
+  mutate(region = ifelse(region == "Sub Saharan SSA", "Sub Saharan Africa", region))
 
 
 df_clean <- df_clean_gdppc %>% 
-  left_join(df_clean_pop, join_by(anio, region))
+  left_join(df_clean_pop, join_by(anio, region)) %>% 
+  mutate(iso3 = lookup[region],
+         region = regiones_MDP[iso3],
+         gdppc = as.numeric(gdppc),
+         pop = as.numeric(pop)*1000,
+         pib = gdppc * pop
+         ) %>% 
+  select(anio, iso3, region, gdppc, pop, pib)
+
 
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 

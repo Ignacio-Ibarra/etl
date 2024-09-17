@@ -17,8 +17,28 @@ fuente_raw <- sprintf("R%sC0",id_fuente)
 sheet_name = "Full data"
 
 
+regiones_MDP <- c('East Asia' = "Asia Oriental (Maddison Project Database)",
+              'Eastern Europe' = "Europa Oriental (Maddison Project Database)",
+               'Latin America' = "América Latina (Maddison Project Database)",
+               'Middle East and North Africa' = "Medio Oriente y África del Norte (Maddison Project Database)",
+               'South and South East Asia' = "Asia del Sur y Sudeste (Maddison Project Database)",
+               'Sub Saharan Africa' = "África Subsahariana (Maddison Project Database)",
+               'Western Europe' = "Europa Occidental (Maddison Project Database)",
+               'Western Offshoots' = "Ramificaciones de Occidente (Maddison Project Database)",
+               'World' = "Mundo")
 
-df_clean <- readxl::read_excel(get_raw_path(fuente_raw), sheet = sheet_name) 
+
+geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+  select(iso3 = codigo_fundar, pais_nombre = desc_fundar, nivel_agregacion) 
+
+df_clean <- readxl::read_excel(get_raw_path(fuente_raw), sheet = sheet_name) %>% 
+  select(iso3 = countrycode, region, anio = year, gdppc, pop) %>%
+  mutate(region = regiones_MDP[region],
+         gdppc = as.numeric(gdppc),
+         pop = as.numeric(pop) * 1000,
+         pib = gdppc * pop) %>% 
+  left_join(geonomenclador, by = join_by(iso3))
+  
 
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
