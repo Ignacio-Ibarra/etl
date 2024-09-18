@@ -1,7 +1,7 @@
 source("scripts/subtopicos/CAMCLI/fuentes_CAMCLI.R")
 subtopico <-  "CAMCLI"
 analista <-  c("")
-entrega <- "datasets_update"
+entrega <- "datasets_segunda_entrega"
 
 
 archivos <- list.files(glue::glue("~/etl/scripts/subtopicos/{subtopico}/"))
