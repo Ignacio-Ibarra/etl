@@ -2,41 +2,60 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
-
-output_name <- "nombre del archivo de salida"
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
 
-#-- Parametros Generales ----
+subtopico <- "CRECIM"
+output_name <- "vab_por_provincia"
+analista = "Pablo Sonzogni"
+fuente1 <- "R221C92"
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
-#-- Procesamiento ----
+geoAr::get_provincias(nombre="Tucumán")
 
-df_output <- proceso
 
-#-- Controlar Output ----
+get_raw_path <- function(codigo){
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
+  df_fuentes_raw <- fuentes_raw() 
+  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
+  return(paste0(prefix, path_raw))
+}
 
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+get_clean_path <- function(codigo){
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
+  df_fuentes_clean <- fuentes_clean() 
+  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
+  return(paste0(prefix, path_clean))
+}
+
+
+# Cargo data desde server
+df_output <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
+  dplyr::filter(sector_de_actividad_economica == "Total sectores") %>% 
+  select(provincia_id, provincia_nombre = provincia, region, anio, vab_pb) %>% 
+  group_by(anio) %>% 
+  mutate(participacion = vab_pb / sum(vab_pb, na.rm = T)) %>% 
+  ungroup()
+
+
+
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")  
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
+  df_anterior = df_anterior,
+  df = df_output,
   nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  pk = c("anio", "provincia_nombre"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
+
+
+
+
+
 
 #-- Exportar Output ----
 
@@ -47,14 +66,16 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c(fuente1),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "provincia_id"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    columna_geo_referencia = "provincia_id",
+    nivel_agregacion = "provincia",
+    aclaraciones = "Este dataset a diferencia del analista posee pequeñas diferencias dado que el analista no contemplo la parte del VAB que no se distribuyó entre provincias",
+    etiquetas_indicadores = list("vab_pb" = "Valor Agregado Bruto a precios básicos, en millones de pesos a precios de 2004",
+                                 "participacion" = "Participacion de la provincia en el VAB nacional"),
+    unidades = list("vab_pb" = "Millones de pesos a precios de 2004",
+                    "participacion" = "unidades")
   )
-
