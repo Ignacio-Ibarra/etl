@@ -5,6 +5,7 @@ download.file(url = url_oferta_demanda_globales_pib_2004_2023,
               mode = "wb", # archivos tipo xlsx requieren escritura tipo binaria
               destfile = glue::glue("{tempdir()}/oferta_demanda_globales_pib_precios_corrientes_2004_2023.xls"))
 
+
 # agrego la fuente
 agregar_fuente_raw(url = "https://www.indec.gob.ar/ftp/cuadros/economia/sh_oferta_demanda_03_24.xls", 
                    institucion = "INDEC - Cuentas nacionales. Agregados macroeconómicos. PIB - Series trimestrales de oferta y demanda globales. Años 2004-2023", 
