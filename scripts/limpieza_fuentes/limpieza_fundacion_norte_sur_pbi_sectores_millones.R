@@ -1,7 +1,18 @@
-# carga
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-data <- readxl::read_excel(get_temp_path("R36C0"),
-                           sheet = 5, skip = 1)
+
+
+id_fuente <- 36
+fuente_raw <- sprintf("R%sC0",id_fuente)
+
+
+sheet_name <- "PBI por sectores"
+
+
+data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw),
+                           sheet = sheet_name, skip = 1)
 # rename anio
 data <- data %>% 
   rename(anio  = Año)
@@ -40,22 +51,31 @@ data <- data %>%
   mutate(valor = as.numeric(valor))
 
 # exlcusion de filas vacias por pivoteo o foramto del excel
-data <- data %>% 
+df_clean <- data %>% 
   filter(!is.na(valor))
 
-# guardar como csv
-write_csv_fundar(x = data,
-                 file = glue::glue("{tempdir()}/pbi_sect_prec_const_2004.csv"))
 
-# carga en sheet fuentes clean
+normalized_sheet_name <- sheet_name %>% janitor::make_clean_names(.)
 
-# agrego fuente clean
-agregar_fuente_clean(id_fuente_raw = 36, 
-                     dir = tempdir(),
-                     path_clean = "pbi_sect_prec_const_2004.csv",
-                     nombre = "PBI por sect - prec const (millones) - Cuentas Nacionales",
-                     script = "limpieza_fundacion_norte_sur_pbi_sectores_millones.R")
+clean_filename <- "pbi_sect_prec_const_2004.parquet"
 
-# actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 82)
+path_clean <- glue::glue("{tempdir()}/{clean_filename}")
+
+df_clean %>% arrow::write_parquet(., sink = path_clean)
+
+code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
+clean_title <- glue::glue("{titulo.raw} - {sheet_name}")
+
+# agregar_fuente_clean(id_fuente_raw = id_fuente,
+#                      df = df_clean,
+#                      path_clean = clean_filename,
+#                      nombre = clean_title,
+#                      script = code_name)
+
+actualizar_fuente_clean(id_fuente_clean = 82, path_clean = clean_filename, directorio = tempdir(), nombre = clean_title, script = code_name)
 
