@@ -123,5 +123,6 @@ df_output %>%
     descripcion_columnas = descripcion,
     cambio_nombre_cols = list("pais_nombre" = "iso3_desc_fundar"),
     unidades = list("particip_servicios_pib" = "unidades"),
+    alcaraciones = "Los datos correspondientes a la República Arábica de Yemen presentan diferencias sustanciales con respecto a los datos provistos por el analista"
   )
 
