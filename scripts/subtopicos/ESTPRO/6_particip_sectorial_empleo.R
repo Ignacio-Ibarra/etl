@@ -8,13 +8,14 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "particip_va_intensivos_id_bys"
+output_name <- "particip_sectorial_empleo"
 analista = "Gisella Pascuariello"
 
-# Casos correctos
-fuente1 <- "R225C97"
-fuente2 <- "R226C96"
-fuente3 <- "R227C0"
+
+fuente1 <- "R228C98"
+fuente2 <- "R228C99"
+fuente3 <- "R228C100"
+fuente4 <- "R229C0"
 
 
 colectar_fuentes <- function(pattern = "^fuente.*"){
@@ -54,74 +55,99 @@ get_clean_path <- function(codigo){
   return(paste0(prefix, path_clean))
 }
 
-# Traigo nomenclador desde google drive
-geonomenclador <- argendataR::get_nomenclador_geografico() %>%
-  select(iso3 = codigo_fundar, pais_nombre = desc_fundar, nivel_agregacion)
-
 
 # Cargo data desde server
 
+df_puestos_ar <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
+  dplyr::filter(edad_sexo == "Total general") %>%  
+  select(-edad_sexo) %>% 
+  replace_na(list(puestos_ar = 0))
 
-df_tiva <- arrow::read_parquet(get_clean_path(fuente1)) 
+df_puestos_anr <- arrow::read_parquet(get_clean_path(fuente2)) %>% 
+  dplyr::filter(edad_sexo == "Total general") %>%  
+  select(-edad_sexo) %>% 
+  replace_na(list(puestos_anr = 0))
 
-df_tiva_codes <- arrow::read_parquet(get_clean_path(fuente2)) %>% 
-  select(code, industry)
-
-df_clasif <- readxl::read_excel(argendataR::get_raw_path(fuente3)) %>% 
-  select(sector = ind, gran_sector = gran_sector_desc, intensidad = intensidad_id_ocde_desc)
-
-# Saco las que son agregaciones de df_tiva, quedandome solo con las que estan
-# en df_tiva_codes
-
-reemplazos_codigos <- list(
-  "A5_A7" = "ZSCA",
-  "WXD"   = "ROW",
-  "E"     = "ZEUR",
-  "EU28XEU15" = "EU13",
-  "W" = "WLD",
-  "F" = "F_ESTPRO", # Agregado al geonomenclador.json
-  "W_O" = "ZOTH",
-  "S2" = "EASIA",
-  "S2_S8" = "ZASI",
-  "NAFTA" = "NAFTA_ESTPRO", #Agregado al geonomenclador.json
-  "WXOECD" = "NONOECD",
-  "W_O" = "ZOTH"
-)
-
-df_output <- df_tiva %>% 
-  right_join(df_tiva_codes, join_by(sector == code)) %>% 
-  left_join(df_clasif, join_by(sector)) %>% 
-  group_by(anio, iso3, intensidad) %>% 
-  summarise(vab_usd = sum(vab_usd, na.rm=T)) %>% 
-  ungroup() %>% 
-  group_by(anio, iso3) %>% 
-  mutate(particip = vab_usd / sum(vab_usd, na.rm=T)) %>% 
-  ungroup() %>% 
-  dplyr::filter(intensidad == "Media y alta intensidad de I+D") %>% 
-  select(anio, iso3, particip_bys_alta_intensidad = particip) %>%
-  mutate(iso3 = recode(iso3, !!!reemplazos_codigos)) %>% 
-  left_join(geonomenclador, join_by(iso3)) 
+df_puestos_na <- arrow::read_parquet(get_clean_path(fuente3)) %>% 
+  dplyr::filter(edad_sexo == "Total general") %>%  
+  select(-edad_sexo) %>% 
+  replace_na(list(puestos_na = 0))
 
 
-df_output[df_output$iso3 == "NAFTA_ESTPRO", c("pais_nombre")] <- "Países miembros del NAFTA"
-df_output[df_output$iso3 == "F_ESTPRO", c("pais_nombre")] <- "África"
+df_puestos_total <- df_puestos_ar %>% 
+  left_join(df_puestos_anr, join_by(anio, letra, letra_desc)) %>% 
+  left_join(df_puestos_na, join_by(anio, letra, letra_desc)) %>% 
+  mutate(puestos_total = puestos_ar + puestos_anr + puestos_na) %>% 
+  select(anio, letra, puestos_total) %>% 
+  mutate(letra = case_when(
+    letra == "A + B" ~ "A_B",
+    letra %in% c("N", "O") ~ "N_O",
+    letra %in% c("L", "Q") ~ "L_Q",
+    TRUE ~ letra)) %>% 
+  group_by(anio, letra) %>% 
+  summarise(puestos_total_indec = sum(puestos_total, na.rm = T) * 1000)
+
+
+letras_indec <- unique(df_puestos_total$letra)
+
+
+df_fichas_cep <- read_csv(get_raw_path(fuente4)) %>% 
+  dplyr::filter(nombre_variable == "TOT_PUESTOS") %>% 
+  select(anio, letra = id_sector_productivo, puestos_total_cep = valor) %>% 
+  dplyr::filter(letra %in% letras_indec) %>% 
+  mutate(puestos_total_cep = as.numeric(puestos_total_cep))
+
+
+letra_desc_abrev <- list(
+     'A_B' =  'Agro y pesca',
+     'C' = 'Petróleo y minería',
+     'D' = 'Industria manufacturera',
+     'E' = 'Electricidad, gas y agua',
+     'F' = 'Construcción',
+     'G' = 'Comercio',
+     'H' = 'Hotelería y restaurantes',
+     'I' = 'Transporte y comunicaciones',
+     'J' = 'Finanzas',
+     'K' = 'Serv. inmobiliarios y profesionales',
+     'L_Q' =  'Adm. pública y defensa',
+     'M' = 'Enseñanza',
+     'N_O' =  'Serv. comunitarios, sociales y personales',
+     'P' = 'Servicio doméstico'
+     )
+
+
+df_output <- df_puestos_total %>% 
+  full_join(df_fichas_cep, join_by(anio, letra)) %>% 
+  mutate(
+    puestos = ifelse(anio < 2016, puestos_total_cep, puestos_total_indec)
+  ) %>% 
+  select(anio, letra, puestos) %>% 
+  mutate( 
+    id_tipo_sector = ifelse(letra %in% c('A_B', 'C', 'D', 'E', 'F'),1, 2),
+    tipo_sector = ifelse(letra %in% c('A_B', 'C', 'D', 'E', 'F'),'Bienes', 'Servicios'),
+    letra_desc_abrev = recode(letra, !!!letra_desc_abrev)
+    ) %>% 
+  group_by(anio) %>% 
+  mutate(share_sectorial = puestos / sum(puestos, na.rm=T)) %>% 
+  ungroup()
+
+
+
 
 
 # Modifico para que coincida con el nuevo formato
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
-  select(-iso3_desc_fundar, -es_agregacion) %>% 
-  mutate(iso3 = recode(iso3, !!!reemplazos_codigos)) %>% 
-  left_join(geonomenclador, join_by(iso3)) 
-
-df_anterior[df_anterior$iso3 == "NAFTA_ESTPRO", c("pais_nombre")] <- "Países miembros del NAFTA"
-df_anterior[df_anterior$iso3 == "F_ESTPRO", c("pais_nombre")] <- "África"
-
+  mutate(letra = case_when(
+    letra == "AB" ~ "A_B",
+    letra == "NO" ~ "N_O",
+    letra == "LQ" ~ "L_Q",
+    TRUE ~ letra)) 
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
   nombre = output_name,
-  pk = c("anio","iso3"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio","letra"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -172,12 +198,8 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("pais_nombre",
-                      "nivel_agregacion",
-                      "particip_bys_alta_intensidad"),
-  descripcion = c("Nombre de país",
-                  "Indica si el registro corresponde a un 'pais' o una 'agregacion' de países",
-                  "Participación en el PBI de los bienes y servicios de media y alta intensidad")
+  variable_nombre = c("puestos"),
+  descripcion = c("Cantidad de puestos")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -195,13 +217,9 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "letra"),
     es_serie_tiempo = T,
     columna_indice_tiempo = 'anio',
-    nivel_agregacion = "países",
     descripcion_columnas = descripcion,
-    cambio_nombre_cols = list("pais_nombre" = "iso3_desc_fundar",
-                              "nivel_agregacion" = "es_agregacion"),
-    unidades = list("particip_bys_alta_intensidad" = "unidades"),
-    aclaraciones = "Los codigos de varias agregaciones de países fueron modificados para ser armonizados con los códigos de agregaciones ya disponibles para OECD en el `argendataR::get_nomenclador_geografico()`"
-  )
+    unidades = list("share_sectorial" = "unidades", "puestos" = "unidades")
+    )
