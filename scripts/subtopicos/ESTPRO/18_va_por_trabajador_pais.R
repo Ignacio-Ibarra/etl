@@ -36,16 +36,19 @@ get_raw_path <- function(codigo){
 # Traducción al castellano de Gise Pascuariello 
 descriptores <- haven::read_dta(get_raw_path(fuente2)) 
 
-
-icio_tables <-  arrow::read_parquet(get_clean_path("R226C96")) %>% 
-  select(old_code, code)
+# Me lo traigo pero no es una fuente utilizada
+icio_tables <-  arrow::read_parquet(get_clean_path("R226C96")) 
 
 
 # Traigo nomenclador desde google drive
 geonomenclador <- argendataR::get_nomenclador_geografico() %>%
   select(iso3 = codigo_fundar, pais_nombre = desc_fundar, nivel_agregacion)
 
-df_clean <- arrow::read_parquet(get_clean_path(fuente1))
+df_clean <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
+  mutate(anio = as.integer(anio)) %>% 
+  rename(letra = codigo_act) %>% 
+  dplyr::filter(letra %in% LETTERS)
+
 
 
 # reemplazo codigo de países
@@ -69,12 +72,8 @@ reemplazos_codigos <- list(
 
 base <- df_clean %>% 
   select(-desc_act) %>% 
-  right_join(descriptores, join_by(codigo_act == tim_code)) %>% 
+  left_join(descriptores %>% distinct(letra, letra_desc_abrev = letra_desc), join_by(letra)) %>% 
   dplyr::filter(!is.na(valor_usd_por_emp)) %>% 
-  select(-codigo_act, -tim_code_desc) %>% 
-  group_by(iso3, anio, letra, letra_desc_abrev = letra_desc) %>% 
-  summarise(valor_usd_por_emp = mean(valor_usd_por_emp, na.rm=T)) %>% 
-  ungroup() %>% 
   mutate(iso3 = recode(iso3, !!!reemplazos_codigos)) %>%
   left_join(geonomenclador, join_by(iso3))
 
@@ -95,7 +94,8 @@ df_output <- base %>%
 
 # Modifico para que coincida con el nuevo formato
 df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
-   mutate(iso3 = recode(iso3, !!!reemplazos_codigos)) %>% 
+   mutate(iso3 = recode(iso3, !!!reemplazos_codigos),
+          anio = as.integer(anio))  %>% 
   select(-es_agregacion, -iso3_desc_fundar) %>% 
   left_join(geonomenclador, join_by(iso3))
   
@@ -159,14 +159,10 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("tim_code",
-                      "tim_code_desc",
-                      "intensidad_ocde",
-                      "pais_nombre"),
-  descripcion = c("Código de actividad económica en la base de datos TiM de OCDE",
-                  "Descripción de la actividad económica, en español",
-                  "Nivel de intensidad de uso de la tecnología, basado en OCDE",
-                  "Nombre del país de referencia")
+  variable_nombre = c("pais_nombre",
+                      "nivel_agregacion"),
+  descripcion = c("Nombre de país o agregación de países",
+                  "Describe si el registro refiere a un 'pais' o 'agregacion' de países")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -201,37 +197,40 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3", "tim_code"),
+    control = comparacion, 
+    pk = c("anio", "iso3", "letra"),
     es_serie_tiempo = T,
     columna_indice_tiempo = 'anio',
+    columna_geo_referencia = 'iso3',
+    cambio_nombre_cols = list('pais_nombre' = 'iso3_desc_fundar', 'nivel_agregacion' = 'es_agregacion'),
     descripcion_columnas = descripcion,
-    unidades = list("valor" = "miles")
+    unidades = list("valor_relativo_arg" = "unidades")
   )
 
 
-joined_df <- comparacion$joined_df
-
-# Conozco cuales son mis primary keys
-primary_keys <- c('anio','iso3','letra')
-
-# Genero una columna de etiquetas para el tooltip, con las columnas que son pk
-joined_df$label <- apply(joined_df[primary_keys], 1, function(row) paste(row, collapse = " - "))
-
-# Conozco la columna numérica que quiero comparar. 
-col_comparar <- 'valor_relativo_arg'
-cols_comp <- paste0(col_comparar, c('.x','.y'))
-col_x <- cols_comp[1]
-col_y <- cols_comp[2]
-
-# Genero scatter de ggplot
-scatter <-  ggplot(joined_df, aes(x = !!sym(col_x), y = !!sym(col_y), label = label))+
-  geom_point() +
-  geom_abline(slope = 1,color = "red", alpha = 0.7) +
-  theme_minimal() +
-  labs(title = "Scatterplot dinámico", x = cols_comp[1], y = cols_comp[2])
-
-# Agregar interactividad con plotly
-interactive_scatter <- plotly::ggplotly(scatter, tooltip = 'label')
-
-# Mostrar el scatter interactivo
-interactive_scatter
+# joined_df <- comparacion$joined_df
+# 
+# # Conozco cuales son mis primary keys
+# primary_keys <- c('anio','iso3','letra')
+# 
+# # Genero una columna de etiquetas para el tooltip, con las columnas que son pk
+# joined_df$label <- apply(joined_df[primary_keys], 1, function(row) paste(row, collapse = " - "))
+# 
+# # Conozco la columna numérica que quiero comparar.
+# col_comparar <- 'valor_relativo_arg'
+# cols_comp <- paste0(col_comparar, c('.x','.y'))
+# col_x <- cols_comp[1]
+# col_y <- cols_comp[2]
+# 
+# # Genero scatter de ggplot
+# scatter <-  ggplot(joined_df, aes(x = !!sym(col_x), y = !!sym(col_y), label = label))+
+#   geom_point() +
+#   geom_abline(slope = 1,color = "red", alpha = 0.7) +
+#   theme_minimal() +
+#   labs(title = "Scatterplot dinámico", x = cols_comp[1], y = cols_comp[2])
+# 
+# # Agregar interactividad con plotly
+# interactive_scatter <- plotly::ggplotly(scatter, tooltip = 'label')
+# 
+# # Mostrar el scatter interactivo
+# interactive_scatter
