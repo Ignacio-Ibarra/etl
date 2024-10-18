@@ -8,10 +8,12 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "pib_por_ocupado"
+output_name <- "vab_sectorial_provincia"
 analista = "Gisella Pascuariello"
 
-fuente1 <- "R92C15"
+fuente1 <- "R221C92"
+fuente2 <- "R236C0"
+
 
 get_clean_path <- function(codigo){
   prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
@@ -29,27 +31,45 @@ get_raw_path <- function(codigo){
 }
 
 
-geonomenclador <- argendataR::get_nomenclador_geografico()
+df_cepal <- arrow::read_parquet(get_clean_path(fuente1)) 
 
-df_pwt <- arrow::read_parquet(get_clean_path(fuente1)) 
+dicc_sectores <- readxl::read_excel(get_raw_path(fuente2))
 
-df_output <- df_pwt %>% 
-  select(iso3 = countrycode, anio = year, rgdpna, emp) %>% 
-  mutate(pib_por_ocupado = rgdpna / emp) %>% 
-  select(-rgdpna, -emp) %>% 
-  left_join(geonomenclador %>% select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar), join_by(iso3)) %>% 
-  drop_na(pib_por_ocupado) %>% 
-  select(anio, iso3, pais_nombre, continente_fundar, pib_por_ocupado)
-
+df_output <- df_cepal %>% 
+  dplyr::filter(!(provincia == "No distribuido")) %>% 
+  mutate(
+    gran_region = case_when(
+      provincia_id %in% c(2, 6, 14, 30, 42, 50, 70, 74, 82) ~ "Centro",
+      provincia_id %in% c(10, 18, 22, 34, 38, 46, 54, 66, 86, 90) ~ "Norte",
+      provincia_id %in% c(26, 58, 62, 78, 94) ~ "Sur",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  left_join(dicc_sectores %>% select(letra, dos_digitos_desc, letra_desc_abrev), join_by(sector_de_actividad_economica == dos_digitos_desc)) %>%
+  drop_na(letra) %>% 
+  group_by(anio, gran_region, provincia_id, provincia, letra, letra_desc_abrev) %>% 
+  summarise(
+    vab_pb = sum(vab_pb, na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  mutate(tipo_sector = ifelse(letra %in% c('A', 'B', 'C', 'D', 'E', 'F'),'Bienes', 'Servicios')) %>% 
+  group_by(anio, provincia) %>% 
+  mutate(
+    share_vab_sectorial = vab_pb / sum(vab_pb, na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  select(-vab_pb)
 
 
 # Modifico para que coincida con el nuevo formato
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+  rename(gran_region = gran_region_desc) %>% 
+  select(-gran_region_id)
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("anio","iso3"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio","letra", "provincia_id"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -99,10 +119,31 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
+
+gran_region_desc <- df_cepal %>% 
+  dplyr::filter(!(provincia == "No distribuido")) %>% 
+  mutate(
+    gran_region = case_when(
+      provincia_id %in% c(2, 6, 14, 30, 42, 50, 70, 74, 82) ~ "Centro",
+      provincia_id %in% c(10, 18, 22, 34, 38, 46, 54, 66, 86, 90) ~ "Norte",
+      provincia_id %in% c(26, 58, 62, 78, 94) ~ "Sur",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  distinct(provincia, gran_region) %>% 
+  group_by(gran_region) %>% 
+  summarise(concatenado = stringr::str_c(provincia, collapse=", ")) %>% 
+  ungroup() %>% 
+  mutate(concatenado2 = paste0(gran_region,": ", concatenado)) %>%
+  pull(concatenado2) %>%
+  paste0(., collapse = "; ") %>% 
+  paste0("Región de referencia: 'Centro', 'Norte' y 'Sur'. Las provincias que las componen son: ", .)
+
+
+
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("pais_nombre"),
-  descripcion = c("Nombre de país de referencia",
-                  "PIB real a precios nacionales constantes de 2017 (en millones de dólares estadounidenses de 2017), por ocupado")
+  variable_nombre = c("gran_region"),
+  descripcion = gran_region_desc
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -137,11 +178,11 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "letra", "provincia_id"),
     es_serie_tiempo = T,
-    control = comparacion, 
     columna_indice_tiempo = 'anio',
-    columna_geo_referencia = 'iso3',
     descripcion_columnas = descripcion,
-    unidades = list("pib_por_ocupado" = "millones de dólares de 2017")
+    cambio_nombre_cols = list('gran_region' = 'gran_region_desc'),
+    unidades = list("share_vab_sectorial" = "unidades"),
+    aclaracion = "En la descripción de las columnas se detalla cuál es la composicón de provincias de cada `gran_region`"
   )

@@ -8,7 +8,7 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "pib_por_ocupado"
+output_name <- "productividad_internacional"
 analista = "Gisella Pascuariello"
 
 fuente1 <- "R92C15"
@@ -34,12 +34,16 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 df_pwt <- arrow::read_parquet(get_clean_path(fuente1)) 
 
 df_output <- df_pwt %>% 
-  select(iso3 = countrycode, anio = year, rgdpna, emp) %>% 
-  mutate(pib_por_ocupado = rgdpna / emp) %>% 
-  select(-rgdpna, -emp) %>% 
-  left_join(geonomenclador %>% select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar), join_by(iso3)) %>% 
-  drop_na(pib_por_ocupado) %>% 
-  select(anio, iso3, pais_nombre, continente_fundar, pib_por_ocupado)
+  select(iso3 = countrycode, anio = year, rgdpna, emp, avh) %>% 
+  mutate(`Productividad por ocupado` = rgdpna / emp,
+         `Productividad por hora` = rgdpna / (emp * avh)) %>% 
+  select(-rgdpna, -emp, -avh) %>% 
+  pivot_longer(!all_of(c('iso3', 'anio')), 
+               names_to = "productividad_tipo",
+               values_to = 'valor') %>% 
+  left_join(geonomenclador %>% select(iso3 = codigo_fundar, pais_nombre = desc_fundar), join_by(iso3)) %>% 
+  drop_na(valor) %>% 
+  select(anio, iso3, pais_nombre, productividad_tipo, valor)
 
 
 
@@ -49,7 +53,7 @@ df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = sub
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("anio","iso3"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio","iso3", "productividad_tipo"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -100,9 +104,10 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("pais_nombre"),
+  variable_nombre = c("pais_nombre", 
+                      "valor"),
   descripcion = c("Nombre de país de referencia",
-                  "PIB real a precios nacionales constantes de 2017 (en millones de dólares estadounidenses de 2017), por ocupado")
+                  "PIB real a precios nacionales constantes de 2017 (en millones de dólares estadounidenses de 2017)")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -137,11 +142,12 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "iso3", "productividad_tipo"),
     es_serie_tiempo = T,
     control = comparacion, 
     columna_indice_tiempo = 'anio',
     columna_geo_referencia = 'iso3',
     descripcion_columnas = descripcion,
-    unidades = list("pib_por_ocupado" = "millones de dólares de 2017")
+    unidades = list("valor" = "millones de dólares de 2017"),
+    aclaracion = "Se eliminan las filas con nulos"
   )
