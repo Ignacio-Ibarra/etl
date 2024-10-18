@@ -2,9 +2,6 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-limpiar_temps()
-
-
 id_fuente <- 35
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
@@ -16,12 +13,7 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
 
 # Lectura datos 
 
-SHEET_NAME <- "VAB_pb"
-
-
-sheets <- readxl::excel_sheets(argendataR::get_raw_path(fuente_raw))
-
-# leer los datos
+SHEET_NAME <- "Puestos"
 serie_cgi <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), sheet = SHEET_NAME)
 
 
@@ -37,7 +29,6 @@ no_drop <- function(col) {
 
 diccionario_letra <- serie_cgi[1:2,] %>% select_if(~ no_drop(.)) %>% t() %>% as.data.frame()
 names(diccionario_letra) <- c("letra","sector")
-
 
 # asigno nombres de columnas limpios tomando fila 2
 names(serie_cgi) <- serie_cgi[2,]
@@ -68,7 +59,7 @@ serie_cgi <- serie_cgi[,!sapply(serie_cgi, function(x) {sum(is.na(x)) == length(
 # pivoteo a la long estricto, agrego col unidades y paso valores de millones a unidades
 df_clean <- serie_cgi %>% 
   pivot_longer(cols = -c(anio, trim),
-               names_to = "indicador", values_to = "vab_pb", values_transform = as.numeric) %>% 
+               names_to = "indicador", values_to = "puestos", values_transform = as.numeric) %>% 
   left_join(diccionario_letra, join_by(indicador == sector))
 
 norm_sheet <- str_to_lower(SHEET_NAME) %>% str_replace(., " ", "_")
@@ -87,16 +78,13 @@ titulo.raw <- fuentes_raw() %>%
 
 clean_title <- glue::glue("{titulo.raw} - Cuadro: {SHEET_NAME}")
 
-# lineas de carga de fuente clean en sheet del drive
-# solo se ejecutan al cargar por primera vez la fuente clean
+# agregar_fuente_clean(id_fuente_raw = id_fuente,
+#                      path_clean = clean_filename,
+#                      nombre = clean_title,
+#                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir",
+#                      script = code_name)
 
-# agregar_fuente_clean(id_fuente_raw = 35,
-#                      path_clean = "serie_cgi_vab_indec.csv",
-#                      nombre = "CGI - VAB por sector",
-#                      script = "limpieza_cgi_vab_mano_de_obra_indec.R")
-
-# linea de actualizacion para futuras cargas
-actualizar_fuente_clean(id_fuente_clean = 5, 
+actualizar_fuente_clean(id_fuente_clean = 106,
                         path_clean = clean_filename,
                         nombre = clean_title, 
                         script = code_name)

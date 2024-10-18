@@ -8,10 +8,10 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "pib_por_ocupado"
+output_name <- "particip_mujer"
 analista = "Gisella Pascuariello"
 
-fuente1 <- "R92C15"
+fuente1 <- "R235C105" 
 
 get_clean_path <- function(codigo){
   prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
@@ -29,29 +29,47 @@ get_raw_path <- function(codigo){
 }
 
 
-geonomenclador <- argendataR::get_nomenclador_geografico()
+df_bel_puestos_priv <- arrow::read_parquet(get_clean_path(fuente1))
 
-df_pwt <- arrow::read_parquet(get_clean_path(fuente1)) 
 
-df_output <- df_pwt %>% 
-  select(iso3 = countrycode, anio = year, rgdpna, emp) %>% 
-  mutate(pib_por_ocupado = rgdpna / emp) %>% 
-  select(-rgdpna, -emp) %>% 
-  left_join(geonomenclador %>% select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar), join_by(iso3)) %>% 
-  drop_na(pib_por_ocupado) %>% 
-  select(anio, iso3, pais_nombre, continente_fundar, pib_por_ocupado)
+anios_completos <- df_bel_puestos_priv %>% distinct(periodo_trimestre_ano) %>% 
+  mutate(
+    anio = as.integer(str_extract(periodo_trimestre_ano, ".*(\\d{4})", group = 1))
+  ) %>% 
+  group_by(anio) %>%
+  mutate(selection = n() == 4) %>% 
+  dplyr::filter(selection) %>% 
+  distinct(anio) %>% pull()
+  
 
+
+df_output <- df_bel_puestos_priv %>% 
+  mutate(
+    anio = as.integer(str_extract(periodo_trimestre_ano, ".*(\\d{4})", group = 1))
+  ) %>% 
+  group_by(anio, letra, letra_desc_abrev, sexo) %>% 
+  summarise(puestos = mean(puestos, na.rm = T)) %>% 
+  ungroup() %>% 
+  group_by(anio, letra, letra_desc_abrev) %>% 
+  mutate(porc_mujeres = puestos / sum(puestos, na.rm = T)) %>% 
+  ungroup() %>% 
+  dplyr::filter(sexo == "Mujer") %>% 
+  select(-sexo, -puestos) %>% 
+  dplyr::filter(anio %in% anios_completos)
+  
 
 
 # Modifico para que coincida con el nuevo formato
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("anio","iso3"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio","letra"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
+
 
 
 #-- Exportar Output ----
@@ -99,15 +117,7 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
-etiquetas_nuevas <- data.frame(
-  variable_nombre = c("pais_nombre"),
-  descripcion = c("Nombre de país de referencia",
-                  "PIB real a precios nacionales constantes de 2017 (en millones de dólares estadounidenses de 2017), por ocupado")
-)
-
-descripcion <- armador_descripcion(metadatos = metadatos,
-                                   etiquetas_nuevas = etiquetas_nuevas,
-                                   output_cols = output_cols)
+descripcion <- armador_descripcion(metadatos = metadatos,output_cols = output_cols)
 
 
 colectar_fuentes <- function(pattern = "^fuente.*"){
@@ -137,11 +147,10 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "letra"),
     es_serie_tiempo = T,
-    control = comparacion, 
     columna_indice_tiempo = 'anio',
-    columna_geo_referencia = 'iso3',
     descripcion_columnas = descripcion,
-    unidades = list("pib_por_ocupado" = "millones de dólares de 2017")
+    unidades = list("porc_mujeres" = "unidades")
   )
+

@@ -8,10 +8,15 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "pib_por_ocupado"
+output_name <- "va_por_trabajador_pais"
 analista = "Gisella Pascuariello"
 
-fuente1 <- "R92C15"
+fuente1 <- "R233C104"
+fuente2 <- "R234C0"
+fuente3 <- "R227C0"
+
+
+
 
 get_clean_path <- function(codigo){
   prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
@@ -19,7 +24,6 @@ get_clean_path <- function(codigo){
   path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
   return(paste0(prefix, path_clean))
 }
-
 
 get_raw_path <- function(codigo){
   prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
@@ -29,29 +33,84 @@ get_raw_path <- function(codigo){
 }
 
 
-geonomenclador <- argendataR::get_nomenclador_geografico()
+# Traducción al castellano de Gise Pascuariello 
+descriptores <- haven::read_dta(get_raw_path(fuente2)) 
 
-df_pwt <- arrow::read_parquet(get_clean_path(fuente1)) 
+# Me lo traigo pero no es una fuente utilizada
+icio_tables <-  arrow::read_parquet(get_clean_path("R226C96")) 
 
-df_output <- df_pwt %>% 
-  select(iso3 = countrycode, anio = year, rgdpna, emp) %>% 
-  mutate(pib_por_ocupado = rgdpna / emp) %>% 
-  select(-rgdpna, -emp) %>% 
-  left_join(geonomenclador %>% select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar), join_by(iso3)) %>% 
-  drop_na(pib_por_ocupado) %>% 
-  select(anio, iso3, pais_nombre, continente_fundar, pib_por_ocupado)
 
+# Traigo nomenclador desde google drive
+geonomenclador <- argendataR::get_nomenclador_geografico() %>%
+  select(iso3 = codigo_fundar, pais_nombre = desc_fundar, nivel_agregacion)
+
+df_clean <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
+  mutate(anio = as.integer(anio)) %>% 
+  rename(letra = codigo_act) %>% 
+  dplyr::filter(letra %in% LETTERS)
+
+
+
+# reemplazo codigo de países
+reemplazos_codigos <- list(
+  "A5_A7" = "ZSCA",
+  "WXD"   = "ROW",
+  "E"     = "ZEUR",
+  "EU28XEU15" = "EU13",
+  "W" = "WLD",
+  "F" = "F_ESTPRO", # Agregado al geonomenclador.json
+  "W_O" = "ZOTH",
+  "S2" = "EASIA",
+  "S2_S8" = "ZASI",
+  "ZNAM" = "NAFTA_ESTPRO", #Agregado al geonomenclador.json
+  "NAFTA" = "NAFTA_ESTPRO",
+  "WXOECD" = "NONOECD",
+  "W_O" = "ZOTH"
+)
+
+
+
+base <- df_clean %>% 
+  select(-desc_act) %>% 
+  left_join(descriptores %>% distinct(letra, letra_desc_abrev = letra_desc), join_by(letra)) %>% 
+  dplyr::filter(!is.na(valor_usd_por_emp)) %>% 
+  mutate(iso3 = recode(iso3, !!!reemplazos_codigos)) %>%
+  left_join(geonomenclador, join_by(iso3))
+
+base[base$iso3 == "NAFTA_ESTPRO", c("pais_nombre")] <- "Países miembros del NAFTA"
+base[base$iso3 == "F_ESTPRO", c("pais_nombre")] <- "África"
+
+
+argentina_df <- base %>% dplyr::filter(iso3 == "ARG") %>% select(anio, letra, indice = valor_usd_por_emp) 
+
+df_output <- base %>% 
+  left_join(argentina_df, join_by(anio, letra)) %>% 
+  mutate(
+    valor_relativo_arg = 100 * valor_usd_por_emp / indice
+  ) %>% 
+  select(-valor_usd_por_emp, -indice) %>% 
+  dplyr::filter(valor_relativo_arg >= 0) # borro un registro raro de Malta. 
 
 
 # Modifico para que coincida con el nuevo formato
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+   mutate(iso3 = recode(iso3, !!!reemplazos_codigos),
+          anio = as.integer(anio))  %>% 
+  select(-es_agregacion, -iso3_desc_fundar) %>% 
+  left_join(geonomenclador, join_by(iso3))
+  
+
+df_anterior[df_anterior$iso3 == "NAFTA_ESTPRO", c("pais_nombre")] <- "Países miembros del NAFTA"
+df_anterior[df_anterior$iso3 == "F_ESTPRO", c("pais_nombre")] <- "África"
+
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("anio","iso3"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio","iso3", "letra"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
+
 
 
 #-- Exportar Output ----
@@ -100,9 +159,10 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("pais_nombre"),
-  descripcion = c("Nombre de país de referencia",
-                  "PIB real a precios nacionales constantes de 2017 (en millones de dólares estadounidenses de 2017), por ocupado")
+  variable_nombre = c("pais_nombre",
+                      "nivel_agregacion"),
+  descripcion = c("Nombre de país o agregación de países",
+                  "Describe si el registro refiere a un 'pais' o 'agregacion' de países")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -137,11 +197,40 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3"),
-    es_serie_tiempo = T,
     control = comparacion, 
+    pk = c("anio", "iso3", "letra"),
+    es_serie_tiempo = T,
     columna_indice_tiempo = 'anio',
     columna_geo_referencia = 'iso3',
+    cambio_nombre_cols = list('pais_nombre' = 'iso3_desc_fundar', 'nivel_agregacion' = 'es_agregacion'),
     descripcion_columnas = descripcion,
-    unidades = list("pib_por_ocupado" = "millones de dólares de 2017")
+    unidades = list("valor_relativo_arg" = "unidades")
   )
+
+
+# joined_df <- comparacion$joined_df
+# 
+# # Conozco cuales son mis primary keys
+# primary_keys <- c('anio','iso3','letra')
+# 
+# # Genero una columna de etiquetas para el tooltip, con las columnas que son pk
+# joined_df$label <- apply(joined_df[primary_keys], 1, function(row) paste(row, collapse = " - "))
+# 
+# # Conozco la columna numérica que quiero comparar.
+# col_comparar <- 'valor_relativo_arg'
+# cols_comp <- paste0(col_comparar, c('.x','.y'))
+# col_x <- cols_comp[1]
+# col_y <- cols_comp[2]
+# 
+# # Genero scatter de ggplot
+# scatter <-  ggplot(joined_df, aes(x = !!sym(col_x), y = !!sym(col_y), label = label))+
+#   geom_point() +
+#   geom_abline(slope = 1,color = "red", alpha = 0.7) +
+#   theme_minimal() +
+#   labs(title = "Scatterplot dinámico", x = cols_comp[1], y = cols_comp[2])
+# 
+# # Agregar interactividad con plotly
+# interactive_scatter <- plotly::ggplotly(scatter, tooltip = 'label')
+# 
+# # Mostrar el scatter interactivo
+# interactive_scatter

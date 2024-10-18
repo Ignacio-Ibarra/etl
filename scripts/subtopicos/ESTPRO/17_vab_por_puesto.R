@@ -8,10 +8,11 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "pib_por_ocupado"
+output_name <- "vab_por_puesto"
 analista = "Gisella Pascuariello"
 
-fuente1 <- "R92C15"
+fuente1 <- "R35C5" # sheet VAB_pb
+fuente2 <- "R35C106" # sheet VAB_pb
 
 get_clean_path <- function(codigo){
   prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
@@ -28,28 +29,50 @@ get_raw_path <- function(codigo){
   return(paste0(prefix, path_raw))
 }
 
+letra = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P')
+letra_desc_abrev = c('Agro', 'Pesca', 'Petróleo y minería', 'Industria manufacturera', 
+                     'Electricidad, gas y agua', 'Construcción', 'Comercio', 'Hotelería y restaurantes', 
+                     'Transporte y comunicaciones', 'Finanzas', 'Serv. inmobiliarios y profesionales', 
+                     'Adm. pública y defensa', 'Enseñanza', 'Salud', 'Serv. comunitarios, sociales y personales', 'Servicio doméstico')
 
-geonomenclador <- argendataR::get_nomenclador_geografico()
+dicc_abrev <- data.frame(letra, letra_desc_abrev)
 
-df_pwt <- arrow::read_parquet(get_clean_path(fuente1)) 
+df_vabpb <-  arrow::read_parquet(get_clean_path(fuente1)) %>% 
+  drop_na(vab_pb) %>% 
+  dplyr::filter(!is.na(letra)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  select(-indicador, -trim)
 
-df_output <- df_pwt %>% 
-  select(iso3 = countrycode, anio = year, rgdpna, emp) %>% 
-  mutate(pib_por_ocupado = rgdpna / emp) %>% 
-  select(-rgdpna, -emp) %>% 
-  left_join(geonomenclador %>% select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar), join_by(iso3)) %>% 
-  drop_na(pib_por_ocupado) %>% 
-  select(anio, iso3, pais_nombre, continente_fundar, pib_por_ocupado)
 
+df_puestos <-  arrow::read_parquet(get_clean_path(fuente2)) %>% 
+  drop_na(puestos) %>% 
+  dplyr::filter(!is.na(letra)) %>% 
+  dplyr::filter(trim == "Total") %>% 
+  select(-indicador, -trim)
+
+df_output <- df_vabpb %>% 
+  left_join(df_puestos, join_by(anio, letra)) %>% 
+  group_by(anio) %>% 
+  mutate(
+    cociente_economia = sum(vab_pb) / sum(puestos)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    vab_pb_por_puesto = vab_pb / puestos,
+    valor_relativo_economia = 100 * vab_pb_por_puesto / cociente_economia
+  ) %>% 
+  left_join(dicc_abrev, join_by(letra)) %>%
+  select(anio, letra, letra_desc_abrev, vab_pb_por_puesto, valor_relativo_economia)
 
 
 # Modifico para que coincida con el nuevo formato
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre = "va_por_trabajador", subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+  rename(vab_pb_por_puesto = va_por_trabajador, valor_relativo_economia = indice_va_trab)
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("anio","iso3"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio","letra"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -91,7 +114,7 @@ armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), outp
 
 # Tomo las variables output_name y subtopico declaradas arriba
 metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
-  dplyr::filter(grepl(paste0(output_name,".csv"), dataset_archivo)) %>% 
+  dplyr::filter(grepl(paste0('va_por_trabajador',".csv"), dataset_archivo)) %>% 
   distinct(variable_nombre, descripcion) 
 
 
@@ -100,9 +123,10 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("pais_nombre"),
-  descripcion = c("Nombre de país de referencia",
-                  "PIB real a precios nacionales constantes de 2017 (en millones de dólares estadounidenses de 2017), por ocupado")
+  variable_nombre = c("vab_pb_por_puesto",
+                      "valor_relativo_economia"),
+  descripcion = c("Valor Agrgado Bruto por puesto de trabajo en miles de pesos",
+                  "Valor relativo al total de la economía (base = 100)")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -137,11 +161,14 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "letra"),
     es_serie_tiempo = T,
     control = comparacion, 
     columna_indice_tiempo = 'anio',
-    columna_geo_referencia = 'iso3',
+    cambio_nombre_output = list('nombre_nuevo' = 'vab_por_puesto', 'nombre_anterior' = 'va_por_trabajador'),
+    cambio_nombre_cols = list('vab_pb_por_puesto' = 'va_por_trabajador',
+                              'valor_relativo_economia' = 'indice_va_trab'),
     descripcion_columnas = descripcion,
-    unidades = list("pib_por_ocupado" = "millones de dólares de 2017")
+    unidades = list("vab_pb_por_puesto" = "en miles de pesos",
+                    "valor_relativo_economia" = "unidades")
   )
