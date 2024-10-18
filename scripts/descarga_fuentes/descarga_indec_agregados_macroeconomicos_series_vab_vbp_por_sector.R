@@ -9,14 +9,15 @@ periodicidad <- months(3)
 fecha_ultima_actualizacion <- as.Date("2024-09-18")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
-url <- "https://www.indec.gob.ar/ftp/cuadros/economia/sh_VBP_VAB_09_24.xls"
+source("scripts/utils/indec_cuentas_nacionales_scraper_links.R")
 
-# Desactivo la verificacion de SSL
-options(download.file.method="libcurl"
-        # , download.file.extra="-k -L --ssl-allow-unsafe-legacy-renegotiation"
-)
+agregados_macro_id <- 47
 
-download_filename <- "sh_VBP_VAB_09_24.xls"
+pattern_vbp_vab <- ".*sh_VBP_VAB_.*\\.xls"
+
+url <- INDEC.cuentas_nacionales.extraer_links(id = agregados_macro_id, pattern = pattern_vbp_vab)
+
+download_filename <- url %>% str_extract(., "sh.*\\.xls.*") # esta linea no debería ser así, debería proveer una string estatica
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
@@ -33,5 +34,6 @@ download.file(url, destfile = destfile, mode = "wb")
 # )
 
 actualizar_fuente_raw(id_fuente = 223,
-                      fecha_actualizar = as.character(fecha_actualizar),
-                      path_raw = download_filename)
+                      fecha_actualizar = fecha_actualizar,
+                      path_raw = download_filename,
+                      script = code_name) 
