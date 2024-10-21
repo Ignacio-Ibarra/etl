@@ -9,7 +9,7 @@ periodicidad <- months(12)
 fecha_ultima_actualizacion <- as.Date("2024-04-01")
 fecha_actualizar <- fecha_ultima_actualizacion + periodicidad
 
-source("scripts/utils/boletin_estadisticas_laborales_scraper_links.R")
+source("scripts/utils/mteyss_boletin_estadisticas_laborales_scraper_links.R")
 
 page_url <- "https://www.argentina.gob.ar/trabajo/estadisticas/boletin-de-estadisticas-laborales-segun-sexo"
 url_base <- "https://www.argentina.gob.ar/sites/default/files/"
