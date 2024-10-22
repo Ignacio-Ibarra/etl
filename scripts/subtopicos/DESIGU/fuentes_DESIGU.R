@@ -19,8 +19,6 @@ descargar_fuente('R191C0')
 # Indicadores Sociales de Argentina: Desigualdad de ingresos en Argentina - Coeficiente de Gini de la distribución del ingreso per cápita familiar
 descargar_fuente('R192C0')
 
-
-
 # Indicadores Sociales de Argentina: Desigualdad de ingresos - Brecha de ingresos entre el decil más rico y el más pobre
 descargar_fuente('R193C0')
 
@@ -66,10 +64,6 @@ descargar_fuente('R206C0')
 # Indicadores Sociales de Argentina: Brecha en el acceso a servicios entre quintil 5 y quintil 1
 descargar_fuente('R207C0')
 
-# # EPH descarga de todos los años
-# ids.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(codigo) %>% pull()
-# purrr::map(ids.eph, descargar_fuente)
-
 # CEPED - Distribución Funcional Argentina
 descargar_fuente("R210C0")
 
@@ -84,3 +78,9 @@ descargar_fuente("R35C79")
 
 # Graña, Juan M. (2007) CEPED - Cuadro 2. Participación del Consumo Privado, Inversión Bruta Interna Total, Privada y Pública, Masa Salarial, Ingreso Asalariado, Superávit Bruto de Explotación e Ingreso Capitalista en el PBIpm.
 descargar_fuente("R211C77")
+
+# EPH descarga de todos los años
+ids.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(codigo) %>% pull()
+purrr::map(ids.eph, descargar_fuente)
+
+
