@@ -89,6 +89,11 @@ comparacion <- argendataR::comparar_outputs(
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
+
 etiquetas <- meta_desigu %>% 
   filter(dataset_archivo == output_name) %>% 
   pull(descripcion) %>% 
@@ -113,7 +118,9 @@ df_output %>%
     control = comparacion,
     columna_indice_tiempo = "anio",
     aclaraciones = "El dataset posee algunas diferencias con respecto al realizado por el analista",
-    etiquetas_indicadores = list("part_salarial_vab" = "Participación de la masa salarial en el Valor Agregado Bruto a precios básicos"),
+    etiquetas_indicadores = list("part_salarial_vab" = "Participación de los ingresos del trabajo en el Valor Agregado Bruto a precios básicos (participacion)"),
     unidades = list("part_salarial_vab" = "porcentaje")
   )
+
+
 

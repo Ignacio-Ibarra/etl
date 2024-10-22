@@ -15,19 +15,19 @@ fuente_3 <- "R35C79"
 
 
 # Cuenta Generacion del Ingeso (RTA pp) - INDEC
-rta_df <- read_csv(argendataR::get_temp_path(fuente_1)) %>% 
+rta_df <- arrow::read_parquet(argendataR::get_temp_path(fuente_1)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(anio, `Remuneración al trabajo asalariado` = participacion)
 
 # Cuenta Generacion del Ingeso (IBM pp) - INDEC
-ibm_df <- read_csv(argendataR::get_temp_path(fuente_2)) %>% 
+ibm_df <- arrow::read_parquet(argendataR::get_temp_path(fuente_2)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(anio, `Ingreso mixto bruto` = participacion)
 
 # Cuenta Generacion del Ingeso (EEB pp) - INDEC
-eeb_df <- read_csv(argendataR::get_temp_path(fuente_3)) %>% 
+eeb_df <- arrow::read_parquet(argendataR::get_temp_path(fuente_3)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(anio, `Excedente de explotación bruto` = participacion)
