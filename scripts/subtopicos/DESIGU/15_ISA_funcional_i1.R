@@ -6,7 +6,7 @@ limpiar_temps()
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 subtopico <- 'DESIGU'
-output_name <- 'ISA_funcional_i1'
+output_name <- 'ISA_funcional_i1.csv'
 
 
 fuente_1 <- "R210C0"
@@ -21,12 +21,12 @@ ceped_df <- readxl::read_excel(argendataR::get_temp_path(fuente_1)) %>%
   select(anio = Anio, particip_vab_pb_total = Total)
   
 # Cuenta Generacion del Ingeso (RTA pp) - INDEC
-cgi_df <- read_csv(argendataR::get_temp_path(fuente_2)) %>% 
+cgi_df <- arrow::read_parquet(argendataR::get_temp_path(fuente_2)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(anio, participacion)
 
-grania_df <- read_csv(argendataR::get_temp_path(fuente_3)) %>% select(anio, masa_salarial)
+grania_df <- arrow::read_parquet(argendataR::get_temp_path(fuente_3)) %>% select(anio, masa_salarial)
 
 
 data_total <- grania_df %>% 
@@ -73,9 +73,7 @@ df_output <- X %>%
 
 df_anterior <- argendataR::descargar_output(nombre ='ISA_funcional_i1', 
                                             subtopico = "DESIGU", 
-                                            entrega_subtopico = "datasets_primera_entrega") %>% 
-  pivot_wider(names_from = "variable", values_from = 'valor') %>% 
-  select(anio = ano, part_salarial_vab = participacion)
+                                            entrega_subtopico = "datasets_primera_entrega") 
 
 
 comparacion <- argendataR::comparar_outputs(
@@ -90,6 +88,11 @@ comparacion <- argendataR::comparar_outputs(
 
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
+
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
 
 etiquetas <- meta_desigu %>% 
   filter(dataset_archivo == output_name) %>% 
@@ -115,7 +118,9 @@ df_output %>%
     control = comparacion,
     columna_indice_tiempo = "anio",
     aclaraciones = "El dataset posee algunas diferencias con respecto al realizado por el analista",
-    etiquetas_indicadores = list("part_salarial_vab" = "Participación de la masa salarial en el Valor Agregado Bruto a precios básicos"),
+    etiquetas_indicadores = list("part_salarial_vab" = "Participación de los ingresos del trabajo en el Valor Agregado Bruto a precios básicos (participacion)"),
     unidades = list("part_salarial_vab" = "porcentaje")
   )
+
+
 

@@ -8,10 +8,11 @@ limpiar_temps()
 id_fuente <- 35
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
-nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw) %>% 
-                                    select(path_raw) %>% 
-                                    pull(), pattern = "\\.")[1]
+# Guardado de archivo
+nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
+                            filter(codigo == fuente_raw) %>% 
+                            select(path_raw) %>% 
+                            pull())
 
 
 # Lectura datos 

@@ -44,3 +44,39 @@ INDEC.cuentas_nacionales.extraer_links = function(id, pattern){
 # [1] "https://www.indec.gob.ar/ftp/cuadros/economia/serie_cgi_07_24.xls"
 
 
+id <- 119
+
+INDEC.poblacion_proyecciones.extraer_links = function(id, pattern, all=FALSE){
+  
+  url_base <- "https://www.indec.gob.ar"
+  
+  page_url <- paste0(url_base,"/Nivel4/Tema/2/24/",id)
+  
+  # Obtener el contenido de la página
+  response <- GET(page_url)
+  html_content <- content(response, as = "text", encoding = "UTF-8")
+  
+   # Parsear el contenido HTML
+  page <- read_html(html_content)
+  
+  xpath_query <- '//*[@id="contenidoPrincipal"]/div/div[1] | //*[@id="contenidoPrincipal"]/div/div[2]/div/div[1]/div/div | //*[@id="10"]/div[1]'
+  
+  titulo <- page %>% 
+    html_nodes(xpath = xpath_query) %>% 
+    html_text(., trim = TRUE) %>% paste0(., collapse = ". ")
+  
+  # Extraer los links y sus textos acompañantes
+  links_info <- page %>%
+    html_nodes(xpath ='//*[@id="contenidoPrincipal"]') %>% 
+    html_elements("a.a-color2") %>%
+    purrr::map_df(~ data.frame(
+      provincia = html_text(.x, trim = TRUE),
+      link = html_attr(.x, "href"),
+      stringsAsFactors = FALSE
+    )) %>% 
+    mutate(link = paste0(url_base, link),
+           titulo = titulo)
+  
+  return(links_info)
+  
+}
