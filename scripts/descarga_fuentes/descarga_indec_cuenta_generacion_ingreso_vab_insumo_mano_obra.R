@@ -9,7 +9,7 @@ periodicidad <- months(3)
 fecha_ultima_actualizacion <- as.Date("2024-10-31")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
-source("scripts/utils/indec_cuentas_nacionales_scraper_links.R")
+source("scripts/utils/indec_scraper_links.R")
 
 
 serie_cgi_id <- 49
