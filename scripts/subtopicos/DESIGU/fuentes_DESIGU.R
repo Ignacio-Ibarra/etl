@@ -66,9 +66,9 @@ descargar_fuente('R206C0')
 # Indicadores Sociales de Argentina: Brecha en el acceso a servicios entre quintil 5 y quintil 1
 descargar_fuente('R207C0')
 
-# EPH descarga de todos los años
-ids.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(codigo) %>% pull()
-purrr::map(ids.eph, descargar_fuente)
+# # EPH descarga de todos los años
+# ids.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(codigo) %>% pull()
+# purrr::map(ids.eph, descargar_fuente)
 
 # CEPED - Distribución Funcional Argentina
 descargar_fuente("R210C0")

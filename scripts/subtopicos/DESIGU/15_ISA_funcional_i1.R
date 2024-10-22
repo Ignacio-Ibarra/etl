@@ -6,7 +6,7 @@ limpiar_temps()
 
 code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 subtopico <- 'DESIGU'
-output_name <- 'ISA_funcional_i1'
+output_name <- 'ISA_funcional_i1.csv'
 
 
 fuente_1 <- "R210C0"
