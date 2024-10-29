@@ -91,3 +91,73 @@ afip_anuario_estadistico.search_file = function(anio, unzipped_folder, formatos_
   return(archivo_path)  
   
 }
+
+
+
+afip_anuario_estadistico.a_fuente_raw <- function(datos, code_name, tematica_archivo, actualizar = FALSE){
+  
+  anios_scrapeados <- datos %>% dplyr::filter(!is.na(archivo_path)) %>% pull(anio)
+  
+  
+  for (y in anios_scrapeados){
+    
+    cat("Verificando año ", y, "\n\n")
+    
+    metadata_completar <- datos %>% dplyr::filter(anio == y) %>% select(anio, url_name, archivo_path)
+    
+    src <- metadata_completar$archivo_path
+    
+    download_filename <- str_split_1(src, pattern = "/") %>% tail(., 1) %>% paste0(y,"_",.)
+    
+    dest <- glue::glue("{tempdir()}/{download_filename}")
+    
+    file.copy(from = src, to = dest)
+    
+    name <- "Anuario estadísticas tributarias. {tematica_archivo}. Año {y}."
+    
+    fuente_row <- fuentes_raw() %>% dplyr::filter(institucion == "AFIP" & grepl(y, nombre)) 
+    
+    existe_fuente <- fuente_row %>% nrow() == 1
+    
+    if(existe_fuente){
+      
+      if(actualizar){
+      
+        id_fuente <- fuente_row$id_fuente
+      
+      actualizar_fuente_raw(
+        id_fuente = id_fuente,
+        nombre = name,
+        fecha_actualizar = "Sin informacion",
+        path_raw = download_filename,
+        directorio = tempdir()
+        
+      )
+        
+        cat("Se actualizó: ", name,"\n\n")
+      
+      }  
+    }else{
+      
+      agregar_fuente_raw(
+        
+        url = metadata_completar$url_name,
+        nombre = name,
+        institucion = "AFIP",
+        actualizable = F,
+        fecha_actualizar = "Sin informacion",
+        script = code_name,
+        path_raw = download_filename,
+        directorio = tempdir()
+        
+      )
+      
+      cat("Se agregó: ", name, "\n\n")
+      
+    }
+  }
+}
+
+
+
+
