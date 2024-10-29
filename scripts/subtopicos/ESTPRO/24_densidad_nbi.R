@@ -6,13 +6,14 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-
 subtopico <- "ESTPRO"
-output_name <- "densidad_empresarial_depto"
-analista = "Gisella Pascuariello"
+output_name <- "densidad_nbi"
+analista <- "Gisella Pascuariello"
 
 fuente1 <- "R243C113"
 fuente2 <- "R240C0"
+fuente3 <- "R249C118"
+fuente4 <- "R84C0"
 
 
 get_clean_path <- function(codigo){
@@ -30,6 +31,7 @@ get_raw_path <- function(codigo){
   return(paste0(prefix, path_raw))
 }
 
+
 df_pob_censo <- arrow::read_parquet(get_clean_path(fuente1))
 
 
@@ -40,7 +42,7 @@ df_establecimientos <- read_csv(get_raw_path(fuente2)) %>%
   group_by(depto_id, depto_nombre = departamento, provincia_id, provincia) %>% 
   summarise(
     establecimientos = sum(Establecimientos, na.rm = T),
-    ) %>% 
+  ) %>% 
   mutate(
     depto_id = case_when(
       depto_id == "94007" ~ "94008", # Cambio codigo de Rio Grande en Censo 2022, CEP lo tiene mal
@@ -49,19 +51,29 @@ df_establecimientos <- read_csv(get_raw_path(fuente2)) %>%
       TRUE ~ depto_id
     )
   )
-    
 
-df_output <- df_pob_censo %>%
+
+df_densidad <- df_pob_censo %>%
   left_join(df_establecimientos, join_by(depto_id)) %>% 
   filter(!is.na(establecimientos)) %>% 
   mutate(densidad_emp = 1000*establecimientos / poblacion,
          anio = 2022) %>% 
   select(anio, id_depto = depto_id, departamento = depto_nombre, provincia_id, provincia, densidad_emp) %>% 
   mutate(provincia_id = str_pad(provincia_id, width = 2, side = 'left', pad ="0"))
-  
 
 
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+df_nbi <- arrow::read_parquet(get_clean_path(fuente3)) %>% 
+  select(id_depto, porcentaje_hogares_con_nbi) 
+
+df_output <- df_densidad %>% left_join(df_nbi, join_by(id_depto))
+
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")%>% 
+  rename(porcentaje_hogares_con_nbi = share_pb_nbi)
+
+codigos <- df_anterior %>% distinct(provincia_id, region)
+
+
+df_output <- df_output %>% left_join(codigos, join_by(provincia_id))
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,

@@ -6,13 +6,20 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-
 subtopico <- "ESTPRO"
-output_name <- "densidad_empresarial_depto"
-analista = "Gisella Pascuariello"
+output_name <- "tasa_informalidad_tamanio_empresa"
+analista <- "Gisella Pascuariello"
+codigos.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(nombre, codigo) 
 
-fuente1 <- "R243C113"
-fuente2 <- "R240C0"
+
+# librerías
+
+
+#-- Lectura de Datos ----
+
+current_year <- year(Sys.Date())
+
+anios <- 2003:2023
 
 
 get_clean_path <- function(codigo){
@@ -30,43 +37,112 @@ get_raw_path <- function(codigo){
   return(paste0(prefix, path_raw))
 }
 
-df_pob_censo <- arrow::read_parquet(get_clean_path(fuente1))
+###################################
 
-
-
-df_establecimientos <- read_csv(get_raw_path(fuente2)) %>% 
-  mutate(depto_id = str_pad(in_departamentos, width = 5, side = 'left', pad ="0")) %>% 
-  dplyr::filter(anio == 2022) %>% 
-  group_by(depto_id, depto_nombre = departamento, provincia_id, provincia) %>% 
-  summarise(
-    establecimientos = sum(Establecimientos, na.rm = T),
+# Creo una función custom para aplicar un determinado wrangling a cada dataset de EPH
+eph_tasa_informalidad_tamanio_empresa <- function(eph_data) {
+  outdf <- eph_data %>%
+    select(anio = ano4, pp04c, estado, cat_ocup, pp07h, pondera) %>% 
+    mutate(tamanio_cod = 
+             case_when(
+               pp04c<6 & pp04c>0 ~ 1,
+               pp04c==6 ~ 2,
+               pp04c==7 ~ 3,
+               pp04c==8 ~ 4,
+               pp04c==9 ~ 5,
+               pp04c>9 & pp04c<99 ~ 6,
+               TRUE ~ NA_real_
+             ),
+           tamanio_desc = 
+             case_when(
+               tamanio_cod == 1 ~ "Hasta 5 ocupados",
+               tamanio_cod == 2 ~ "Entre 6 y 10 ocupados",
+               tamanio_cod == 3 ~ "Entre 11 y 25 ocupados",
+               tamanio_cod == 4 ~ "Entre 26 y 40 ocupados",
+               tamanio_cod == 5 ~ "Entre 41 y 100 ocupados",
+               tamanio_cod == 6 ~ "Más de 100 ocupados",
+               TRUE ~ NA_character_
+            ),
+           asal_informal = case_when(
+             estado==1 & cat_ocup==3 & pp07h==2 ~ 1,
+             estado==1 & cat_ocup==3 & pp07h==1 ~ 0,
+             TRUE ~ NA_integer_
+           )
+           ) %>% 
+    dplyr::filter(!is.na(tamanio_cod)) %>% 
+    group_by(anio, tamanio_cod, tamanio_desc) %>% 
+    summarise(
+      tasa_informalidad = stats::weighted.mean(asal_informal, pondera, na.rm=TRUE)
     ) %>% 
-  mutate(
-    depto_id = case_when(
-      depto_id == "94007" ~ "94008", # Cambio codigo de Rio Grande en Censo 2022, CEP lo tiene mal
-      depto_id == "94014" ~ "94015", # Cambió codigo de Ushuaia en Censo 2022, CEP lo tiene mal
-      depto_id == "06217" ~ "06218", # Cambió codigo de Chascomus en Censo 2022, CEP lo tiene mal
-      TRUE ~ depto_id
-    )
-  )
-    
-
-df_output <- df_pob_censo %>%
-  left_join(df_establecimientos, join_by(depto_id)) %>% 
-  filter(!is.na(establecimientos)) %>% 
-  mutate(densidad_emp = 1000*establecimientos / poblacion,
-         anio = 2022) %>% 
-  select(anio, id_depto = depto_id, departamento = depto_nombre, provincia_id, provincia, densidad_emp) %>% 
-  mutate(provincia_id = str_pad(provincia_id, width = 2, side = 'left', pad ="0"))
+    select(anio, tamanio_cod, tamanio_desc, tasa_informalidad)
   
+  return(outdf)
+}
+
+get_eph_fuente <- function(year, codes_and_names) {
+  fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
+  fuente
+}
+
+# Creo una función que levanta el dataset correspondiente a un año
+load_eph_by_year <- function(year, codes_and_names){
+  fuente <- get_eph_fuente(year, codes_and_names)
+  eph_df <- data.table::fread(argendataR::get_raw_path(fuente))
+  return(eph_df)
+}
+
+# Creo una función de cleaning de cada archivo
+cleaning_eph <- function(eph_data){
+  colnames(eph_data) <- tolower(colnames(eph_data))
+  return(eph_data)
+}
 
 
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+# Creo una función que procesa una lista de años 
+eph_processing <- function(years, codes_and_names, custom_wrangling){
+  result_processing <- data.table()
+  for (year in years){
+    cat(sprintf("Archivo EPH (%s)... empezando\n", year))
+    
+    # Cargo archivo
+    eph_df <- load_eph_by_year(year = year, codes_and_names = codes_and_names)
+    dimensiones <- dim(eph_df)
+    cat(sprintf("... cargando %s filas y %s columnas \n", dimensiones[1], dimensiones[2]))
+    
+    # Hago cleaning
+    eph_df <- cleaning_eph(eph_data = eph_df)
+    cat("... limpieza\n")
+    
+    # Hago wrangling
+    result_df <- custom_wrangling(eph_data = eph_df)
+    cat("... procesado\n")
+    rm(eph_df)
+    
+    result_processing <- rbind(result_processing, result_df, fill=F)
+    cat("... finalizado\n")
+    
+    
+  }
+  return(result_processing)
+}
+
+#-- Procesamiento ----
+
+df_output <- eph_processing(years = anios, codes_and_names = codigos.eph, custom_wrangling = eph_tasa_informalidad_tamanio_empresa)
+
+
+
+###################################
+
+
+
+df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+  mutate( anio = as.integer(anio))
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("id_depto"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio", "tamanio_cod"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -149,28 +225,26 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = colectar_fuentes(),
+    fuentes = codigos.eph$codigo,
     analista = analista,
     control = comparacion, 
-    pk = c("id_depto"),
+    pk = c("anio", "tamanio_cod"),
     es_serie_tiempo = F,
     descripcion_columnas = descripcion,
-    unidades = list("densidad_emp" = "unidades"),
-    aclaraciones = "Se modificó el dato población, antes era proyeccion 2010-2025 y ahora se usó el dato del Censo 2022,
-    la columna 'anio' se mantiene a los fines de identificar cual es el anio de las observaciones"
-  )
+    unidades = list("tasa_informalidad" = "unidades")
+    )
 
 
 # joined_df <- comparacion$joined_df
 # 
 # # Conozco cuales son mis primary keys
-# primary_keys <- c('id_depto')
+# primary_keys <- c('anio','tamanio_cod')
 # 
 # # Genero una columna de etiquetas para el tooltip, con las columnas que son pk
 # joined_df$label <- apply(joined_df[primary_keys], 1, function(row) paste(row, collapse = " - "))
 # 
 # # Conozco la columna numérica que quiero comparar.
-# col_comparar <- 'densidad_emp'
+# col_comparar <- 'tasa_informalidad'
 # cols_comp <- paste0(col_comparar, c('.x','.y'))
 # col_x <- cols_comp[1]
 # col_y <- cols_comp[2]
