@@ -20,7 +20,7 @@ indicador_id <- indicador$id
 
 titulo <- indicador$descripcion
 
-download_filename <- titulo %>% janitor::make_clean_names() %>% paste0(.,".json")
+download_filename <- titulo %>% janitor::make_clean_names() %>% paste0(.,".csv")
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
@@ -45,5 +45,9 @@ institucion = "INDEC"
 
 
 actualizar_fuente_raw(id_fuente = 243,
+                      nombre = nombre, 
                       fecha_actualizar = fecha_actualizar,
-                      path_raw = download_filename)
+                      path_raw = download_filename, 
+                      script = code_name, 
+                      api = T)
+
