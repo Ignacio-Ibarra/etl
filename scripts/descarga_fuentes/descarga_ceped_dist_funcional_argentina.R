@@ -36,4 +36,4 @@ nombre_fuente <- "Distribución Funcional Argentina"
 #                    script = code_name
 # )
 
-actualizar_fuente_raw(id_fuente = 210, fecha_actualizar = "Sin informacion")
+actualizar_fuente_raw(id_fuente = 210, dir = tempdir())
