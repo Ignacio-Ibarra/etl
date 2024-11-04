@@ -88,6 +88,50 @@ mteyss.oede.boletin_estadisticas_laborales_segun_sexo = function(){
 }
 
 
+# Codigo para scrapear los links de esa parte
+mteyss.oede.provinciales.remuneracions_empleo_y_empresas = function(){
+  
+  page_oede <- "https://www.argentina.gob.ar/trabajo/estadisticas/oede-estadisticas-provinciales"
+  
+  # Leer el contenido HTML
+  pagina <- read_html(page_oede)
+  
+  # Obtener el texto del h3 con id=1
+  h3_relevante <- pagina %>%
+    html_nodes(xpath = "//h3[@id='1']") %>%
+    html_text(trim = TRUE)
+  
+  # Obtener todos los h4 relacionados con el h3
+  h4_tags <- pagina %>%
+    html_nodes(xpath = "//h3[@id='1']/following-sibling::h4[preceding-sibling::h3[@id='1']]")
+  
+  # Procesar cada h4 y su tabla relacionada
+  resultados <- map_df(h4_tags, function(h4) {
+    h4_texto <- html_text(h4, trim = TRUE)
+    
+    # Extraer todas las filas (tr) de la tabla relacionada con este h4
+    filas_tabla <- h4 %>%
+      html_node(xpath = "following-sibling::table[1]//tbody") %>%
+      html_nodes("tr")
+    
+    # Extraer datos de cada fila
+    map_df(filas_tabla, function(fila) {
+      tibble(
+        h3 = h3_relevante,
+        h4 = h4_texto,
+        detalle = html_node(fila, "td[data-label=' Detalle']") %>% html_text(trim = TRUE),
+        fecha_publicacion = html_node(fila, "td[data-label='Actualización']") %>% html_text(trim = TRUE),
+        link = html_node(fila, "td a") %>% html_attr("href")
+      )
+    })
+  })
+  
+  # Asegurarse de completar los links relativos con la URL base
+  resultados <- resultados %>%
+    mutate(link = ifelse(!grepl("^http", link), paste0("https://www.argentina.gob.ar", link %>% str_remove(., ".*:#")), link) )
+  
+  return(resultados)
+}
 
 # result <- mteyss.oede.boletin_estadisticas_laborales_segun_sexo()
 # print(result)
