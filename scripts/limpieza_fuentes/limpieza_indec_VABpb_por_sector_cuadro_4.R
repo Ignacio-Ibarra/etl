@@ -135,6 +135,20 @@ clean_title <- glue::glue("{titulo.raw} - {sheet_name}")
 #                      nombre = clean_title,
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 94, path_clean = clean_filename, directorio = tempdir(), nombre = clean_title, script = code_name)
+id_fuente_clean <- 94
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c("anio", "trimestre", "letra", "sub_sector")
+)
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
