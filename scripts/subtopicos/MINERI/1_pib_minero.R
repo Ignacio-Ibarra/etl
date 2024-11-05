@@ -1,17 +1,21 @@
-# 7_pib_comp_va
-# descripcion
+################################################################################
+##                              Dataset: nombre                               ##
+################################################################################
+
+# Este script es una copia del script ~/etl/scripts/subtopicos/ACECON/7_pib_comp_va.R
+
 
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-subtopico <- "ACECON"
-output_name <- "7_pib_comp_va"
+subtopico <- "MINERI"
+output_name <- "pbi_minero"
 analista = "Daniel Schteingart y Juan Gabriel Juara"
 fuente1 <- "R36C13"
 fuente2 <- "R38C7"
-
+fuente3 <- "R223C94"
 
 
 # sectores a precios basicos como % del pib a precio de mercado y PIB a precio de basicos como % respecto a precio de mercado
@@ -19,6 +23,11 @@ pbisectores_fnys <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 # vab por sectores a precios corrientes en millones de pesos corrientes 
 pbisectores_indec <- arrow::read_parquet(argendataR::get_clean_path(fuente2))
+
+
+vabpb_sector_2d <- arrow::read_parquet(argendataR::get_clean_path(fuente3)) %>% 
+  dplyr::filter(trimestre == "Total")
+
 
 
 # Procesamiento -------
@@ -100,10 +109,10 @@ columnas_prop <- grep("^prop_",colnames(pbisectores_fnys), value = T)
 
 for(i in columnas_prop) {
   
-    pbisectores_fnys[which(is.na(pbisectores_fnys[i])),i] <- zoo::na.approx(pbisectores_fnys[[i]],
-                                                                            xout = which(is.na(pbisectores_fnys[[i]])))
-
-  }
+  pbisectores_fnys[which(is.na(pbisectores_fnys[i])),i] <- zoo::na.approx(pbisectores_fnys[[i]],
+                                                                          xout = which(is.na(pbisectores_fnys[[i]])))
+  
+}
 
 
 pbisectores_fnys <- pbisectores_fnys %>% 
@@ -148,48 +157,53 @@ pbisectores_indec <- pbisectores_indec %>%
             prop_h_hoteles_y_restaurantes, prop_m_ensenanza:prop_p_hogares_privados_con_servicio_domestico))
 
 colnames(pbisectores_indec) <- gsub("prop_._|prop_", "",
-     colnames(pbisectores_indec))
+                                    colnames(pbisectores_indec))
 
 
 pbisectores_fnys <- pbisectores_fnys %>% 
   rename( otros_servicios = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios,
-         administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr,
-         intermediacion_financiera = intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera,
-         actividades_inmobiliarias_empresariales_y_de_alquiler = intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler,
-         comercio_mayorista_minorista_hoteles_restaurantes = comercio_al_por_mayor_y_menor_y_hoteles_y_restaurantes,
-         industria_manufacturera =industrias_manufactureras,
-         agricultura_ganaderia_caza_y_silvicultura = agricultura_caza_y_silvicultura,
-          )
+          administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr,
+          intermediacion_financiera = intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera,
+          actividades_inmobiliarias_empresariales_y_de_alquiler = intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler,
+          comercio_mayorista_minorista_hoteles_restaurantes = comercio_al_por_mayor_y_menor_y_hoteles_y_restaurantes,
+          industria_manufacturera =industrias_manufactureras,
+          agricultura_ganaderia_caza_y_silvicultura = agricultura_caza_y_silvicultura,
+  )
 
 
 
-df_output <- bind_rows(pbisectores_fnys,
-                        pbisectores_indec) 
+df_nivel_letra <- bind_rows(pbisectores_fnys,
+                       pbisectores_indec) %>% 
+  distinct(anio, petroleo_mineria_participacion = explotacion_de_minas_y_canteras)
 
 
-df_output <- df_output %>% 
-  pivot_longer(cols = -anio, names_to = "sector", values_to = "valor")
+total_vab_indec <- vabpb_sector_2d %>% dplyr::filter(sub_sector == "Total sector") %>% 
+  group_by(anio) %>% 
+  summarise(total_vabpb = sum(vab_pb, na.rm = T))
 
-df_output <- df_output %>% 
-  mutate(valor = round(valor, 4)) %>% 
-  distinct() %>% drop_na(valor)
+vabpb_mineria <- vabpb_sector_2d %>% dplyr::filter(sub_sector == "Extracción de minerales metalíferos. Explotación de minas y canteras n.c.p.") %>% 
+  select(anio, vab_pb) %>% 
+  left_join(total_vab_indec, join_by(anio)) %>% 
+  mutate(mineria_participacion = 100*vab_pb / total_vabpb) %>% 
+  select(anio, mineria_participacion)
 
+df_output <- df_nivel_letra %>%
+  left_join(vabpb_mineria, join_by(anio))
 
-# el control por el momento no tiene version previa de comparacion
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
-                                            entrega_subtopico = "primera_entrega")
-# 
-# #-- Controlar Output ----
-# 
-comparacion <- argendataR::comparar_outputs(
-  df_output,
-  df_anterior,
-  pk = c("anio", "sector"),
-  drop_joined_df = F
-)
+                                            entrega_subtopico = "primera_entrega") %>% 
+  rename(petroleo_mineria_participacion = petroleo_mineria, mineria_participacion = mineria)
 
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("anio"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
 
 
 #-- Exportar Output ----
@@ -229,7 +243,7 @@ armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), outp
 
 # Tomo las variables output_name y subtopico declaradas arriba
 metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
-  dplyr::filter(grepl(paste0(output_name,".csv"), dataset_archivo)) %>% 
+  dplyr::filter(grepl(paste0("^", output_name,".csv"), dataset_archivo)) %>% 
   distinct(variable_nombre, descripcion) 
 
 
@@ -238,10 +252,12 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("anio","sector", "valor"),
+  variable_nombre = c("anio",
+                      "petroleo_mineria_participacion",
+                      "mineria_participacion"),
   descripcion = c("Año de referencia",
-                  "Sector de la actividad económica",
-                  "Participación en el VAB a precios básicos, en pesos corrientes")
+                  "Participación del sector 'Extracción minas y canteras' en el VAB a precios básicos en pesos corrientes",
+                  "Paricipación del sector 'Extracción de minerales metalíferos. Explotación de minas y canteras n.c.p.' en el VAB a precios básicos en pesos corrientes")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -270,18 +286,35 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+
+aclaracion <- paste0("Se modificó el calculo realizado cambiando la fuente de información. ",
+               "De Fundación Norte y Sur, Cuentas Nacionales, se tomó la participación del sector 'Explotación de minas y canteras', ",
+               "proveniente de la solapa 'PBI por sectores %'. El cuál expresa la participación del sector en el ",
+               "VAB a precios básicos, en pesos corrientes. Dicha fuente se tomó para el período 1935 a 2004. ",
+               "Para el período 2004 a la actualidad se tomó la participación del sector en el VAB a precios básicos ",
+               "en pesos corrientes de INDEC, Series trimestrales de oferta y demanda globales, de la solapa 'Cuadro 12'. ",
+               "Dado que las series coincidían en valores, las mismas fueron empalmadas sin ningún cálculo adicional. ",
+               "Para la serie de 'Extracción de minerales metalíferos. Explotación de minas y canteras n.c.p.' sólo hay datos desde ",
+               "2004  en adelante, siendo la unica fuente disponible INDEC Cuentas Nacionales, Agregados Macroeconómicos (PIB), Series por sector ",
+               "de actividad económica: valor bruto de producción y valor agregado bruto, por trimestre. De dicha fuente se consumieron los datos ",
+               "de la solapa 'Cuadro 4'"
+               
+               )
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "sector"),
+    pk = c("anio"),
     es_serie_tiempo = T,
     control = comparacion, 
     columna_indice_tiempo = 'anio',
     descripcion_columnas = descripcion,
-    unidades = list("valor"="porcentaje")
+    cambio_nombre_cols = list('mineria_participacion' = 'mineria',
+                              'petroleo_mineria_participacion' = 'petroleo_mineria'),
+    unidades = list("mineria_participacion" = "porcentaje",
+                    "petroleo_mineria_participacion" = "porcentaje"),
+    aclaracion = aclaracion
   )
-
-
