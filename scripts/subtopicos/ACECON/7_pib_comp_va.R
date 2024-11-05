@@ -9,13 +9,10 @@ subtopico <- "ACECON"
 # Insumos -------
 
 # sectores a precios basicos como % del pib a precio de mercado y PIB a precio de basicos como % respecto a precio de mercado
-pbisectores_fnys <- read_csv(get_temp_path("R36C13"))
-
-# pib en usd “PIB a precios de mercado, en miles de $ 2018
-pbiusd_fnys <- read_csv(get_temp_path("R36C9"))
+pbisectores_fnys <- read_csv(argendataR::get_clean_path("R36C13"))
 
 # vab por sectores a precios corrientes en millones de pesos corrientes 
-pbisectores_indec <- read_csv(get_temp_path("R38C7"))
+pbisectores_indec <- read_csv(argendataR::get_clean_path("R38C7"))
 
 # Procesamiento -------
 
@@ -201,7 +198,7 @@ df_output <- df_output %>%
 
 df_output %>% 
   write_output(output_name = output_name,
-               fuentes = c("R36C13", "R36C9", "R38C7"),
+               fuentes = c("R36C13", "R38C7"),
                subtopico = "ACECON",
                analista = "",
                pk = c("anio", "sector"),
