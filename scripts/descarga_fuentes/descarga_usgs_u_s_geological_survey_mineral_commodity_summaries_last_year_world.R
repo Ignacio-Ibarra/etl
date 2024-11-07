@@ -75,8 +75,10 @@ if(!(url %in% fraw$url)){
   
 }else{
   
+  id_fuente <- fraw[fraw$url == url, c('id_fuente')] %>% drop_na(id_fuente) %>% pull()
   download.file(url, destfile, mode = "wb")
-  actualizar_fuente_raw(url = url,
+  actualizar_fuente_raw(id_fuente = id_fuente,
+                     url = url,
                      actualizable = T,
                      script = code_name,
                      api = T, 
