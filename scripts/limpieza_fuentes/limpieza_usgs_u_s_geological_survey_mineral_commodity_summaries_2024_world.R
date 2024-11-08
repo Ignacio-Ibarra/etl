@@ -43,19 +43,28 @@ zip_path <- argendataR::get_raw_path(fuente_raw)
 archivos <- unzip(zip_path, list = TRUE)
 
 # Filtrar archivos
-archivos_filtrados <- archivos$Name[grepl(".*world\\.csv$", archivos$Name)]
+
+archivos_csv <- archivos %>%
+  dplyr::filter(grepl(".*world\\.csv$", Name)) %>% 
+  mutate(basename = basename(Name))
+
+archivos_xml <- archivos %>%
+  dplyr::filter(grepl(".*meta\\.xml$", Name)) %>% 
+  mutate(basename = basename(Name))
+
+archivos_extraer <- c(archivos_csv$Name, archivos_xml$Name)
 
 # Extraer solo los archivos filtrados
-unzip(zip_path, files = archivos_filtrados, exdir = tempdir())
+unzip(zip_path, files = archivos_extraer, exdir = tempdir(), junkpaths = T)
 
 
-# Crear una lista vacía para almacenar cada data.frame
-lista_dataframes <- list()
-
-# Iterar sobre el vector de archivos filtrados
-for (archivo in archivos_filtrados) {
+procesar_archivos_csv <- function(archivos_filtrados) {
   
-  # print(archivo)
+  lista_dataframes <- list()
+  archivos_con_errores <- c()
+  
+  for (archivo in archivos_filtrados$basename) {
+
   
   # Extraer el substring del nombre del archivo (por ejemplo, antes del ".csv")
   id <- str_extract(archivo, ".*-(.*)_world", group = 1 )
@@ -76,26 +85,120 @@ for (archivo in archivos_filtrados) {
   
   data <- data[, cols[cols!="X"]]
   
-  # Agregar el data.frame a la lista
-  lista_dataframes[[length(lista_dataframes) + 1]] <- data
+  data[] <- lapply(data, as.character)
+  
+  data <- data %>% janitor::clean_names() 
+  
+  unpivot_possible_cols <- c("data_source", "source", "type", "year", "country", "commodity", "id")
+  
+  unpivot_cols <- unpivot_possible_cols[unpivot_possible_cols %in% names(data)]
+  
+  errores <- list()
+  
+  pivoted_data <- tryCatch({
+    data %>% pivot_longer(
+      !all_of(unpivot_cols),
+      names_to = 'variable', values_to = 'value'
+    )
+  }, error = function(e) {
+    errores <- append(errores, list(e$message))
+    NULL
+  })
+  
+  
+  if (is.null(pivoted_data)) {
+    
+    if(length(errores) > 0){
+    message("No se pudo procesar el archivo: ", archivo)
+      for (error in errores) {
+        message(error)
+      }
+      archivos_con_errores <- c(archivos_con_errores, archivo)
+    }else{
+      message("por alguna razon no se guardaron los errores")
+    }
+    
+  } else {
+    lista_dataframes[[id]] <- pivoted_data %>% mutate(value = ifelse(value == "", NA, value)) %>% drop_na(value)
+  }
+  }
+  
+  message("Cantidad de archivos con errores: ", length(archivos_con_errores))
+  message("Cantidad de archivos procesados exitosamente: ", length(lista_dataframes))
+  message("Archivos con errores: ", paste(archivos_con_errores, collapse = ", "))
+  
+  return(lista_dataframes)
 }
 
-# Convertir todas las columnas a character antes de hacer bind_rows
-lista_dataframes <- lapply(lista_dataframes, function(df) {
-  df[] <- lapply(df, as.character)  # Convertir todas las columnas a character
-  return(df)
-})
+
+# Función para parsear los atributos de datos del archivo XML
+parse_xml_attributes <- function(xml_data) {
+  attributes <- xml2::xml_find_all(xml_data, "//eainfo/detailed/attr") %>%
+    lapply(function(attr) {
+      data.frame(
+        Label = xml2::xml_text(xml2::xml_find_first(attr, "attrlabl")),
+        Definition = xml2::xml_text(xml2::xml_find_first(attr, "attrdef")),
+        Domain = xml2::xml_text(xml2::xml_find_first(attr, "attrdomv/edom/edomv")),
+        DomainDescription = xml2::xml_text(xml2::xml_find_first(attr, "attrdomv/edom/edomvd")),
+        Unit = xml2::xml_text(xml2::xml_find_first(attr, "attrdomv/rdom/attrunit")),
+        stringsAsFactors = FALSE
+      )
+    }) %>%
+    bind_rows()
+  return(attributes)
+}
+
+
+procesar_archivos_xml <- function(archivos_filtrados){
+  
+  lista_tablas <- list()
+  
+  for (archivo in archivos_filtrados$basename) {
+    
+    # message("Procesando archivo: ", archivo)
+    
+    id <- str_extract(archivo, ".*-(.*)_meta", group = 1)
+    
+    id <- ifelse(id == "alumi", "alum", id)
+    
+    xml_path <- file.path(tempdir(), archivo)
+    
+    xml_content <- readLines(xml_path, warn = FALSE)
+    
+    # Reemplazar caracteres & no escapados
+    xml_content <- gsub("&(?!amp;|lt;|gt;|apos;|quot;)", "&amp;", xml_content, perl = TRUE)
+    
+    # Guardar el contenido corregido en una variable
+    xml_data <- xml2::read_xml(paste(xml_content, collapse = "\n"))
+    
+    attributes_table <- parse_xml_attributes(xml_data) %>% 
+      mutate(id = id,
+             Label = janitor::make_clean_names(Label)) %>% 
+      janitor::clean_names() %>% 
+      select(id, label, definition, unit)
+    
+    lista_tablas[[id]] <- attributes_table
+    
+  }
+  
+  return(lista_tablas)
+  
+}
+
+
+lista_dataframes <- procesar_archivos_csv(archivos_csv)
+
+
+lista_tablas <- procesar_archivos_xml(archivos_xml)
+
 
 # Luego, combinar los dataframes
-df_clean <- bind_rows(lista_dataframes) %>% 
-  janitor::clean_names() %>% 
-  pivot_longer(!all_of(c("id", "source","country", "type")), 
-                       names_to = 'variable', 
-                       values_to = "value",
-                       values_transform = as.character) %>%
-  mutate(value = ifelse(value == "", NA, value)) %>% 
-  drop_na(value)
+df_dataframes <- bind_rows(lista_dataframes) 
 
+df_tablas <- bind_rows(lista_tablas)
+
+df_clean <- df_dataframes %>% 
+  left_join(df_tablas, join_by(variable == label, id))
 
 lista_metales <- unique(df_clean$id)
 
@@ -127,7 +230,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("cod_act", "destino_venta", "detalle")
+                                     pk = c("id", "variable", "country")
 )
 
 
