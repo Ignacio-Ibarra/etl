@@ -56,7 +56,7 @@ download.file(url = url,
 
 actualizar_fuente_raw(id_fuente = 269,
                       url = url,
-                      nombre = "Series trimestrales de oferta y demanda globales",
+                      nombre = nombre,
                       fecha_actualizar = fecha_actualizar, 
                       path_raw = download_filename,
                       actualizable = T,
