@@ -109,3 +109,46 @@ INDEC.balanza_pagos.extraer_links = function(id, pattern){
   # Si pasa la verificación, devuelve el valor
   return(url)
 }
+
+
+
+INDEC.intercambio_comercial_argentino.extraer_links = function(id, pattern){
+  
+  url_base <- "https://www.indec.gob.ar"
+  
+  page_url <- paste0(url_base,"/Nivel4/Tema/3/2/",id)
+  
+  # Obtiene el contenido de la página web
+  web_content <- read_html(page_url)
+  
+  # Obtiene los href y el texto de cada enlace
+  links <- web_content %>%
+    html_nodes("a") %>%
+    html_attr("href")
+  
+  text_links <- web_content %>%
+    html_nodes("a") %>%
+    html_text(trim = TRUE)
+  
+  # Filtra los links que contienen la URL base y aplican el pattern
+  filtered_links <- links[grepl(pattern, links)]
+  filtered_texts <- text_links[grepl(pattern, links)]
+  
+    # Verificar que 'url' sea un vector de longitud 1 y no vacío
+  if (!is.character(filtered_links) || length(filtered_links) != 1 || nchar(filtered_links) == 0) {
+    stop("Error: 'url' debe ser una cadena de caracteres no vacía y de longitud 1.")
+  }
+  
+  
+  # Construye la URL completa
+  url <- paste0(url_base, "/", filtered_links)
+  
+  # Devuelve una lista con la URL y el texto asociado
+  result <- list(url = url, text = filtered_texts)
+  
+  # Si pasa la verificación, devuelve el valor
+  return(result)
+}
+
+
+
