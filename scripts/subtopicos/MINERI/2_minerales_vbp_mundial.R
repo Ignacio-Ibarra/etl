@@ -77,7 +77,7 @@ comm_metadata <- json_imf_metada$COMMODITY %>%
 
 
 minerals_imf <- c("Aluminum", "Cobalt", "Copper", "Gold", "Iron Ore", "Lead", 
-                  "Nickel", "Tin", "Uranium", "Zinc", "Palladium", "Platinum", 
+                  "Nickel", "Tin", "Zinc", "Palladium", "Platinum", 
                   "Chromium", "Lithium", "Manganese", "Rare Earth Elements", 
                   "Silicon", "Vanadium", "Silver")
 
@@ -90,6 +90,7 @@ df_imf_data <- read.csv(argendataR::get_raw_path(fuente3)) %>%
   dplyr::filter(tolower(commodity_name) %in% tolower(minerals_imf)) %>% 
   mutate(id = case_when(
     trimws(tolower(commodity_name %>% str_sub(., start = 1, end = 5))) == "iron" ~ "feore",
+    trimws(tolower(commodity_name %>% str_sub(., start = 1, end = 5))) == "rare" ~ "raree",
     TRUE ~ trimws(tolower(commodity_name %>% str_sub(., start = 1, end = 5)))
   ),
   time_period = as.numeric(time_period))
@@ -162,6 +163,7 @@ df_usgs_solo_usgs_con_precios <- df_usgs_produccion_solo_usgs %>%
   left_join(df_usgs_precios_solo_usgs, join_by(id, anio)) %>% 
   mutate(
     multiplier = case_when(
+      grepl(".*dry.*metric.*ton.*tungsten.*trioxide.*", usd_unit_price) ~ 126.12,
       grepl(".*metric.*ton.*", usd_unit_price) ~ 1,
       grepl(".*kilogram.*", usd_unit_price) ~ 1000,
       grepl(".*pound.*", usd_unit_price) ~ 2204.62,
@@ -243,7 +245,9 @@ country_names <- c(
   "Kazakhstan, concentrate" = "Kazajstán",
   "Russiae" = "Rusia",
   "Ukraine, concentrate" = "Ucrania",
-  "New Caledonia9" = "Nueva Caledonia"
+  "New Caledonia9" = "Nueva Caledonia",
+  "Korea, Republic of" = "Corea del Sur",
+  "Thailand" = "Tailandia"
 )
 
 
@@ -267,7 +271,8 @@ minerales_es = c(
   'mercu' = 'Mercurio', 
   'tungs' = 'Tungsteno',
   'silve' = 'Plata',
-  'molyb' = "Molibdeno"
+  'molyb' = "Molibdeno",
+  'raree' = "Tierras Raras"
 )
 
 df_output <- countries_df %>% 
@@ -292,7 +297,7 @@ df_output <- countries_df %>%
 
 V <- df_output %>% dplyr::filter(is.na(codigo_pais)) %>% distinct(country) %>% pull()
 
-df_output[df_output$country %in% V, c("codigo_pais")] <- c("VNM", "VNM", "USA", "USA", "USA", "USA", "KOR", "KOR")
+df_output[df_output$country %in% V, c("codigo_pais")] <- c("VNM", "VNM", "USA", "USA", "USA", "USA")
 
 df_output <- df_output %>% 
   select(-country, -country_es) %>% 
