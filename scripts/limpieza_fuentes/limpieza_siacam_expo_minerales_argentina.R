@@ -55,7 +55,8 @@ df_clean <- read.csv(tmp_file, sep=";",
          provincia = ifelse(prov == "sin dato", "sin dato", ifelse(provincia == "", "sin nombre", provincia))
          ) %>% 
   group_by(across(-fob)) %>% 
-  summarise(fob = sum(fob, na.rm = T))
+  summarise(fob = sum(fob, na.rm = T)) %>%
+  ungroup()
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
