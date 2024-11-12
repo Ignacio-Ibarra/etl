@@ -57,7 +57,8 @@ df_clean <- read.csv(tmp_file, sep=";",
     ppro = ifelse(is.na(ppro), "sin dato", as.character(ppro))
   ) %>% 
   group_by(across(-cif)) %>% 
-  summarise(cif = sum(cif, na.rm = T))
+  summarise(cif = sum(cif, na.rm = T)) %>% 
+  ungroup()
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
