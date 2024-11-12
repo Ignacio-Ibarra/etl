@@ -24,7 +24,7 @@ get_file_location <- function() {
 code_name <- get_file_location() %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 268
+id_fuente <- 270
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -48,14 +48,16 @@ df_clean <- read.csv(tmp_file, sep=";",
                      na.strings = c("NA", "#N/A")) %>% 
   dplyr::filter(!is.na(ANYO)) %>% 
   janitor::clean_names() %>% 
-  mutate(fob = as.numeric(gsub(",", ".", gsub("\\.", "", fob))),
+  mutate(cif = as.numeric(gsub(",", ".", gsub("\\.", "", cif))),
          anyo = as.integer(anyo)) %>% 
-  drop_na(fob) %>% 
-  mutate(prov = ifelse(is.na(prov) | prov == "", "sin dato", prov),
-         provincia = ifelse(prov == "sin dato", "sin dato", ifelse(provincia == "", "sin nombre", provincia))
-         ) %>% 
-  group_by(across(-fob)) %>% 
-  summarise(fob = sum(fob, na.rm = T)) %>%
+  drop_na(cif) %>% 
+  mutate(
+    origen = ifelse(trimws(origen) == "" | is.na(origen), "sin dato", trimws(origen)),
+    procedenc = ifelse(trimws(procedenc) == "" | is.na(procedenc), "sin dato", trimws(procedenc)),
+    ppro = ifelse(is.na(ppro), "sin dato", as.character(ppro))
+  ) %>% 
+  group_by(across(-cif)) %>% 
+  summarise(cif = sum(cif, na.rm = T)) %>% 
   ungroup()
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
@@ -72,7 +74,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 #                      nombre = clean_title,
 #                      script = code_name)
 
-id_fuente_clean <- 137
+id_fuente_clean <- 139
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -81,7 +83,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("anyo", "prov", "destino", "mes", "grupo")
+                                     pk = c("anyo", "ppro", "procedenc", "mes", "grupo")
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
@@ -89,4 +91,3 @@ actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         nombre = clean_title, 
                         script = code_name,
                         comparacion = comparacion)
-
