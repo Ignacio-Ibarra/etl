@@ -69,8 +69,8 @@ procesar_archivos_csv <- function(archivos_filtrados) {
     tryCatch({
       
       data <- read.csv(file.path(tempdir(), archivo)) %>% janitor::clean_names()
-    
-      }, error = function(e) {
+      
+    }, error = function(e) {
       message("Error al leer el archivo: ", archivo, " - ", e$message)
       archivos_con_errores <- c(archivos_con_errores, archivo)
       return(NULL)
@@ -203,7 +203,7 @@ procesar_archivos_xml <- function(archivos_filtrados){
       select(id, label, definition, unit)
     
     lista_tablas[[id]] <- attributes_table
-  
+    
   }
   
   return(lista_tablas)
@@ -220,12 +220,19 @@ df_dataframes <- bind_rows(lista_dataframes) %>%
   janitor::clean_names() %>% 
   mutate(data_source = ifelse(!is.na(source), source, data_source),
          commodity = ifelse(!is.na(type), type, commodity)) %>% 
-  select(-c(source,type))
+  select(-c(source,type)) %>% 
+  mutate(variable = case_when( # acá pongo todas las correcciones a mano que necesite
+    id == "mercu" & variable == "price_imports_df" ~ "price_imports_dkg", 
+    TRUE ~ variable)
+    ) %>% 
+  mutate(variable_clean = gsub("_","", variable))
 
-df_tablas <- bind_rows(lista_tablas)
+df_tablas <- bind_rows(lista_tablas) %>% 
+  mutate(label_clean = gsub("_","", label))
 
 df_clean <- df_dataframes %>% 
-  left_join(df_tablas, join_by(variable == label, id))
+  left_join(df_tablas, join_by(variable_clean == label_clean, id)) %>% 
+  select(-label, -variable_clean)
 
 
 lista_metales <- unique(df_clean$id)
