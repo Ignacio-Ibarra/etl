@@ -53,7 +53,9 @@ df_clean <- read.csv(tmp_file, sep=";",
   drop_na(fob) %>% 
   mutate(prov = ifelse(is.na(prov) | prov == "", "sin dato", prov),
          provincia = ifelse(prov == "sin dato", "sin dato", ifelse(provincia == "", "sin nombre", provincia))
-         ) 
+         ) %>% 
+  group_by(across(-fob)) %>% 
+  summarise(fob = sum(fob, na.rm = T))
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
