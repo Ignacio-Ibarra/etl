@@ -14,9 +14,9 @@ fuente1 <- "R270C139" # SIACAM impo
 fuente2 <- "R268C137" # SIACAM expo
 
 
-df_siacam_impo <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) %>% ungroup() # esto habría que sacarlo
+df_siacam_impo <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
 
-df_siacam_expo <- arrow::read_parquet(argendataR::get_clean_path(fuente2)) %>% ungroup()
+df_siacam_expo <- arrow::read_parquet(argendataR::get_clean_path(fuente2))
 
 impo_df <- df_siacam_impo %>% 
   group_by(anio = anyo) %>% 
