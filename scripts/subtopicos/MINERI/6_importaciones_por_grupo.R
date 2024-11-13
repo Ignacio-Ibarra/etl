@@ -25,8 +25,7 @@ df_siacam <- df_siacam %>%
   mutate(grupo_agrup_nuevo = ifelse(grupo_agrup_nuevo == "Cinc", "Zinc", grupo_agrup_nuevo))
 
 otros <- df_siacam %>% 
-  dplyr::filter(grupo_agrup_nuevo == "Otros") %>% 
-  ungroup() %>% 
+  dplyr::filter(grupo_agrup_nuevo == "Otros") %>%
   group_by(grupo) %>%
   summarise(
     cif = sum(cif, na.rm = T)
