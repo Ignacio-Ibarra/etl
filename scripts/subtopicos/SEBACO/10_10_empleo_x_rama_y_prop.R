@@ -2,20 +2,29 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-output_name <- "nombre del archivo de salida"
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
+subtopico <- "SEBACO"
+output_name <- "10_empleo_x_rama_y_prop"
+analista = "Nicolas Sidicaro"
+fuente1 <- "R238C138"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
 
+#readr::read_csv(argendataR::get_temp_path("RXXCX"))
+
+get_raw_path <- function(codigo){
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
+  df_fuentes_raw <- fuentes_raw() 
+  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
+  return(paste0(prefix, path_raw))
+}
+
+## traigo la data
+data <- arrow::read_parquet(get_clean_path(fuente1))
 
 #-- Parametros Generales ----
 
@@ -23,19 +32,80 @@ readr::read_csv(argendataR::get_temp_path("RXXCX"))
 
 #-- Procesamiento ----
 
-df_output <- proceso
+# Paso 1: Filtrar solo los valores donde 'rama_de_actividad' es 'Total'
+totales_anuales <- data %>%
+  filter(rama_de_actividad == 'Total' & !is.na(anio)) %>%
+  select(anio, total_puestos = cant_promedio_puestos_privados)
+
+# Paso 2: Filtrar las actividades específicas de SBC (Servicios Basados en Conocimientos)
+empleo_sbc <- data %>% 
+  filter(ciiu_rev3_4d %in% c('2213',
+                             '3530',
+                             '7210','7220','7230','7240','7290',
+                             '7300',
+                             '7410','7421','7430','7494',
+                             '7491',
+                             '9211'
+                             #,'7499' # Se agregan "Servicios empresariales ncp, pese a que pueden tomar actividades que no estan dentro de SBC
+  ))
+
+empleo_sbc <- empleo_sbc %>% 
+  mutate(rama_de_actividad = case_when(ciiu_rev3_4d %in% c('7210','7220','7230','7240','7290') ~ 'SSI',
+                                       ciiu_rev3_4d %in% c('7300') ~ 'Investigación y desarrollo',
+                                       ciiu_rev3_4d %in% c('7410') ~ 'Ss. Jurídicos y de contabilidad',
+                                       ciiu_rev3_4d %in% c('7421') ~ 'Ss. Arquitectura',
+                                       ciiu_rev3_4d %in% c('7430') ~ 'Ss. publicidad',
+                                       TRUE ~ 'Otras'))
+empleo_sbc$ciiu_rev3_4d <- NULL
+
+# Paso 3: Calcular la suma de puestos privados solo para SBC por año
+sbc_puestos <- empleo_sbc %>%
+  group_by(anio,rama_de_actividad) %>%
+  summarize(puestos_sbc = sum(cant_promedio_puestos_privados, na.rm = TRUE))
+
+sbc_puestos <- sbc_puestos %>% 
+  group_by(anio) %>% 
+  mutate(sbc = sum(puestos_sbc)) %>% 
+  ungroup() %>% 
+  mutate(prop_sbc = puestos_sbc / sbc)
+sbc_puestos$sbc <- NULL
+sbc_puestos$empleo <- NULL
+sbc_puestos <- sbc_puestos %>% 
+  rename(prop_rama = prop_sbc)
+sbc_puestos <- sbc_puestos %>% 
+  rename(rama = rama_de_actividad) %>% 
+  select(rama,anio,puestos_sbc,prop_rama)
+
+
+# Paso 4: Unir las tablas de totales y SBC, y calcular la proporción de SBC
+empleo_final <- sbc_puestos %>%
+  left_join(totales_anuales, by = "anio") %>%
+  mutate(total_perc = puestos_sbc / total_puestos) %>% 
+  rename(empleo = puestos_sbc) %>% 
+  rename(sbc_perc = prop_rama) %>% 
+  select(1,2,3,4,6)
+
+# Limpiar nombres de columnas 
+df_clean <- empleo_final 
+
+##########################
+
+df_output <- df_clean 
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+## data anterior
+
+df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
-  nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  df_anterior = df_anterior,
+  df = df_output,
+  pk = c("anio","rama"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
 
 #-- Exportar Output ----
@@ -46,15 +116,24 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    control = comparacion,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c("R238C138"),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio","rama"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
+    #columna_geo_referencia = "",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
-  )
+    etiquetas_indicadores = list("rama"="Rama de actividad",
+                                 "anio"="Año de referencia",
+                                 "empleo"="Cantidad de empleados por rama de SBC",
+                                 "sbc_perc"="Proporción del empleo de una rama sobre el total de empleados en SBC",
+                                 "total_perc"="Proporción del empleo de una rama sobre el total de empleados en el sector privado registrado"),
+                                 unidades = list("sbc_perc"= "proporción", "total_perc"="proporción"))
+
+
+#temp_files <- list.files(temp_dir, full.names = TRUE)
+#view(temp_files)
+#list.files(tempdir())
 
