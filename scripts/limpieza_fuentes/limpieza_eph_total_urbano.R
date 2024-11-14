@@ -84,6 +84,24 @@ clean_title <- glue::glue("{titulo.raw}")
 #                      descripcion_clean = "Columnas en minúscula",
 #                      script = code_name)
 
+id_fuente_clean <- 16
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c('codusu', 'trimestre', 'ano4', 'provincia', 'aglomerado', 'nro_hogar', 'componente')
+)
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
+
 
 actualizar_fuente_clean(id_fuente_clean = 16, 
                         path_clean = clean_filename,
