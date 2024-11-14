@@ -103,8 +103,3 @@ actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         comparacion = comparacion)
 
 
-actualizar_fuente_clean(id_fuente_clean = 16, 
-                        path_clean = clean_filename,
-                        nombre = clean_title,
-                        descripcion = "Este dataset contiene las siguientes modificaciones: 1) columnas en minúscula 2) se utilizaron las funciones `eph::organize_cno` y `eph::organize_caes` para corregir codigos y labels; 3) Se agregaron descripciones abreviadas a las letras del CAES",
-                        script = code_name)
