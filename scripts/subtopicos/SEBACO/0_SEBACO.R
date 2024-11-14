@@ -1,0 +1,31 @@
+source("scripts/subtopicos/SEBACO/fuentes_SEBACO.R")
+subtopico <-  "SEBACO"
+analista <-  c("")
+
+#-- Sources -----
+
+# source("scripts/subtopicos/SEBACO/1_01_ventas_afip.R)"
+# source("scripts/subtopicos/SEBACO/10_10_empleo_x_rama_y_prop.R)"
+# source("scripts/subtopicos/SEBACO/11_11_ocupados_x_condicion.R)"
+# source("scripts/subtopicos/SEBACO/12_12_salarios_sbc_y_desagregado.R)"
+# source("scripts/subtopicos/SEBACO/13_13_ocupados_x_niveled.R)"
+# source("scripts/subtopicos/SEBACO/14_14_participacion_femenina_sbc.R)"
+# source("scripts/subtopicos/SEBACO/15_15_participacion_femenina_ssi.R)"
+# source("scripts/subtopicos/SEBACO/16_16_brecha_salarial_ssi.R)"
+# source("scripts/subtopicos/SEBACO/17_17_tasa_teletrabajo.R)"
+# source("scripts/subtopicos/SEBACO/18_18_expo_impo_saldo_x_sector.R)"
+# source("scripts/subtopicos/SEBACO/19_19_saldo_comex_x_sector.R)"
+# source("scripts/subtopicos/SEBACO/2_02_vbp_ssi_fundar.R)"
+# source("scripts/subtopicos/SEBACO/20_20_composicion_expo_sbc.R)"
+# source("scripts/subtopicos/SEBACO/21_21_exportaciones_ssi.R)"
+# source("scripts/subtopicos/SEBACO/22_22_participacion_expo_sbc.R)"
+# source("scripts/subtopicos/SEBACO/23_23_participacion_expo_ssi.R)"
+# source("scripts/subtopicos/SEBACO/24_24_expo_x_socio_comercial_arg.R)"
+# source("scripts/subtopicos/SEBACO/25_25_impo_x_socio_comercial_arg.R)"
+# source("scripts/subtopicos/SEBACO/3_03_vab_indec.R)"
+# source("scripts/subtopicos/SEBACO/4_04_exportacion_sbc.R)"
+# source("scripts/subtopicos/SEBACO/5_05_empleo_sbc_oede.R)"
+# source("scripts/subtopicos/SEBACO/6_06_empleo_sbc_provincia.R)"
+# source("scripts/subtopicos/SEBACO/7_07_empleo_sbc_provincias_princ.R)"
+# source("scripts/subtopicos/SEBACO/8_08_i_d_sbc.R)"
+# source("scripts/subtopicos/SEBACO/9_09_composicion_sbc_rama.R)"
