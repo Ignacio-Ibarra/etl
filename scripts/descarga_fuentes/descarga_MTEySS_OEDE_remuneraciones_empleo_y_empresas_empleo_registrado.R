@@ -17,7 +17,7 @@ resultado <- resultado[resultado$detalle == "Caracterización y evolución del e
 
 url <- resultado$link
 
-download_filename <- paste0(resultado$detalle %>% janitor::make_clean_names(),"xlsx")
+download_filename <- paste0(resultado$detalle %>% janitor::make_clean_names(),".xlsx")
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
