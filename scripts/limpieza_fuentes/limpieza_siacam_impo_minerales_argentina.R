@@ -58,7 +58,20 @@ df_clean <- read.csv(tmp_file, sep=";",
   ) %>% 
   group_by(across(-cif)) %>% 
   summarise(cif = sum(cif, na.rm = T)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(
+    provincia = case_when(
+      provincia == "Capital Federal" ~ "CABA",
+      provincia == "Cordoba" ~ "Córdoba",
+      provincia == "Entre Rios" ~ "Entre Ríos",
+      provincia == "Neuquen" ~ "Neuquén",
+      provincia == "Rio Negro" ~ "Río Negro",
+      provincia == "Santiago Del Estero" ~ "Santiago del Estero",
+      provincia == "Tierra Del Fuego" ~ "Tierra del Fuego",
+      provincia == "Tucuman" ~ "Tucumán",
+      provincia == "Santa Fe" ~ "Santa Fé",
+      TRUE ~ provincia
+    ))
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
