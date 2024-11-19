@@ -50,7 +50,7 @@ clean_opex_provincia_rubro <- function(sheet_name, skip, lista_provincias){
   
   
   
-  df_clean <- readxl::read_excel(get_raw_path(fuente_raw),
+  df <- readxl::read_excel(get_raw_path(fuente_raw),
                                  sheet = sheet_name, 
                                  col_names = F,
                                  skip = skip) 
@@ -59,27 +59,39 @@ clean_opex_provincia_rubro <- function(sheet_name, skip, lista_provincias){
   
   cols <- c("provincia_rubro",anios[1]:anios[2])
   
-  names(df_clean) <- cols
+  names(df) <- cols
   
   # cuento cantidad de columnas
   num_cols <- length(cols)
   
   # saco las filas que tienen (num_cols - 1) nulos
-  filter_bool <- check_na_threshold(df_clean, num_cols-1)
+  filter_bool <- check_na_threshold(df, num_cols-1)
   
-  df_clean <- df_clean %>%  
+  
+  lista_prov_norm <- lista_provincias %>% trimws(.) %>% janitor::make_clean_names() 
+  
+  df_clean <- df %>%  
     dplyr::filter(!filter_bool) %>% 
     mutate(
-      provincia = trimws(ifelse(provincia_rubro %in% lista_provincias, provincia_rubro, NA)),
-      rubro = ifelse(!(provincia_rubro %in% lista_provincias), provincia_rubro, "Total provincia")
+      provincia_rubro = case_when(
+        provincia_rubro == "Ciudad Autónoma de Buenos Aires" ~ "CABA",
+        provincia_rubro == "Santa Fe" ~ "Santa Fé",
+        provincia_rubro == "Entre Rios" ~ "Entre Ríos",
+        provincia_rubro == "Tierra del Fuego, Antártida e Islas del Atlántico Sur" ~ "Tierra del Fuego",
+        TRUE ~ provincia_rubro
+      )) %>% 
+    mutate(
+      provincia_rubro_norm = str_replace(janitor::make_clean_names(trimws(provincia_rubro)), "_\\d$",""),
+      provincia = trimws(ifelse(provincia_rubro_norm %in% lista_prov_norm, provincia_rubro, NA)),
+      rubro = ifelse(!(provincia_rubro_norm %in% lista_prov_norm), provincia_rubro, "Total rubros")
     ) %>% 
     fill(provincia, .direction = "downup") %>% 
-    select(-provincia_rubro) %>% 
+    select(-provincia_rubro, - provincia_rubro_norm) %>% 
     pivot_longer(!all_of(c('provincia', 'rubro')), 
                  names_to = 'anio', 
                  names_transform = as.integer,
                  values_to = "valor_expo",
-                 values_transform = as.numeric)
+                 values_transform = as.numeric) 
   
   
   return(df_clean)
@@ -88,7 +100,7 @@ clean_opex_provincia_rubro <- function(sheet_name, skip, lista_provincias){
 
 
 lista_provincias <- c("Buenos Aires",
-                "Ciudad Autónoma de Buenos Aires",
+                "CABA",
                 "Catamarca",
                 "Chaco",
                 "Chubut",
@@ -112,7 +124,8 @@ lista_provincias <- c("Buenos Aires",
                 "Tierra del Fuego",
                 "Tucumán",
                 "Extranjero",
-                "Indeterminado")
+                "Indeterminado",
+                "Plataforma continental")
 
 
 

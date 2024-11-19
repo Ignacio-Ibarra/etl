@@ -24,7 +24,7 @@ get_file_location <- function() {
 code_name <- get_file_location() %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 268
+id_fuente <- 275
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -44,32 +44,30 @@ lineas <- readLines(argendataR::get_raw_path(fuente_raw), encoding='latin1')
 lineas <- gsub('\"', '', lineas)
 writeLines(lineas, tmp_file)
 
-df_clean <- read.csv(tmp_file, sep=";",
-                     na.strings = c("NA", "#N/A")) %>% 
-  dplyr::filter(!is.na(ANYO)) %>% 
-  janitor::clean_names() %>% 
-  mutate(fob = as.numeric(gsub(",", ".", gsub("\\.", "", fob))),
-         anyo = as.integer(anyo)) %>% 
-  drop_na(fob) %>% 
-  mutate(prov = ifelse(is.na(prov) | prov == "", "sin dato", prov),
-         provincia = ifelse(prov == "sin dato", "sin dato", ifelse(provincia == "", "sin nombre", provincia))
-         ) %>% 
-  group_by(across(-fob)) %>% 
-  summarise(fob = sum(fob, na.rm = T)) %>%
-  ungroup() %>% 
+df_clean <- read.csv(tmp_file, sep=";", na.strings = c("NA", "#N/A"), dec = ",") %>% 
+  janitor::clean_names()
+
+fechas_corregidas <- data.frame(
+  fechas_num = df_clean %>% arrange(ano_mes) %>% distinct(ano_mes) %>% pull()
+)
+
+fechas_corregidas$anio_mes <- seq.Date(from = as.Date("2007-01-01"), by = "month", length.out = nrow(fechas_corregidas))
+
+df_clean <- df_clean %>% 
+  left_join(fechas_corregidas, join_by(ano_mes == fechas_num)) %>% 
   mutate(
     provincia = case_when(
-      provincia == "Capital Federal" ~ "CABA",
-      provincia == "Cordoba" ~ "Córdoba",
-      provincia == "Entre Rios" ~ "Entre Ríos",
-      provincia == "Neuquen" ~ "Neuquén",
-      provincia == "Rio Negro" ~ "Río Negro",
-      provincia == "Santiago Del Estero" ~ "Santiago del Estero",
-      provincia == "Tierra Del Fuego" ~ "Tierra del Fuego",
-      provincia == "Tucuman" ~ "Tucumán",
-      provincia == "Santa Fe" ~ "Santa Fé",
-      TRUE ~ provincia
-    ))
+      provincia_zona == "Cordoba" ~ "Córdoba",
+      provincia_zona == "Entre Rios" ~ "Entre Ríos",
+      provincia_zona == "Neuquen" ~ "Neuquén",
+      provincia_zona == "Rio Negro" ~ "Río Negro",
+      provincia_zona == "Santiago Del Estero" ~ "Santiago del Estero",
+      provincia_zona == "Tierra Del Fuego" ~ "Tierra del Fuego",
+      provincia_zona == "Tucuman" ~ "Tucumán",
+      provincia_zona == "Santa Fe" ~ "Santa Fe",
+      TRUE ~ provincia_zona
+    )) %>% 
+  select(-ano_mes,-provincia_zona)
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -85,7 +83,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 #                      nombre = clean_title,
 #                      script = code_name)
 
-id_fuente_clean <- 137
+id_fuente_clean <- 144
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -94,11 +92,11 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("anyo", "prov", "destino", "mes", "grupo"))
+                                     pk = c("anio_mes", "provincia", "genero", "rubro")
+)
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         path_clean = clean_filename,
                         nombre = clean_title, 
                         script = code_name,
                         comparacion = comparacion)
-
