@@ -10,17 +10,66 @@ gc()   #Garbage Collection
 subtopico <- "MINERI"
 output_name <- "min_comp_categoria_ocupacional_rama"
 analista = "Kevin Corfield"
-fuente1 <- "R277C148"
+fuente1 <- "R49C16"
 
 
-df_siacam <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
+df_eph <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
 
 
-df_output <- df_siacam %>% 
-  rename(rama_actividad = rama_de_actividad,
-         porcentaje_sobre_total_rama = promedio_share)
+df_intermedio <- df_eph %>% 
+  select(ano4, pondera, pp04b_cod, pp04b_label, 
+         letra_desc_abrev, cat_ocup, estado, pp07h) %>% 
+  mutate(
+    
+    pp04b_cod = as.integer(pp04b_cod),
+    
+    rama_actividad = case_when(
+      pp04b_cod %in% c(6,500,600,900) ~ "Extracción de petróleo y gas",
+      pp04b_cod == 700 ~ "Minería metalífera",
+      pp04b_cod == 800 ~ "Minería no metalífera",
+      letra_desc_abrev == "Agro y pesca" ~ "Agro",
+      letra_desc_abrev == "Serv. inmobiliarios" ~ "Inmobiliarias",
+      letra_desc_abrev == "Industria manufacturera" ~ "Industria",
+      letra_desc_abrev == "Servicio doméstico" ~ "Serv. Doméstico",
+      letra_desc_abrev == "Hotelería y restaurantes" ~ "Hoteles y restaurantes",
+      letra_desc_abrev == "Administración pública" ~ "Administración pública y defensa",
+      pp04b_cod >= 58 & pp04b_cod < 64 ~ "Información y comunicación",
+      pp04b_cod >= 5800 & pp04b_cod < 6400 ~ "Información y comunicación",
+      pp04b_cod >= 69 & pp04b_cod < 77 ~ "Act. profesionales, científicas y técnicas",
+      pp04b_cod >= 6900 & pp04b_cod < 7700 ~ "Act. profesionales, científicas y técnicas",
+      pp04b_cod >= 94 & pp04b_cod < 97 ~ "Otros servicios",
+      pp04b_cod >= 9400 & pp04b_cod < 9700 ~ "Otros servicios",
+      pp04b_cod >=9900 & pp04b_cod <=99999 | pp04b_cod == 99 ~ "Otros",
+      pp04b_cod >=9000 & pp04b_cod < 9400 ~ "Recreación",
+      pp04b_cod > 90 & pp04b_cod < 94 ~ "Recreación",
+      TRUE ~ letra_desc_abrev 
+    ),
+    categoria_ocupacional = case_when(
+      cat_ocup == 3 & pp07h == 1 ~ "Asalariado registrado",
+      cat_ocup == 3 & pp07h == 2 ~ "Asalariado no registrado",
+      cat_ocup != 3 & estado == 1 ~ "No asalariado",
+      estado != 1 ~ NA_character_,
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  filter(pp04b_cod != 0)
 
-
+df_output <- df_intermedio %>% 
+  group_by(
+    rama_actividad, categoria_ocupacional
+  ) %>% 
+  summarise(
+    pondera = sum(pondera, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(rama_actividad) %>%
+  mutate(
+    porcentaje_sobre_total_rama = 100 * pondera / sum(pondera, na.rm=T)
+  ) %>% 
+  ungroup() %>% 
+  select(-pondera) %>% 
+  complete(., rama_actividad, categoria_ocupacional, fill = list(porcentaje_sobre_total_rama = 0))
+  
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
@@ -31,6 +80,13 @@ df_anterior <- argendataR::descargar_output(nombre = output_name,
       categoria_ocupacional == "asalariados_registrados" ~ "Asalariado registrado",
       categoria_ocupacional == "asalariados_no_registrados" ~ "Asalariado no registrado",
       categoria_ocupacional == "no_asalariados" ~ "No asalariado"
+    ),
+    rama_actividad = case_when(
+      rama_actividad == "Reciclamiento de desperdicios, agua y saneamiento" ~ "Agua y saneamiento",
+      rama_actividad == "Act. Administrativas" ~ "Actividades administrativas",
+      rama_actividad == "Otras minas y canteras" ~ "Minería no metalífera",
+      
+      TRUE ~ rama_actividad
     )
   )
 
@@ -127,6 +183,6 @@ df_output %>%
     control = comparacion, 
     descripcion_columnas = descripcion,
     unidades = list("porcentaje_sobre_total_rama" = "porcentaje"),
-    aclaracion = "Se cambiaron los strings de la columna 'categoria_ocupacional' para adaptarlos al gráfico."
+    aclaracion = "Se cambiaron los strings de la columna 'categoria_ocupacional' para adaptarlos al gráfico. Se cambiaron las ramas de actividad. Se cambió la fuente de información de SIACAM a EPH Total Urbano, ya que el primero se habia basado en el segundo, el calculo del share se hace tomando un promedio global, se actualizaron los años. "
   )
 
