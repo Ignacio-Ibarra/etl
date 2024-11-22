@@ -75,12 +75,12 @@ clean_data <- data %>%
   dplyr::filter(!filter_bool) %>% 
   mutate(
     sectors = ifelse(to_split %in% sector, to_split, NA),
-    sub_sectors = ifelse(to_split %in% sub_sector, to_split, NA),
+    clean_energy_technologies = ifelse(to_split %in% sub_sector, to_split, NA),
     mineral = ifelse(!(to_split %in% c(sector, sub_sector)), to_split, NA)
     
   ) %>% 
   fill(sectors, .direction = "down") %>% 
-  fill(sub_sectors, .direction = "down") %>% 
+  fill(clean_energy_technologies, .direction = "down") %>% 
   drop_na(mineral) %>% 
   select(-to_split) %>% 
   pivot_longer(
@@ -148,7 +148,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("sectors","sub_sectors","mineral", "scenario")
+                                     pk = c("sectors","clean_energy_technologies","mineral", "scenario")
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
