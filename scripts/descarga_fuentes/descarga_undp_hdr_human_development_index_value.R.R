@@ -74,5 +74,6 @@ df_raw %>% write_csv_fundar(., glue::glue("{tempdir()}/{download_filename}"))
 
 actualizar_fuente_raw(id_fuente = 282,
                       fecha_actualizar = as.character(fecha_actualizar),
+                      script = code_name,
                       path_raw = download_filename
 )
