@@ -38,7 +38,7 @@ codigos_agragaciones <- c('ZZA.VHHD', 'ZZB.HHD', 'ZZC.MHD', 'ZZD.LHD', 'ZZE.AS',
 hdr_indictators <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
                                         entityName = "Indicators")
 
-hdr_indicator <- hdr_indictators[hdr_indictators$code == "hdi",]
+hdr_indicator <- hdr_indictators[hdr_indictators$code == "eys",]
 
 area_codes <- c(countries$code, codigos_agragaciones)
 
@@ -62,7 +62,9 @@ download_filename <- glue::glue("HDR_{hdr_indicator$code}.csv")
 
 df_raw %>% write_csv_fundar(., glue::glue("{tempdir()}/{download_filename}"))
 
-# agregar_fuente_raw(nombre = glue::glue("{hdr_indicator$name}. Human Development Report (Revision 2024)"),
+nombre <- glue::glue("{hdr_indicator$name}. Human Development Report (Revision {current_year})")
+
+# agregar_fuente_raw(nombre = nombre,
 #                    url = url,
 #                    institucion = "United Nations Development Programme",
 #                    actualizable = T,
@@ -72,7 +74,7 @@ df_raw %>% write_csv_fundar(., glue::glue("{tempdir()}/{download_filename}"))
 #                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 282,
+actualizar_fuente_raw(id_fuente = 284,
                       fecha_actualizar = as.character(fecha_actualizar),
                       path_raw = download_filename
 )
