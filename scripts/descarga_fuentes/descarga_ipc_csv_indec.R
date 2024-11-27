@@ -18,4 +18,6 @@ write_csv_fundar(x = ipc_indec, file = glue::glue("{tempdir()}/{archivo}"))
 #   script = "descarga_ipc_csv_indec.R"
 # )
 
-actualizar_fuente_raw(id_fuente = 127)
+
+actualizar_fuente_raw(id_fuente = 127,
+                      fecha_actualizar = "2024/11/15", prompt = F)
