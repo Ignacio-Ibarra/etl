@@ -10,6 +10,12 @@ subtopico <- "DESIGU"
 output_name <- "brecha_horas_trabajadas_genero"
 codigos.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(nombre, codigo) 
 
+
+
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
 # librerías
 
 require(data.table)
@@ -37,7 +43,7 @@ eph_brecha_horas_trabajadas_genero <- function(eph_data) {
 # Creo una función que levanta el dataset correspondiente a un año
 load_eph_by_year <- function(year, codes_and_names){
   fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
-  eph_df <- fread(argendataR::get_temp_path(fuente))
+  eph_df <- fread(argendataR::get_raw_path(fuente))
   return(eph_df)
 }
 
@@ -83,9 +89,12 @@ df_output <- eph_processing(years = anios, codes_and_names = codigos.eph, custom
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+df_anterior <- descargar_output(output_name, subtopico = "DESIGU")
+
+
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  nombre = output_name,
+  df_anterior,
   pk = c("anio", "genero_cod", "genero_desc"),
   drop_joined_df =  F
 )
@@ -116,6 +125,7 @@ df_output %>%
     analista = "",
     pk = c("anio", "genero_cod", "genero_desc"),
     es_serie_tiempo = T,
+    control = comparacion,
     columna_indice_tiempo = "anio",
     etiquetas_indicadores = list("hs_trabajadas_sem" = "Horas promedio trabajadas semanalmente"),
     unidades = list("hs_trabajadas_sem" = "unidades"),

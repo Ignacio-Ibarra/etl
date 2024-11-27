@@ -1,8 +1,18 @@
+#'
+#'
+#'
+#'
+
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 limpiar_temps()
+
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
 
 code_name <- '1_ISA_desigualdad_i1.R'
 subtopico <- 'DESIGU'
@@ -15,7 +25,7 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   pivot_longer(cols = c("EPH", "ajustados"), names_to = "variable", values_to = "valor")
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
@@ -28,6 +38,8 @@ comparacion <- argendataR::comparar_outputs(
   pk = c('decil','variable'),
   drop_joined_df = F
 )
+
+print(comparacion)
 
 etiquetas <- meta_desigu %>% 
   filter(dataset_archivo == output_name) %>% 
