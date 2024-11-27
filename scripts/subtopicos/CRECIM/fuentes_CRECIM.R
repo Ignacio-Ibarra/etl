@@ -1,2 +1,15 @@
-## Ver como definir 
-
+source('scripts/descarga_fuentes/descarga_world_bank_NY_GDP_PCAP_PP_KD.R')
+source('scripts/descarga_fuentes/descarga_world_bank_NY_GDP_MKTP_CD.R')
+source('scripts/descarga_fuentes/descarga_world_bank_NY_GDP_PCAP_CD.R')
+source('scripts/descarga_fuentes/descarga_wpp_life_expectancy_at_exact_age_both_sexes.R')
+source('scripts/descarga_fuentes/descarga_undp_hdr_mean_years_schoolling.R')
+source('scripts/descarga_fuentes/descarga_pip_ingreso_consumo_medio.R')
+source('scripts/descarga_fuentes/descarga_world_bank_NY_GDP_MKTP_KD.R')
+source('scripts/descarga_fuentes/descarga_maddison_project_database_2023.R')
+source('scripts/descarga_fuentes/descarga_world_bank_NY_GDP_PCAP_KD.R')
+source('scripts/descarga_fuentes/descarga_empalme_VAB_largo_plazo_argentina.R')
+source('scripts/limpieza_fuentes/limpieza_wpp_life_expectancy_at_exact_age_both_sexes_estimates.R')
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_mean_years_schoolling.R')
+source('scripts/limpieza_fuentes/limpieza_pip_ingreso_consumo_promedio.R')
+source('scripts/limpieza_fuentes/limpieza_maddison_project_database_2023_full_data.R')
+source('scripts/limpieza_fuentes/limpieza_maddison_project_database_2023_regional_data.R')
