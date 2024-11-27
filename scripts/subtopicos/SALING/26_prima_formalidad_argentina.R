@@ -100,7 +100,7 @@ eph_prima_formalidad <- function(eph_data){
 # Creo una función que levanta el dataset correspondiente a un año
 load_eph_by_year <- function(year, codes_and_names){
   fuente <- codigos.eph%>% filter(grepl(year, nombre)) %>% select(codigo) %>% pull()
-  eph_df <- fread(argendataR::get_temp_path(fuente))
+  eph_df <- fread(argendataR::get_fuente_path(fuente))
   return(eph_df)
 }
 
@@ -151,6 +151,8 @@ comparacion <- argendataR::comparar_outputs(
   pk = c("anio", "tipo_prima"),
   drop_joined_df = F
 )
+
+print(comparacion)
 
 #-- Exportar Output ----
 

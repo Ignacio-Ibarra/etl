@@ -10,9 +10,13 @@ output_name <- 'ISA_pobreza_monetaria_it3.csv'
 id_fuente <- 150
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+
+df_anterior <- df_anterior %>% 
+  filter(fgt_parameter == 0) %>% 
+  select(-fgt_parameter)
 
 #-- Controlar Output ----
 
@@ -22,6 +26,8 @@ comparacion <- argendataR::comparar_outputs(
   pk = c('year','period_type','date','poverty_line'),
   drop_joined_df = F
 )
+
+print(comparacion)
 
 
 df_output %>%

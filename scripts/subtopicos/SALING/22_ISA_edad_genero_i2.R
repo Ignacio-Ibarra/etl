@@ -10,7 +10,7 @@ output_name <- 'ISA_edad_genero_i2.csv'
 id_fuente <- 169
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   pivot_longer(-edad, names_to = "variable", values_to = "valor")
 
 
@@ -24,6 +24,8 @@ comparacion <- argendataR::comparar_outputs(
   pk = c('edad','variable'),
   drop_joined_df = F
 )
+
+print(comparacion)
 
 
 df_output %>%
