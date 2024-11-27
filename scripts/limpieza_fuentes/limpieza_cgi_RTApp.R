@@ -89,8 +89,10 @@ clean_title <- glue::glue("{titulo.raw} - Cuadro: {SHEET_NAME}")
 #                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir",
 #                      script = code_name)
 
+control <- comparar_fuente_clean(df_clean, id = 76, pk = c("anio", "trim", "indicador", "letra"))
+
 actualizar_fuente_clean(id_fuente_clean = 76,
                         path_clean = clean_filename,
                         nombre = clean_title, 
-                        script = code_name)
+                        script = code_name, comparacion = control)
 

@@ -1,6 +1,6 @@
 descargar_fuente("R127C0")
 
-archivo <- "ipc_total_regiones_divisiones_indec.csv"
+archivo <- "ipc_total_regiones_divisiones_indec.parquet"
 
 ipc_indec <- readr::read_csv(get_temp_path("R127C0"))
 
@@ -22,8 +22,8 @@ ipc_indec <- ipc_indec %>%
 # 
 # 
 ipc_indec <- ipc_indec %>%
-  mutate(anio =  substr(periodo, 1, 4),
-         mes = substr(periodo, 5, 6))
+  mutate(anio =  as.numeric(substr(periodo, 1, 4)),
+         mes = as.numeric(substr(periodo, 5, 6)))
 # 
 ipc_indec <- ipc_indec %>%
   select(-c(periodo))
@@ -33,7 +33,10 @@ ipc_indec <- ipc_indec %>%
   select(anio, mes, region, codigo, clasificador, descripcion,  everything())
 
 
-write_csv_fundar(x = ipc_indec, file = glue::glue("{tempdir()}/{archivo}"))
+arrow::write_parquet(x = ipc_indec,
+                     sink = glue::glue("{tempdir()}/{archivo}"))
+
+print(glue::glue("{tempdir()}/{archivo}"))
 
 
 # agregar_fuente_clean(id_fuente_raw = 127,script = "scripts/limpieza_fuentes/limpieza_ipc_csv_indec.R", 
@@ -42,4 +45,17 @@ write_csv_fundar(x = ipc_indec, file = glue::glue("{tempdir()}/{archivo}"))
 #                      descripcion = "Los datos de esta tabla deberian coincidir con la sheet ipc de fuente raw 117 tambien. Se consume directo del link csv por comodidad"
 #                      )
 
-actualizar_fuente_clean(id_fuente_clean = 54)
+df_anterior <- arrow::read_parquet(get_clean_path(codigo = "R127C54"))
+
+
+comparacion <- comparar_fuente_clean(ipc_indec,
+                                     df_anterior %>% 
+                                       mutate(across(c(anio, mes), as.numeric)),
+                                     pk = c("anio", "mes", "region", "codigo"))
+
+
+
+actualizar_fuente_clean(id_fuente_clean = 54,
+                        df = ipc_indec, comparacion = comparacion)
+
+
