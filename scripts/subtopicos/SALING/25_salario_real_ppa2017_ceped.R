@@ -18,7 +18,7 @@ fuente_ipc <- 'R127C54'
 # las filas donde 'nombre.variable' == Salario real en dólares 
 # de paridad de poder adquisitivo de 2017 (PPA de consumo privado) 
 # y las columnas iso3c, nombre.país, ANO4, valor
-ceped.df <- readxl::read_excel(argendataR::get_temp_path(fuente_ceped)) %>% 
+ceped.df <- readxl::read_excel(argendataR::get_fuente_path(fuente_ceped)) %>% 
   dplyr::filter(nombre.variable == "Salario real en dólares de paridad de poder adquisitivo de 2017 (PPA de consumo privado)") %>% 
   select(iso3 = iso3c, anio = ANO4, salario_real_ppa_consumo_privado_2017 = valor)
 
@@ -27,19 +27,19 @@ valor_ult_ceped <- ceped.df[(ceped.df$anio == anio_ult_ceped) & (ceped.df$iso3 =
 
                 
 # Tomamos el dato Total general/Total
-rta.df <- read_csv(argendataR::get_temp_path(fuente_cgi_rta)) %>% 
+rta.df <- arrow::read_parquet(argendataR::get_fuente_path(fuente_cgi_rta)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(-trim,-indicador)
 
 # Tomamos el dato Total general/Total 
-puestos_ar.df <- read_csv(argendataR::get_temp_path(fuente_cgi_puestos_ar)) %>% 
+puestos_ar.df <- arrow::read_parquet(argendataR::get_fuente_path(fuente_cgi_puestos_ar)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(-trim,-indicador)
 
 # # Tomamos el dato Total general/Total
-puestos_anr.df <- read_csv(argendataR::get_temp_path(fuente_cgi_puestos_anr)) %>% 
+puestos_anr.df <- arrow::read_parquet(argendataR::get_fuente_path(fuente_cgi_puestos_anr)) %>% 
   dplyr::filter(trim == "Total") %>% 
   dplyr::filter(indicador == "Total general") %>% 
   select(-trim,-indicador)
@@ -50,7 +50,7 @@ cgi_jn <- left_join(rta.df, puestos_ar.df,by = join_by(anio)) %>%
   mutate(salario_medio_nominal = valor_agregado_bruto * 1000 / (puestos_ar + puestos_anr) ) %>% 
   select(anio, salario_medio_nominal)
 
-ipc.df <- read_csv(argendataR::get_temp_path(fuente_ipc)) %>% 
+ipc.df <- arrow::read_parquet(argendataR::get_fuente_path(fuente_ipc)) %>% 
   dplyr::filter(region == "Nacional") %>% 
   dplyr::filter(descripcion == "Nivel general") %>% 
   group_by(anio) %>% 
@@ -88,12 +88,12 @@ df_output <- bind_rows(ceped.df, filas_nuevas)
 
 # El dataset del analista tenía filas erróneas que se sacaron para poder hacer correctamente la comparacion
 df_anterior <- argendataR::descargar_output(nombre = output_name, 
-                                            subtopico = subtopico, 
-                                            entrega_subtopico = "datasets_primera_entrega") %>% 
+                                            subtopico = subtopico) %>% 
   group_by(iso3, anio) %>% 
   mutate(row_id = row_number()) %>% 
   dplyr::filter(row_id == 1) %>% 
-  select(-row_id)
+  select(-row_id) %>% 
+  ungroup()
 
 
 comparacion <- argendataR::comparar_outputs(
@@ -102,6 +102,8 @@ comparacion <- argendataR::comparar_outputs(
   pk = c('iso3','anio'), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
+
+print(comparacion)
 
 #-- Exportar Output ----
 
