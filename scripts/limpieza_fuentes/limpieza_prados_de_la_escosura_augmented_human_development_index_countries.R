@@ -179,16 +179,19 @@ tfidf_dirty <- build_tfidf_matrix(B, vocabulary)
 # Calcular similitudes coseno
 cosine_sim <- proxy::simil(tfidf_clean, tfidf_dirty,method = "cosine")
 
-threshold <- 0.46
+threshold <- 0.5
 
 # Convertir la matriz de similitudes a un dataframe para obtener las mejores coincidencias
 match_results <- as.data.frame(as.table(as.matrix(cosine_sim))) %>%
   rename(clean_index = Var1, dirty_index = Var2, similarity = Freq) %>%
   mutate(clean_name = A[as.integer(clean_index)], dirty_name = B[as.integer(dirty_index)]) %>%
   group_by(dirty_index) %>%
-  dplyr::filter(similarity>threshold) %>% 
+  dplyr::filter(similarity>threshold & dirty_index != 'Iceland') %>%  #Similarity(Iceland, Belice) > Similarity(Belize, Belice)
   slice_max(similarity, n = 1) %>% 
   ungroup() %>%
+  group_by(clean_index) %>% 
+  slice_max(similarity, n = 1) %>% 
+  ungroup() %>% 
   arrange(dirty_index) %>%
   select(clean_index, dirty_index, similarity)
 
@@ -208,6 +211,7 @@ completar_automaticamente <- nombres_ahdi %>%
   dplyr::filter(!is.na(iso3))
 
 
+
 completar_automaticamente <- setNames(completar_automaticamente$iso3, completar_automaticamente$pais_nombre)
 
 completar_a_mano <- c(
@@ -225,9 +229,24 @@ completar_a_mano <- c(
   'Tunisia' = 'TUN',
   'Korea, South' = 'KOR',
   'Syrian Arab R' = 'SYR',
-  'USA' = 'USA'
+  'USA' = 'USA',
+  'Germany' = 'DEU',
+  'Ireland' = "IRL",
+  'Netherlands' = 'NLD',
+  "Slovak Rep"  = 'SVK',
+  'CAR' = 'CAF',
+  'Congo Dem R' = 'COD',
+  "Switzerland" = 'CHE',
+  'Equat. Guinea' = 'GNQ',
+  "Rwanda" = 'RWA',
+  'South Africa' = 'ZAF',
+  'Lebanon' = 'LBN',
+  'Turkey' = 'TUR',
+  'U A Emirates' = 'ARE',
+  'Cyprus' = 'CYP',
+  'Iceland' = 'ISL',
+  'Romania' = 'ROU'
 )
-
 
 completar <- c(completar_automaticamente, completar_a_mano)
 
