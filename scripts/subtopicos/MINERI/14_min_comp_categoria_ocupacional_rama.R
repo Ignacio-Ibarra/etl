@@ -17,7 +17,7 @@ df_eph <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 
 df_intermedio <- df_eph %>% 
-  select(ano4, pondera, pp04b_cod, pp04b_label, 
+  select(anio = ano4, pondera, pp04b_cod, pp04b_label, 
          letra_desc_abrev, cat_ocup, estado, pp07h) %>% 
   mutate(
     
@@ -70,7 +70,6 @@ df_output <- df_intermedio %>%
   select(-pondera) %>% 
   complete(., rama_actividad, categoria_ocupacional, fill = list(porcentaje_sobre_total_rama = 0))
   
-
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
