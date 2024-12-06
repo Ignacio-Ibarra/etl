@@ -16,9 +16,9 @@ fuente2 <- "R84C14"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-ephtu_df <- readr::read_csv(argendataR::get_temp_path(fuente1))
+ephtu_df <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
-codigos <- readr::read_csv(argendataR::get_temp_path(fuente2))
+codigos <-  arrow::read_parquet(argendataR::get_clean_path(fuente2))
 codigos <- codigos %>% select(aglomerado = aglom_cod_indec, provincia = prov_cod, prov_desc)
 
 #-- Procesamiento ----

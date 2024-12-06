@@ -23,35 +23,37 @@ get_file_location <- function() {
 
 code_name <- get_file_location() %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-periodicidad <- months(3)
-fecha_ultima_actualizacion <- as.Date("2024-09-18")
-fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
+fecha_actualizar <- "Sin informacion"
 
-source("scripts/utils/indec_scraper_links.R")
+url <- "https://www.gold.org/download/file/7593/Gold-Mining-Production-Volumes-Data-2024.xlsx"
 
-agregados_macro_id <- 47
+# Desactivo la verificacion de SSL
+options(download.file.method="libcurl"
+        # , download.file.extra="-k -L --ssl-allow-unsafe-legacy-renegotiation"
+)
 
-pattern_vbp_vab <- ".*sh_VBP_VAB_.*\\.xls"
-
-url <- INDEC.cuentas_nacionales.extraer_links(id = agregados_macro_id, pattern = pattern_vbp_vab)
-
-download_filename <- url %>% str_extract(., "sh.*\\.xls.*") # esta linea no debería ser así, debería proveer una string estatica
+download_filename <- "Gold-Mining-Production-Volumes-Data-2024.xlsx"
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
-download.file(url, destfile = destfile, mode = "wb")
+# download.file(url, destfile = destfile, mode = "wb")
+
+nombre = "Gold Mining Production Volumes (Data Release 2024)"
+institucion = "World Gold Council"
 
 # agregar_fuente_raw(url = url,
-#                    institucion = "INDEC",
-#                    nombre = "Cuentas Nacionales. Agregados Macroeconómicos (PIB). Series por sector de actividad económica: valor bruto de producción y valor agregado bruto, por trimestre",
-#                    actualizable = F,
+#                    nombre = nombre,
+#                    institucion = institucion,
+#                    actualizable = T,
+#                    directorio = "~/etl",
 #                    path_raw = download_filename,
 #                    script = code_name,
-#                    fecha_actualizar = fecha_actualizar,
-#                    api = F
-# )
+#                    fecha_actualizar = fecha_actualizar)
 
-actualizar_fuente_raw(id_fuente = 223,
+
+actualizar_fuente_raw(id_fuente = 294,
+                      nombre = nombre,
+                      institucion = institucion,
                       fecha_actualizar = fecha_actualizar,
                       path_raw = download_filename,
-                      script = code_name) 
+                      script = code_name)

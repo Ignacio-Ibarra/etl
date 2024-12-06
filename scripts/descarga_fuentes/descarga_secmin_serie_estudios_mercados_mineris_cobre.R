@@ -23,35 +23,36 @@ get_file_location <- function() {
 
 code_name <- get_file_location() %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-periodicidad <- months(3)
-fecha_ultima_actualizacion <- as.Date("2024-09-18")
-fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
+fecha_actualizar <- "Sin informacion"
 
-source("scripts/utils/indec_scraper_links.R")
+url <- "https://www.argentina.gob.ar/sites/default/files/serie_de_estudios_sobre_mercados_mineros_cobre_secmin.pdf"
 
-agregados_macro_id <- 47
+# Desactivo la verificacion de SSL
+options(download.file.method="libcurl"
+        # , download.file.extra="-k -L --ssl-allow-unsafe-legacy-renegotiation"
+)
 
-pattern_vbp_vab <- ".*sh_VBP_VAB_.*\\.xls"
-
-url <- INDEC.cuentas_nacionales.extraer_links(id = agregados_macro_id, pattern = pattern_vbp_vab)
-
-download_filename <- url %>% str_extract(., "sh.*\\.xls.*") # esta linea no debería ser así, debería proveer una string estatica
+download_filename <- "serie_de_estudios_sobre_mercados_mineros_cobre_secmin.pdf"
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
-download.file(url, destfile = destfile, mode = "wb")
+# download.file(url, destfile = destfile, mode = "wb")
 
+nombre = "Serie de Estudios sobre Mercados Mineros. Documento N° 3: Mercado de Cobre (Mayo 2022)"
+institucion = "Dirección Nacional de Promoción y Economía Minera. Secretaría de Minería. Ministerio de Desarrollo Productivo"
+# 
 # agregar_fuente_raw(url = url,
-#                    institucion = "INDEC",
-#                    nombre = "Cuentas Nacionales. Agregados Macroeconómicos (PIB). Series por sector de actividad económica: valor bruto de producción y valor agregado bruto, por trimestre",
+#                    nombre = nombre,
+#                    institucion = institucion,
 #                    actualizable = F,
 #                    path_raw = download_filename,
 #                    script = code_name,
-#                    fecha_actualizar = fecha_actualizar,
-#                    api = F
-# )
+#                    fecha_actualizar = fecha_actualizar)
 
-actualizar_fuente_raw(id_fuente = 223,
+
+actualizar_fuente_raw(id_fuente = 295,
+                      nombre = nombre,
+                      institucion = institucion,
                       fecha_actualizar = fecha_actualizar,
                       path_raw = download_filename,
-                      script = code_name) 
+                      script = code_name)
