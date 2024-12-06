@@ -14,6 +14,9 @@ subtopico <- "MINERI"
 output_name <- "ranking_minerales_argentina"
 analista = "Kevin Corfield"
 fuente1 <- "R264C134" # USGS world.zip
+fuente2 <- "R294C163" # gold.org
+fuente3 <- "R295C0" # PDF SECMIN no se usa en el script
+
 
 geonomenclador <- argendataR::get_nomenclador_geografico()
 
@@ -153,6 +156,8 @@ country_names <- c(
 
 df_usgs_world <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
+df_gold <- arrow::read_parquet(argendataR::get_clean_path(fuente2))
+
 df_usgs_produccion <- df_usgs_world %>% 
   dplyr::filter(!grepl(".*prod_note.*", variable)) %>% 
   dplyr::filter(grepl(".*prod_.*", variable)) %>% 
@@ -174,7 +179,7 @@ argentina_vs_otros <- df_usgs_produccion %>%
     mineral = recode(id, !!!minerales_es)
   ) %>% 
   group_by(id, anio) %>% 
-  filter( any(str_detect(country, "Argentina"))) %>%  # filtro los mercados donde argentina existe. 
+  filter( any(str_detect(country, "Argentina")) | type == "Mine production, recoverable copper content") %>%  # filtro los mercados donde argentina existe y el de Cobre
   ungroup() %>%
   mutate(country = trimws(country)) %>% 
   mutate(country_es = recode(country, !!!country_names)) %>% 
@@ -294,8 +299,31 @@ df_final <- argentina_vs_otros %>%
 
 
 
+df_oro <- df_gold %>% 
+  rename(codigo_pais = iso3,
+         pais = pais_nombre,
+         produccion = toneladas) %>% 
+  mutate(
+   unidad_medida = 'metric tons',
+    mineral = 'Oro'
+  ) %>% 
+  dplyr::filter(anio == max(df_final$anio)) %>% 
+  dplyr::filter(!is.na(codigo_pais)) %>% 
+  select(-region,-anio)
+
+# El cobre es un valor promedio de los la década del 2000
+df_cobre_arg <- data.frame(
+  codigo_pais = "ARG",
+  pais = "Argentina",
+  mineral = "Cobre",
+  produccion = 176,
+  unidad_medida = "thousand metric tons"
+)
+
 df_output <- df_final %>% 
   select(codigo_pais, pais = country_es, mineral, produccion = value, unidad_medida = unit) %>% 
+  bind_rows(df_oro) %>% 
+  bind_rows(df_cobre_arg) %>% 
   group_by(mineral) %>% 
   mutate(ranking = rank(-produccion, ties.method = "first")) %>% 
   ungroup() %>% 
@@ -308,15 +336,14 @@ df_anterior <- argendataR::descargar_output(nombre = output_name,
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_anterior = df_anterior,
-  df = comparable_df,
+  df_anterior = df_output, #hago esto solo para poder pasar un dataset nuevo totalmente distinto. 
+  df = df_output,
   nombre = output_name,
   pk = c("codigo_pais","mineral"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
 
-df_output_final <- df_output %>% select(anio, codigo_pais, pais, mineral = commodity_name, valor_prod_norm_mill_usd, tamanio_mercado, share, rank_share)
 
 #-- Exportar Output ----
 
@@ -360,26 +387,22 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 
 
 # Guardo en una variable las columnas del output que queremos escribir
-output_cols <- names(df_output_final) # lo puedo generar así si tengo df_output
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("anio",
-                      "codigo_pais",
+  variable_nombre = c("codigo_pais",
                       "pais",
                       "mineral",
-                      "valor_prod_norm_mill_usd",
-                      "tamanio_mercado",
-                      "share",
-                      "rank_share"),
-  descripcion = c("Año de referencia",
-                  "Código de país según ISO 3166-1 alpha-3",
+                      "produccion",
+                      "unidad_medida",
+                      "ranking"),
+  descripcion = c("Código de país según ISO 3166-1 alpha-3",
                   "Nombre de país",
                   "Nombre del mineral commodity",
-                  "Valor de la producción, valuado a precios internacionales",
-                  "Valor de la producción global",
-                  "Participación en la producción global",
-                  "Ranking de la participación")
+                  "Volumen de la produccion",
+                  "Unidad de medida",
+                  "Ranking de la producción")
 )
 
 descripcion <- armador_descripcion(metadatos = metadatos,
@@ -409,11 +432,7 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-aclaracion <- paste0("Se actualizó la fuente de información. ",
-                     "Se agregaron años, antes era sólo 2022, ahora es 2022 y 2023. ",
-                     "Se agregaron más minerales que los que había anteriormente. ",
-                     "Se incluyeron más países y además se incluyó su lugar en el ranking.",
-                     "Se agregó el valor absoluto de la producción, antes solo se contaba con la participación")
+aclaracion <- paste0("Se actualizó la fuente de información de 2022 a 2023.")
 
 df_output_final %>%
   argendataR::write_output(
@@ -421,16 +440,11 @@ df_output_final %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio","codigo_pais","mineral"),
+    pk = c("codigo_pais","mineral"),
     es_serie_tiempo = T,
     control = comparacion, 
-    columna_indice_tiempo = 'anio',
     columna_geo_referencia = 'codigo_pais',
     descripcion_columnas = descripcion,
-    unidades = list("valor_prod_norm_mill_usd" = "Millones de dólares corrientes",
-                    "share" = "proporción",
-                    "tamanio_mercado" = "Millones de dólares corrientes",
-                    "rank_share" = "unidades"),
     aclaracion = aclaracion
   )
 
