@@ -1,8 +1,5 @@
 # Codigo de limpieza de datos de EPH Total Urbano
 
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
 
 require(eph)
 
