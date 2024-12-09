@@ -35,11 +35,11 @@ geonomenclador <- argendataR::get_nomenclador_geografico() %>%
 # Cargo data desde server
 df_madd_c <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
   dplyr::filter(anio>=1900) %>% 
-  select(anio, iso3, area_desc = pais_nombre, gdppc) 
+  select(anio, iso3, pais_nombre, gdppc) 
 
 df_madd_r <- arrow::read_parquet(get_clean_path(fuente2)) %>%
   dplyr::filter(anio>=1900) %>% 
-  select(anio, iso3, area_desc = region, gdppc)
+  select(anio, iso3, pais_nombre = region, gdppc)
 
 df_all <- df_madd_c %>% 
   bind_rows(df_madd_r) %>% 
@@ -73,8 +73,79 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df =  F
 )
 
-#-- Exportar Output ----
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
 
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name,".csv"), dataset_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+etiquetas_nuevas <- data.frame(
+  variable_nombre = c("nivel_agregacion",
+                      "cambio_relativo"),
+  descripcion = c("Indicador si el registro refiere a un 'pais' o una 'agregacion' de países",
+                  "Variación del PIB per cápita del año comparado con el de 1900")
+)
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
@@ -82,7 +153,7 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c(fuente1, fuente2),
+    fuentes = colectar_fuentes(),
     analista = analista,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
@@ -90,8 +161,6 @@ df_output %>%
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
     aclaraciones = "El dataset entregado por el analista fue realizado con datos de Maddison Project Database 2020, en cambio en este caso se utilizaron datos de Maddison Project Database 2023. Los países Yugoslavia (YUG), Unión Soviética (SUN) y Checoslovaquia (CSK) fueron incorporados for los autores de la fuente (ver https://onlinelibrary.wiley.com/doi/10.1111/joes.12618). ",
-    etiquetas_indicadores = list("pib_per_capita" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2011)",
-                                 "cambio_relativo" = "Tasa de cambio del PBI per cápita de un año con respecto al valor del PBI per cápita de 1900"),
     unidades = list("pib_per_capita" = "unidades",
                     "cambio_relativo" = "unidades")
   )
