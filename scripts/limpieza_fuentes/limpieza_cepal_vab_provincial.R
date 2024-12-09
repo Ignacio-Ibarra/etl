@@ -1,14 +1,22 @@
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
+# Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola
+get_file_location <- function() {
+  # Intenta obtener la ruta del archivo en RStudio
+  if (interactive() && "rstudioapi" %in% rownames(installed.packages())) {
+    return(rstudioapi::getSourceEditorContext()$path)
+  }
+  
+  # Alternativa para obtener la ruta si se usa source()
+  this_file <- (function() { attr(body(sys.function(1)), "srcfile") })()
+  
+  # Si no se obtiene el path (e.g., en consola sin RStudio), asigna un valor por defecto
+  if (!is.null(this_file)) {
+    return(this_file$filename)
+  } else {
+    return("Archivo no especificado o ruta predeterminada")
+  }
 }
+
+code_name <- get_file_location() %>% str_split_1(., "/") %>% tail(.,1)
 
 
 id_fuente <- 221
@@ -25,7 +33,7 @@ check_na_threshold <- function(df, threshold) {
 clean_sheet <- function(sheet_name){
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = 5, 
                                    col_names = T)
@@ -129,7 +137,6 @@ path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
 #                      df = df_clean,
@@ -137,7 +144,20 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      nombre = "Desagregación provincial del valor agregado bruto de la Argentina, base 2004",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 92, path_clean = clean_filename, directorio = tempdir(), nombre = clean_filename)
+id_fuente_clean <- 92
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c("sector_de_actividad_economica", "anio", "provincia_id"))
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
 
