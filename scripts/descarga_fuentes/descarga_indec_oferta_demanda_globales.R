@@ -1,9 +1,3 @@
-# oferta y demanda global trimestral INDEC cuentas nacionales  -----------
-
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
 source("scripts/utils/indec_scraper_links.R")
 
 # Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola

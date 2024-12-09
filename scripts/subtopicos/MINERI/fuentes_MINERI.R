@@ -1,21 +1,44 @@
-source('scripts/descarga_fuentes/descarga_cuentas-nacionales-fund-norte-y-sur.R')
-source('scripts/descarga_fuentes/descarga_oferta_demanda_indec.R')
-source('scripts/descarga_fuentes/descarga_eph_total_urbano_individual.R')
-source('scripts/descarga_fuentes/descarga_indec_agregados_macroeconomicos_series_vab_vbp_por_sector.R')
-source('scripts/descarga_fuentes/descarga_boletin_estadisticas_laborales_segun_sexo.R')
-source('scripts/descarga_fuentes/descarga_MTEySS_OEDE_remuneraciones_empleo_y_empresas_empleo_registrado.R')
-source('scripts/descarga_fuentes/descarga_indec_origen_provincial_exportaciones_grandes_rubros.R')
-source('scripts/descarga_fuentes/descarga_siacam_compras_por_rama_vendedora_agrupada.R')
-source('scripts/descarga_fuentes/descarga_iea_the_role_of_critical_in_clean_energy_transitions_data_file.R')
-source('scripts/descarga_fuentes/descarga_iea_minerals_used_in_clean_energy_technologies_compared_to_other_power_generation_sources.R')
-source('scripts/descarga_fuentes/descarga_iea_minerals_used_in_electric_cars_compared_to_conventional_cars.R')
-source('scripts/limpieza_fuentes/limpieza_indec_oferta_y_demanda_globales_cuadro12.R')
-source('scripts/limpieza_fuentes/limpieza_cn_fundacion_norteysur.R')
-source('scripts/limpieza_fuentes/limpieza_eph_total_urbano.R')
-source('scripts/limpieza_fuentes/limpieza_indec_VABpb_por_sector_cuadro_4.R')
-source('scripts/limpieza_fuentes/limpieza_MTEySS_OEDE_boletin_estadisticas_laboral_segun_sexo_c23.R')
-source('scripts/limpieza_fuentes/limpieza_indec_origen_provincial_exportaciones_grandes_rubros.R')
-source('scripts/limpieza_fuentes/limpieza_MTEySS_OEDE_remuneraciones_empleo_y_empresas_empleo_c_3.R')
-source('scripts/limpieza_fuentes/limpieza_MTEySS_OEDE_boletin_estadisticas_laboral_segun_sexo_c24.R')
-source('scripts/limpieza_fuentes/limpieza_siacam_compras_por_rama_vendedora_agrupada.R')
-source('scripts/limpieza_fuentes/limpieza_iea_the_role_of_critical_in_clean_energy_transitions_data_file_by_sector.R')
+source('scripts/descarga_fuentes/descarga_cuentas-nacionales-fund-norte-y-sur.R') # R36C0
+source('scripts/descarga_fuentes/descarga_indec_oferta_demanda_globales.R') # R38C0
+source('scripts/descarga_fuentes/descarga_eph_total_urbano_individual.R') # R49C0
+source('scripts/descarga_fuentes/descarga_cepal_vab_provincial.R') # R221C0
+source('scripts/descarga_fuentes/descarga_indec_agregados_macroeconomicos_series_vab_vbp_por_sector.R') # R223C0
+source('scripts/descarga_fuentes/descarga_boletin_estadisticas_laborales_segun_sexo.R') # R235C0
+source('scripts/descarga_fuentes/descarga_MTEySS_OEDE_remuneraciones_empleo_y_empresas_empleo_registrado.R') # R238C0
+source('scripts/descarga_fuentes/descarga_usgs_u_s_geological_survey_mineral_commodity_summaries_last_year_world.R') # R264C0
+source('scripts/descarga_fuentes/descarga_imf_primary_commodity_prices.R') # R265C0
+source('scripts/descarga_fuentes/descarga_imf_primary_commodity_prices_metadata.R') # R266C0
+source('scripts/descarga_fuentes/descarga_usgs_u_s_geological_survey_mineral_commodity_summaries_last_year_salient.R') # R267C0
+source('scripts/descarga_fuentes/descarga_siacam_expo_minerales_argentina.R') # R268C0
+source('scripts/descarga_fuentes/descarga_indec_ica_balanza_comercial_argentina.R') # R269C0
+source('scripts/descarga_fuentes/descarga_siacam_impo_minerales_argentina.R') # R270C0
+source('scripts/descarga_fuentes/descarga_world_bank_commodity_markets_mensual.R') # R271C0
+source('scripts/descarga_fuentes/descarga_siacam_precios_internacionales_minerales.R') # R272C0
+source('scripts/descarga_fuentes/descarga_fred_consumer_price_index_monthly.R') # R273C0
+source('scripts/descarga_fuentes/descarga_indec_origen_provincial_exportaciones_grandes_rubros.R') # R274C0
+source('scripts/descarga_fuentes/descarga_siacam_empleo_minero_genero.R') # R275C0
+source('scripts/descarga_fuentes/descarga_siacam_compras_por_rama_vendedora_agrupada.R') # R278C0
+source('scripts/descarga_fuentes/descarga_iea_the_role_of_critical_in_clean_energy_transitions_data_file.R') # R279C0
+source('scripts/descarga_fuentes/descarga_iea_minerals_used_in_clean_energy_technologies_compared_to_other_power_generation_sources.R') # R280C0
+source('scripts/descarga_fuentes/descarga_iea_minerals_used_in_electric_cars_compared_to_conventional_cars.R') # R281C0
+source('scripts/descarga_fuentes/descarga_world_gold_council_gold_mining_production_volumes.R') # R294C0
+source('scripts/limpieza_fuentes/limpieza_indec_oferta_y_demanda_globales_cuadro12.R') # R38C7
+source('scripts/limpieza_fuentes/limpieza_fundacion_norte_y_sur_pbi_por_sectores_porcentaje_pib_precios_corrientes.R') # R36C13
+source('scripts/limpieza_fuentes/limpieza_eph_total_urbano.R') # R49C16
+source('scripts/limpieza_fuentes/limpieza_cepal_vab_provincial.R') # R221C92
+source('scripts/limpieza_fuentes/limpieza_indec_VABpb_por_sector_cuadro_4.R') # R223C94
+source('scripts/limpieza_fuentes/limpieza_MTEySS_OEDE_boletin_estadisticas_laboral_segun_sexo_c23.R') # R235C105
+source('scripts/limpieza_fuentes/limpieza_usgs_u_s_geological_survey_mineral_commodity_summaries_2024_world.R') # R264C134
+source('scripts/limpieza_fuentes/limpieza_usgs_u_s_geological_survey_mineral_commodity_summaries_2024_salient.R') # R267C135
+source('scripts/limpieza_fuentes/limpieza_indec_ica_balanza_comercial_argentina.R') # R269C136
+source('scripts/limpieza_fuentes/limpieza_siacam_expo_minerales_argentina.R') # R268C137
+source('scripts/limpieza_fuentes/limpieza_siacam_impo_minerales_argentina.R') # R270C139
+source('scripts/limpieza_fuentes/limpieza_world_bank_commodity_markets_mensual_monthly_prices.R') # R271C141
+source('scripts/limpieza_fuentes/limpieza_siacam_precios_internacionales_minerales_datos.R') # R272C142
+source('scripts/limpieza_fuentes/limpieza_indec_origen_provincial_exportaciones_grandes_rubros.R') # R274C143
+source('scripts/limpieza_fuentes/limpieza_siacam_empleo_minero_genero_rubro.R') # R275C144
+source('scripts/limpieza_fuentes/limpieza_MTEySS_OEDE_remuneraciones_empleo_y_empresas_empleo_c_3.R') # R238C145
+source('scripts/limpieza_fuentes/limpieza_MTEySS_OEDE_boletin_estadisticas_laboral_segun_sexo_c24.R') # R235C147
+source('scripts/limpieza_fuentes/limpieza_siacam_compras_por_rama_vendedora_agrupada.R') # R278C149
+source('scripts/limpieza_fuentes/limpieza_iea_the_role_of_critical_in_clean_energy_transitions_data_file_by_sector.R') # R279C150
+source('scripts/limpieza_fuentes/limpieza_world_gold_council_gold_mining_production_volumes.R') # R294C163

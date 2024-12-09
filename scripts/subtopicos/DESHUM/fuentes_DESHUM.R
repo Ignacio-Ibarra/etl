@@ -1,10 +1,26 @@
-source('scripts/descarga_fuentes/descarga_undp_hdr_mean_years_schoolling.R')
-source('scripts/descarga_fuentes/descarga_undp_hdr_life_expectancy_index_value.R')
-source('scripts/descarga_fuentes/descarga_undp_hdr_expected_years_of_schooling_years.R')
-source('scripts/descarga_fuentes/descarga_undp_hdr_gross_national_income_per_capita_2017_PPP.R')
-source('scripts/descarga_fuentes/descarga_prados_de_la_escosura_augmented_human_development_index_regions.R')
-source('scripts/limpieza_fuentes/limpieza_undp_hdr_mean_years_schoolling.R')
-source('scripts/limpieza_fuentes/limpieza_undp_hdr_life_expectancy_at_birth_years.R')
-source('scripts/limpieza_fuentes/limpieza_undp_hdr_expected_years_of_schooling_years.R')
-source('scripts/limpieza_fuentes/limpieza_undp_hdr_gross_national_income_per_capita_2017_PPP.R')
-source('scripts/limpieza_fuentes/limpieza_prados_de_la_escosura_augmented_human_development_index_regions.R')
+source('scripts/descarga_fuentes/descarga_undp_hdr_mean_years_schoolling.R') # R216C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_human_development_index_value.R.R') # R282C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_life_expectancy_index_value.R') # R283C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_expected_years_of_schooling_years.R') # R284C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_gross_national_income_per_capita_2017_PPP.R') # R285C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_inequality_adjusted_human_development_index_value.R') # R286C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_gender_development_index_value.R') # R287C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_hdi_male.R') # R288C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_hdi_female.R') # R289C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_difference_between_hdi_values.R') # R290C0
+source('scripts/descarga_fuentes/descarga_undp_hdr_planetary_pressures_adjusted_human_development_index_values.R') # R291C0
+source('scripts/descarga_fuentes/descarga_prados_de_la_escosura_augmented_human_development_index_countries.R') # R292C0
+source('scripts/descarga_fuentes/descarga_prados_de_la_escosura_augmented_human_development_index_regions.R') # R293C0
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_mean_years_schoolling.R') # R216C87
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_human_development_index_value.R') # R282C151
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_life_expectancy_at_birth_years.R') # R283C152
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_expected_years_of_schooling_years.R') # R284C153
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_gross_national_income_per_capita_2017_PPP.R') # R285C154
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_inequality_adjusted_human_development_index_value.R') # R286C155
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_gender_development_index_value.R') # R287C156
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_hdi_male.R') # R288C157
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_hdi_female.R') # R289C158
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_difference_between_hdi_values.R') # R290C159
+source('scripts/limpieza_fuentes/limpieza_undp_hdr_planetary_pressures_adjusted_human_development_index_values.R') # R291C160
+source('scripts/limpieza_fuentes/limpieza_prados_de_la_escosura_augmented_human_development_index_countries.R') # R292C161
+source('scripts/limpieza_fuentes/limpieza_prados_de_la_escosura_augmented_human_development_index_regions.R') # R293C162

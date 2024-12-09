@@ -1,8 +1,3 @@
-
-#limpio la memoria
-rm( list=ls())  #Borro todos los objetos
-gc()   #Garbage Collection
-
 # Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola
 get_file_location <- function() {
   # Intenta obtener la ruta del archivo en RStudio

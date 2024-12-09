@@ -1,8 +1,3 @@
-
-#limpio la memoria
-rm( list=ls())  #Borro todos los objetos
-gc()   #Garbage Collection
-
 # Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola
 get_file_location <- function() {
   # Intenta obtener la ruta del archivo en RStudio
@@ -54,7 +49,7 @@ white_cols <- function(df) {
 
 clean_monthly_prices <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
-  str_titulos <- readxl::read_excel(get_raw_path(fuente_raw), 
+  str_titulos <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                     sheet = sheet_name,
                                     range = "A1:A4",
                                     col_names = F) %>% 
@@ -62,7 +57,7 @@ clean_monthly_prices <- function(sheet_name, skip, filas_columnas, names_to, val
     tools::toTitleCase(.) %>% 
     paste0(., collapse = ". ")
   
-  cols_ <- readxl::read_excel(get_raw_path(fuente_raw), 
+  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                               sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
@@ -77,7 +72,7 @@ clean_monthly_prices <- function(sheet_name, skip, filas_columnas, names_to, val
   cols <- c('anio_mes',cols$concatenado)
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = skip, 
                                    col_names = F,

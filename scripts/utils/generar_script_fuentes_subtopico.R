@@ -22,7 +22,9 @@ buscar_codigos_fuentes <- function(ruta_script) {
     # Filtrar solo los códigos que cumplen "^R\\d+C\\d+"
     valores_limpios <- str_replace_all(valores, '"', "")
     patron_codigos <- "^R\\d+C\\d+"
-    codigos <- valores_limpios[str_detect(valores_limpios, patron_codigos)]
+    codigos <- valores_limpios[str_detect(valores_limpios, patron_codigos)] %>% 
+      str_extract(., "(^R\\d+C\\d+).*", group=1) %>% 
+      trimws(., which = "both")
     
     return(codigos)
   }, error = function(e) {
@@ -51,22 +53,28 @@ escribir_fuentes_subtopico <- function(subtopico){
   
   db_fclean <- fuentes_clean() %>% dplyr::filter(codigo %in% fuentes_utilizadas)
   
-  scripts_clean <- db_fclean$script %>% file.path(limpieza_fuentes_folder, .)
+  fuentes_escribir <- db_fclean %>% 
+    select(codigo, script) %>% 
+    mutate(
+      script = file.path(limpieza_fuentes_folder, script)
+    )
   
-  fraw_clean <- db_fclean$id_fuente_raw %>% 
+   # scripts_clean <- db_fclean$script %>% file.path(limpieza_fuentes_folder, .)
+  
+  raw_from_clean <- db_fclean$id_fuente_raw %>% 
     paste0("R",.,"C0")
   
-  scripts_raw <- fuentes_raw() %>% 
-    dplyr::filter(codigo %in% c(fuentes_utilizadas, fraw_clean)) %>% 
+  db_fraw <- fuentes_raw() %>% 
+    dplyr::filter(codigo %in% c(fuentes_utilizadas, raw_from_clean)) %>%
+    select(codigo, script) %>% 
     drop_na(script) %>% 
-    pull(script) %>% 
-    file.path(descarga_fuentes_folder, .)
+    mutate(
+      script = file.path(descarga_fuentes_folder, script)
+    )
   
-  
-  # Tienen que ir en este orden los scripts
-  sources <- c(scripts_raw, scripts_clean)
-  
-  lines_to_write <- glue::glue("source('{sources}')")
+  fuentes_escribir <- db_fraw %>% bind_rows(fuentes_escribir)
+    
+  lines_to_write <- purrr::map2(.x = fuentes_escribir$script, .y = fuentes_escribir$codigo, .f = ~ glue::glue("source('{.x}') # {.y}"))
   
   # Armo el script fuentes_SUBTOP.R pero de manera automática. 
   
