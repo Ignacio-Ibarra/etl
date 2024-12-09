@@ -1,5 +1,5 @@
 source('scripts/descarga_fuentes/descarga_cuentas-nacionales-fund-norte-y-sur.R')
-source('scripts/descarga_fuentes/descarga_oferta_demanda_indec.R')
+source('scripts/descarga_fuentes/descarga_indec_oferta_demanda_globales.R')
 source('scripts/descarga_fuentes/descarga_eph_total_urbano_individual.R')
 source('scripts/descarga_fuentes/descarga_indec_agregados_macroeconomicos_series_vab_vbp_por_sector.R')
 source('scripts/descarga_fuentes/descarga_boletin_estadisticas_laborales_segun_sexo.R')
