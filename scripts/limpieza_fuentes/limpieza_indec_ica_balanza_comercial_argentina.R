@@ -1,8 +1,3 @@
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
-
 # Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola
 get_file_location <- function() {
   # Intenta obtener la ruta del archivo en RStudio
@@ -50,14 +45,14 @@ clean_serie_historica <- function(sheet_name, skip, columns_range){
 
 
 
-  df_clean <- readxl::read_excel(get_raw_path(fuente_raw),
+  df_clean <- readxl::read_excel(argendataR::get_raw_path(fuente_raw),
                                 sheet = sheet_name, 
                                 col_names = F,
                              skip = skip) %>% 
     select(1,3:5)
   
   
-  cols <- readxl::read_excel(get_raw_path(fuente_raw),
+  cols <- readxl::read_excel(argendataR::get_raw_path(fuente_raw),
                              sheet = sheet_name, 
                              range = columns_range,
                              col_names = F) 
