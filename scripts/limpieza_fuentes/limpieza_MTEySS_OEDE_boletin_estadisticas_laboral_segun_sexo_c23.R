@@ -1,16 +1,3 @@
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
-
 id_fuente <- 235
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
@@ -50,7 +37,7 @@ dicc_sector <- data.frame(letra, sector_letra, letra_desc_abrev)
 
 clean_cuadros <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
-  str_titulos <- readxl::read_excel(get_raw_path(fuente_raw), 
+  str_titulos <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                      sheet = sheet_name,
                                      range = "A1:A3",
                                      col_names = F)
@@ -61,7 +48,7 @@ clean_cuadros <- function(sheet_name, skip, filas_columnas, names_to, values_to)
   
   
   
-  cols_ <- readxl::read_excel(get_raw_path(fuente_raw), 
+  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                               sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
@@ -79,7 +66,7 @@ clean_cuadros <- function(sheet_name, skip, filas_columnas, names_to, values_to)
     pull(concatenado) %>% gsub("sd","Z", .)
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = skip, 
                                    col_names = F)
