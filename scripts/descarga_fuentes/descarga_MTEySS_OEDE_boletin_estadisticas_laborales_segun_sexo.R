@@ -52,4 +52,5 @@ nombre <- glue::glue("OEDE - {resultado$h3} - {resultado$fecha_publicacion}")
 actualizar_fuente_raw(id_fuente = 235,
                       nombre = nombre,
                       fecha_actualizar = fecha_actualizar,
-                      path_raw = download_filename, api = F)
+                      path_raw = download_filename, api = F,
+                      script = code_name)
