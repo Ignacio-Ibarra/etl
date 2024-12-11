@@ -8,7 +8,12 @@ fecha_ultima_actualizacion <- as.Date("2024-09-30")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
 
-url <- INDEC.cuentas_nacionales.extraer_links(id = 47, pattern = ".*sh_oferta_demanda_\\d{2}_\\d{2}\\..*" )
+result <- INDEC.cuentas_nacionales.extraer_links(id = 47, pattern = ".*sh_oferta_demanda_\\d{2}_\\d{2}\\..*" )
+
+url <- result$url
+
+title_raw <- glue::glue("Cuentas Nacionales. Agregados macroeconómicos (PIB). {result$text}")
+
 
 download_filename <- "sh_oferta_demanda.xls"
 
@@ -28,7 +33,7 @@ download.file(url = url,
 
 actualizar_fuente_raw(id_fuente = 38,
                       url = url,
-                      nombre = "Series trimestrales de oferta y demanda globales",
+                      nombre = title_raw,
                       fecha_actualizar = fecha_actualizar, 
                       path_raw = download_filename,
                       actualizable = T,
