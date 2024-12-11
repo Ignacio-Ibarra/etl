@@ -1,3 +1,6 @@
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
+
 
 id_fuente <- 223
 fuente_raw <- sprintf("R%sC0",id_fuente)
@@ -108,8 +111,6 @@ clean_filename <- glue::glue("{nombre_archivo_raw}_{normalized_sheet_name}_CLEAN
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 titulo.raw <- fuentes_raw() %>% 
   filter(codigo == fuente_raw) %>% 
