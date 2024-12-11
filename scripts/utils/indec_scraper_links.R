@@ -27,16 +27,27 @@ INDEC.cuentas_nacionales.extraer_links = function(id, pattern){
     html_attr("href") %>% 
     str_extract(., pattern = "ftp/.*")
   
-  # Filtra los links que contienen la URL base
-  url <- paste0(url_base, "/", links[grepl(pattern, links)])
+  text_links <- web_content %>%
+    html_nodes("a") %>%
+    html_text(trim = TRUE)
+  
+  # Filtra los links que contienen la URL base y aplican el pattern
+  filtered_links <- links[grepl(pattern, links)]
+  filtered_texts <- text_links[grepl(pattern, links)]
   
   # Verificar que 'url' sea un vector de longitud 1 y no vacío
-  if (!is.character(url) || length(url) != 1 || nchar(url) == 0) {
+  if (!is.character(filtered_links) || length(filtered_links) != 1 || nchar(filtered_links) == 0) {
     stop("Error: 'url' debe ser una cadena de caracteres no vacía y de longitud 1.")
   }
   
-  # Si pasa la verificación, devuelve el valor
-  return(url)
+  
+  # Construye la URL completa
+  url <- paste0(url_base, "/", filtered_links)
+  
+  # Devuelve una lista con la URL y el texto asociado
+  result <- list(url = url, text = filtered_texts)
+  
+  return(result)
 }
 
 # A la fecha 2024-10-17 el output que generea es este
