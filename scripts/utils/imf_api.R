@@ -19,7 +19,7 @@ get_response_json <- function(url){
   
   requested_url <- response$url
   # Parsear el contenido a JSON y convertirlo a data frame
-  content <- content(response, as = "text")
+  content <- httr::content(response, as = "text")
   json_data <- fromJSON(content)
   
   return(json_data)
