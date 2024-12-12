@@ -1,27 +1,5 @@
-
-#limpio la memoria
-rm( list=ls())  #Borro todos los objetos
-gc()   #Garbage Collection
-
-# Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola
-get_file_location <- function() {
-  # Intenta obtener la ruta del archivo en RStudio
-  if (interactive() && "rstudioapi" %in% rownames(installed.packages())) {
-    return(rstudioapi::getSourceEditorContext()$path)
-  }
-  
-  # Alternativa para obtener la ruta si se usa source()
-  this_file <- (function() { attr(body(sys.function(1)), "srcfile") })()
-  
-  # Si no se obtiene el path (e.g., en consola sin RStudio), asigna un valor por defecto
-  if (!is.null(this_file)) {
-    return(this_file$filename)
-  } else {
-    return("Archivo no especificado o ruta predeterminada")
-  }
-}
-
-code_name <- get_file_location() %>% str_split_1(., pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
 id_fuente <- 268
@@ -56,7 +34,20 @@ df_clean <- read.csv(tmp_file, sep=";",
          ) %>% 
   group_by(across(-fob)) %>% 
   summarise(fob = sum(fob, na.rm = T)) %>%
-  ungroup()
+  ungroup() %>% 
+  mutate(
+    provincia = case_when(
+      provincia == "Capital Federal" ~ "CABA",
+      provincia == "Cordoba" ~ "Córdoba",
+      provincia == "Entre Rios" ~ "Entre Ríos",
+      provincia == "Neuquen" ~ "Neuquén",
+      provincia == "Rio Negro" ~ "Río Negro",
+      provincia == "Santiago Del Estero" ~ "Santiago del Estero",
+      provincia == "Tierra Del Fuego" ~ "Tierra del Fuego",
+      provincia == "Tucuman" ~ "Tucumán",
+      provincia == "Santa Fe" ~ "Santa Fé",
+      TRUE ~ provincia
+    ))
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -81,8 +72,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("anyo", "prov", "destino", "mes", "grupo")
-)
+                                     pk = c("anyo", "prov", "destino", "mes", "grupo"))
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         path_clean = clean_filename,

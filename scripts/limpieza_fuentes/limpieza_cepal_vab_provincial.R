@@ -1,15 +1,5 @@
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 id_fuente <- 221
 fuente_raw <- sprintf("R%sC0",id_fuente)
@@ -25,7 +15,7 @@ check_na_threshold <- function(df, threshold) {
 clean_sheet <- function(sheet_name){
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = 5, 
                                    col_names = T)
@@ -129,7 +119,6 @@ path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
 #                      df = df_clean,
@@ -137,7 +126,20 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      nombre = "Desagregación provincial del valor agregado bruto de la Argentina, base 2004",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 92, path_clean = clean_filename, directorio = tempdir(), nombre = clean_filename)
+id_fuente_clean <- 92
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c("sector_de_actividad_economica", "anio", "provincia_id"))
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
 

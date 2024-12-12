@@ -1,9 +1,6 @@
-# limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 periodicidad <- months(12)
 fecha_ultima_actualizacion <- as.Date("2024-04-01")
@@ -38,4 +35,5 @@ nombre <- glue::glue("OEDE - {resultado$h3} - {resultado$fecha_publicacion}")
 actualizar_fuente_raw(id_fuente = 235,
                       nombre = nombre,
                       fecha_actualizar = fecha_actualizar,
-                      path_raw = download_filename, api = F)
+                      path_raw = download_filename, api = F,
+                      script = code_name)

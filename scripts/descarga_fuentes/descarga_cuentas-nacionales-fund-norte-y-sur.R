@@ -1,9 +1,6 @@
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
 
 # periodicidad <- months(3)
 # fecha_ultima_actualizacion <- as.Date("2019-09-30") 
@@ -31,4 +28,19 @@ download.file(url, destfile = destfile, mode = "wb")
 
 actualizar_fuente_raw(id_fuente = 36,
                       fecha_actualizar = "Sin informacion",
-                      path_raw = download_filename)
+                      path_raw = download_filename,
+                      script = code_name)
+
+
+
+
+mi_func <- function(x){
+  cat("hola1\n")
+  print(body(sys.function()))
+  cat("\nhola2")
+  
+}
+
+
+
+

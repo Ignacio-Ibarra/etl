@@ -75,5 +75,9 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 78,
-                        dir = tempdir())
+control <- comparar_fuente_clean(df_clean, id = 78, pk = c("anio", "trim", "indicador"))
+
+actualizar_fuente_clean(df = df_clean,
+                        id_fuente_clean = 78,
+                        dir = tempdir(), 
+                        comparacion = control)

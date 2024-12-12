@@ -1,27 +1,5 @@
-
-#limpio la memoria
-rm( list=ls())  #Borro todos los objetos
-gc()   #Garbage Collection
-
-# Función para obtener la ruta del archivo, compatible tanto en RStudio como en la consola
-get_file_location <- function() {
-  # Intenta obtener la ruta del archivo en RStudio
-  if (interactive() && "rstudioapi" %in% rownames(installed.packages())) {
-    return(rstudioapi::getSourceEditorContext()$path)
-  }
-  
-  # Alternativa para obtener la ruta si se usa source()
-  this_file <- (function() { attr(body(sys.function(1)), "srcfile") })()
-  
-  # Si no se obtiene el path (e.g., en consola sin RStudio), asigna un valor por defecto
-  if (!is.null(this_file)) {
-    return(this_file$filename)
-  } else {
-    return("Archivo no especificado o ruta predeterminada")
-  }
-}
-
-code_name <- get_file_location() %>% str_split_1(., pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
 id_fuente <- 271
@@ -54,7 +32,7 @@ white_cols <- function(df) {
 
 clean_monthly_prices <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
-  str_titulos <- readxl::read_excel(get_raw_path(fuente_raw), 
+  str_titulos <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                     sheet = sheet_name,
                                     range = "A1:A4",
                                     col_names = F) %>% 
@@ -62,7 +40,7 @@ clean_monthly_prices <- function(sheet_name, skip, filas_columnas, names_to, val
     tools::toTitleCase(.) %>% 
     paste0(., collapse = ". ")
   
-  cols_ <- readxl::read_excel(get_raw_path(fuente_raw), 
+  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                               sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
@@ -77,7 +55,7 @@ clean_monthly_prices <- function(sheet_name, skip, filas_columnas, names_to, val
   cols <- c('anio_mes',cols$concatenado)
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = skip, 
                                    col_names = F,

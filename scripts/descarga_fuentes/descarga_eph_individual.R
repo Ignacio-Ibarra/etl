@@ -9,55 +9,56 @@ funcion_por_anio <- function(anio,
                              version, 
                              ext, 
                              output_folder
-                             ){
-fuente_id = fuentes_raw_df %>%
-filter(nombre == sprintf("Encuesta Permanente de Hogares, Individual (%s)", anio))  %>%
-select(id_fuente) %>%
-pull()
-
-download_filename <- glue::glue("eph_{tipo_encuesta}_{anio}_{version}.{ext}")
-
-periods <- 1:4
-
-if (anio == 2003){
-periods <- 3:4
-}
-
-if (anio == 2015){
-periods <- 1:2
-}
-
-if (anio == 2016){
-periods <- 2:4
-}
-
-df <- eph::get_microdata(year= anio,
-                       period = periods,
-                       type = "individual")
-
-df  %>% write_csv_fundar(., glue::glue("{output_folder}{download_filename}"))
-
-accion_str <- ""
-if (length(fuente_id) == 0){
-
-agregar_fuente_raw(url = "https://www.indec.gob.ar/indec/web/Institucional-Indec-BasesDeDatos",
-                   nombre = glue::glue("Encuesta Permanente de Hogares, {str_to_title(tipo_encuesta)} ({anio})"),
-                   institucion = "INDEC",
-                   actualizable = T,
-                   dir = output_folder,
-                   path_raw = download_filename,
-                   script = code_name,
-                   api = T
-)
-accion_str <- "Nueva fuente"
-}else{
-
-actualizar_fuente_raw(id_fuente = fuente_id, actualizable = T, dir = "data/_FUENTES/raw")
-accion_str <- "Actualiza fuente"
-}
-
-return(sprintf("%s: id %s año %s archivo %s", accion_str, fuente_id, anio, download_filename))
-
+){
+  
+  fuente_id = fuentes_raw_df %>%
+    filter(nombre == sprintf("Encuesta Permanente de Hogares, Individual (%s)", anio))  %>%
+    select(id_fuente) %>%
+    pull()
+  
+  download_filename <- glue::glue("eph_{tipo_encuesta}_{anio}_{version}.{ext}")
+  
+  periods <- 1:4
+  
+  if (anio == 2003){
+    periods <- 3:4
+  }
+  
+  if (anio == 2015){
+    periods <- 1:2
+  }
+  
+  if (anio == 2016){
+    periods <- 2:4
+  }
+  
+  df <- eph::get_microdata(year= anio,
+                           period = periods,
+                           type = "individual")
+  
+  df  %>% write_csv_fundar(., glue::glue("{output_folder}{download_filename}"))
+  
+  accion_str <- ""
+  if (length(fuente_id) == 0){
+    
+    agregar_fuente_raw(url = "https://www.indec.gob.ar/indec/web/Institucional-Indec-BasesDeDatos",
+                       nombre = glue::glue("Encuesta Permanente de Hogares, {str_to_title(tipo_encuesta)} ({anio})"),
+                       institucion = "INDEC",
+                       actualizable = T,
+                       dir = output_folder,
+                       path_raw = download_filename,
+                       script = code_name,
+                       api = T
+    )
+    accion_str <- "Nueva fuente"
+  }else{
+    
+    actualizar_fuente_raw(id_fuente = fuente_id, actualizable = T, dir = output_folder)
+    accion_str <- "Actualiza fuente"
+  }
+  
+  return(sprintf("%s: id %s año %s archivo %s", accion_str, fuente_id, anio, download_filename))
+  
 }
 
 
@@ -67,9 +68,9 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 
 # Parametros para guardar archivo
 tipo_encuesta <- "individual"
-version <- "v20240506"
+version <- glue::glue("v{format(Sys.Date(), '%Y%m%d')}")
 ext <- "csv"
-output_folder = "data/_FUENTES/raw/"
+output_folder <- glue::glue("{tempdir()}/_FUENTES/raw/")
 
 # Cuanto comenzó la EPH
 eph_init_year <- 2003
@@ -97,6 +98,8 @@ anios_descargados <- fuentes_raw_df %>%
 # Años anteriores no descargados
 anios_anteriores_a_agregar <- setdiff(anios_efectivos, anios_descargados)
 
+stopifnot(length(anios_anteriores_a_agregar) != 0)
+
 
 # Si no tengo algun anio anterior lo descarga
 if (length(anios_anteriores_a_agregar)>0){
@@ -104,11 +107,11 @@ if (length(anios_anteriores_a_agregar)>0){
   for (anio in anios_anteriores_a_descargar){
     
     funcion_por_anio(anio = anio, 
-                         fuentes_raw_df = fuentes_raw_df, 
-                         tipo_encuesta = tipo_encuesta,
-                         version = version, 
-                         ext = ext,
-                         output_folder = output_folder)
+                     fuentes_raw_df = fuentes_raw_df, 
+                     tipo_encuesta = tipo_encuesta,
+                     version = version, 
+                     ext = ext,
+                     output_folder = output_folder)
     
   }
   
@@ -142,14 +145,14 @@ if (ACTUALIZAR_ANIOS_ANTERIORES){
 fecha_prim_trim <- as.Date(sprintf("%s-08-05", current_year))
 current_date <- as.Date(Sys.Date())
 if ( current_date > fecha_prim_trim ){
-
-funcion_agregar_anio(current_year,
-                     fuentes_raw_df,
-                     tipo_encuesta, 
-                     version, 
-                     ext, 
-                     output_folder)
-
+  
+  funcion_agregar_anio(current_year,
+                       fuentes_raw_df,
+                       tipo_encuesta, 
+                       version, 
+                       ext, 
+                       output_folder)
+  
 }
 
 cat("Fin de script!")

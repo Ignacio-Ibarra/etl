@@ -26,7 +26,7 @@ hdr_api.get_metadata <- function(apikey, entityName){
   }
   
   # Parsear el contenido a JSON y convertirlo a data frame
-  content <- content(response, as = "text")
+  content <- httr::content(response, as = "text")
   json_data <- fromJSON(content)
   
   # Convertir el JSON a data frame
@@ -60,7 +60,7 @@ hdr_api.get_data <- function(apikey, country_code, year, indicator) {
   }
   
   # Parsear el contenido a JSON y convertirlo a data frame
-  content <- content(response, as = "text")
+  content <- httr::content(response, as = "text")
   json_data <- fromJSON(content)
   
   # Convertir el JSON a data frame
