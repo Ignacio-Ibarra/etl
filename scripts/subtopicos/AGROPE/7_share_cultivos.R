@@ -2,55 +2,63 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
 
-subtopico <- "MERTRA"
-output_name <- "trabajo_no_remunerado_sexo_internacional"
-fuente1 <- "R96C24"
+subtopico <- "AGROPE"
+output_name <- "share_cultivos"
+analista = "Daniel Schteingart y Juan Gabriel Juara"
+fuente1 <- "R296C0" # Estimaciones Agrícolas - MAGyP
 
+df_magyp <- read.csv(argendataR::get_raw_path(fuente1), 
+                     na.strings = c("NA", "#N/A", "SD", " "),
+                     fileEncoding = "ISO-8859-1")
 
+sacar <- c('Poroto alubia', 'Poroto negro', 'Poroto otros', 'Soja 1ra', 'Soja 2da', 'Trigo candeal')
 
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-jcharm_cleaned <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
-
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-df_output <- jcharm_cleaned %>% 
-  dplyr::filter(subtipo_actividad == "Trabajo no remunerado") %>% 
-  group_by(iso3, pais_desc, anios_observados, continente_fundar) %>% 
-  mutate(share_trabajo_no_remun = minutos / sum(minutos, na.rm = T)) %>% 
-  dplyr::filter(sexo == "Mujeres") %>% 
-  select(iso3, pais_desc, continente_fundar, anios_observados, share_trabajo_no_remun)
-
-#-- Controlar Output ----
-
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+df_output <- df_magyp %>% 
+  dplyr::filter(!(cultivo %in% sacar)) %>% 
+  group_by(campania = ciclo, cultivo) %>% 
+  summarise(q_total = as.numeric(sum(produccion, na.rm = T))) %>% 
+  ungroup() %>% 
+  group_by(campania) %>% 
+  mutate(
+    share = 100* q_total / sum(q_total, na.rm = T)
+  ) %>% 
+  ungroup()
 
 
 
-df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") 
 
-comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
-                                            nombre = output_name,
-                                            pk = c("iso3")
+# Armo un data.frame comparable poniendo la misma campaña. 
+df_comparable <- df_magyp %>% 
+  dplyr::filter(!(cultivo %in% sacar)) %>% 
+  dplyr::filter(ciclo == "2021/2022") %>% 
+  group_by(campania = ciclo, cultivo)  %>% 
+  summarise(q_total = as.numeric(sum(produccion, na.rm = T))) %>% 
+  ungroup() %>% 
+  group_by(campania) %>% 
+  mutate(
+    share = 100* q_total / sum(q_total, na.rm = T)
+  ) %>% 
+  ungroup()
+
+
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_comparable,
+  nombre = output_name,
+  pk = c('cultivo'), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
+
 
 #-- Exportar Output ----
 
@@ -97,7 +105,6 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
-
 descripcion <- armador_descripcion(metadatos = metadatos,
                                    # etiquetas_nuevas = etiquetas_nuevas,
                                    output_cols = output_cols)
@@ -125,18 +132,21 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+
+
 df_output %>%
   argendataR::write_output(
-    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
-    analista = "",
-    pk = c("iso3"),
-    es_serie_tiempo = F,
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
+    analista = analista,
+    pk = c("campania",'cultivo'),
+    es_serie_tiempo = T,
+    control = comparacion, 
+    columna_indice_tiempo = 'campania',
     descripcion_columnas = descripcion,
-    unidades = list("share_trabajo_no_remun" = "unidades")
+    unidades = list("q_total" = "toneladas",
+                    "share" = "porcentaje"),
+    aclaraciones = "Se agregan todas las campanias que tiene el dataset"
   )
 

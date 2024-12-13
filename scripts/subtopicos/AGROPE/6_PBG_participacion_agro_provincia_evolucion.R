@@ -2,55 +2,59 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
 
-subtopico <- "MERTRA"
-output_name <- "trabajo_no_remunerado_sexo_internacional"
-fuente1 <- "R96C24"
+subtopico <- "AGROPE"
+output_name <- "PBG_participacion_agro_provincia_evolucion"
+analista = "Daniel Schteingart y Juan Gabriel Juara"
+fuente1 <- "R221C92" # Desagregacion provincial CEPAL-MECON
 
-
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-jcharm_cleaned <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
+df_cepal <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 
-#-- Parametros Generales ----
+df_output <- df_cepal %>% 
+  dplyr::filter(sector_de_actividad_economica %in% c("Total sectores"
+                                                     , "Agricultura, ganaderia, caza y servicios conexos"
+                                                     #, "Silvicultura, extracción de madera y servicios conexos"
+                                                     #, "Pesca"
+                                                     )) %>% 
+  mutate(sector = ifelse(sector_de_actividad_economica == "Total sectores", "todo", "agro")) %>% 
+  group_by(anio, sector, provincia_id, provincia) %>% 
+  summarise(
+    vab_pb = sum(vab_pb, na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = all_of(c('anio', 'provincia_id', 'provincia')),
+    names_from = "sector",
+    values_from = "vab_pb"
+  ) %>% 
+  mutate(participacion_agro_vab_pb = agro / todo) %>% 
+  select(anio, provincia_id, provincia, participacion_agro_vab_pb) %>% 
+  drop_na(provincia_id)
+  
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
-#-- Procesamiento ----
-
-df_output <- jcharm_cleaned %>% 
-  dplyr::filter(subtipo_actividad == "Trabajo no remunerado") %>% 
-  group_by(iso3, pais_desc, anios_observados, continente_fundar) %>% 
-  mutate(share_trabajo_no_remun = minutos / sum(minutos, na.rm = T)) %>% 
-  dplyr::filter(sexo == "Mujeres") %>% 
-  select(iso3, pais_desc, continente_fundar, anios_observados, share_trabajo_no_remun)
-
-#-- Controlar Output ----
-
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  rename(participacion_agro_vab_pb = valor,
+         provincia_id = cod_pcia,
+         provincia = nom_pcia)
 
 
-
-df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
-
-comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
-                                            nombre = output_name,
-                                            pk = c("iso3")
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("anio",'provincia_id'), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
+
 
 #-- Exportar Output ----
 
@@ -97,9 +101,19 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
+etiquetas_nuevas <- data.frame(
+  variable_nombre = c("provincia",
+                      "provincia_id",
+                      "participacion_agro_vab_pb"
+                      ),
+  descripcion = c(
+    "Nombre de la provincia",
+    "Codigo de la provincia",
+    "Participación del sector 'Agricultura, ganaderia, caza y servicios conexos' en el VAB a precios básicos en pesos constantes de 2004")
+)
 
 descripcion <- armador_descripcion(metadatos = metadatos,
-                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   etiquetas_nuevas = etiquetas_nuevas,
                                    output_cols = output_cols)
 
 
@@ -125,18 +139,25 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+
+
 df_output %>%
   argendataR::write_output(
-    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
-    analista = "",
-    pk = c("iso3"),
-    es_serie_tiempo = F,
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
+    analista = analista,
+    pk = c("anio",'provincia_id'),
+    es_serie_tiempo = T,
+    control = comparacion, 
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = 'provincia_id',
     descripcion_columnas = descripcion,
-    unidades = list("share_trabajo_no_remun" = "unidades")
+    cambio_nombre_cols = list(
+      'participacion_agro_vab_pb' = 'valor',
+      'provincia_id' = 'cod_pcia',
+      'provincia' = 'nom_pcia'
+    ),
+    unidades = list("participacion_agro_vab_pb" = "unidades")
   )
 

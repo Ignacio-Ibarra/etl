@@ -2,55 +2,57 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
 
-subtopico <- "MERTRA"
-output_name <- "trabajo_no_remunerado_sexo_internacional"
-fuente1 <- "R96C24"
+subtopico <- "AGROPE"
+output_name <- "agro_global"
+analista = "Franco Antonio Mendoza"
+fuente1 <- "R295C0" # The World Bank. Agriculture, forestry, and fishing, value added (% of GDP)
 
 
 
-#-- Librerias ----
+df_wb <- readr::read_csv(argendataR::get_raw_path(fuente1)) 
 
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-jcharm_cleaned <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
-
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-df_output <- jcharm_cleaned %>% 
-  dplyr::filter(subtipo_actividad == "Trabajo no remunerado") %>% 
-  group_by(iso3, pais_desc, anios_observados, continente_fundar) %>% 
-  mutate(share_trabajo_no_remun = minutos / sum(minutos, na.rm = T)) %>% 
-  dplyr::filter(sexo == "Mujeres") %>% 
-  select(iso3, pais_desc, continente_fundar, anios_observados, share_trabajo_no_remun)
-
-#-- Controlar Output ----
-
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+  select(iso3c = codigo_fundar, pais = desc_fundar, nivel_agregacion)
 
 
 
-df_anterior <- descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "datasets_primera_entrega")
+df_output <- df_wb %>% 
+  mutate(
+    iso3c = case_when(
+      country == "High income" ~ "HIC",
+      country == "Low income" ~ "LIC",
+      country == "Lower middle income" ~ "LMC",
+      country == "Upper middle income" ~ "UMC",
+      TRUE ~ iso3c
+    )
+  ) %>% 
+  left_join(geonomenclador, join_by(iso3c)) %>% 
+  select(anio = year, iso3c, pais, nivel_agregacion, va_agro_sobre_pbi = `NV.AGR.TOTL.ZS`) %>% 
+  drop_na(va_agro_sobre_pbi) %>% 
+  arrange(iso3c, anio) %>% 
+  dplyr::filter(!is.na(iso3c))
 
-comparacion <- argendataR::comparar_outputs(df = df_output, df_anterior = df_anterior,
-                                            nombre = output_name,
-                                            pk = c("iso3")
+  
+
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") 
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("anio", 'iso3c'), 
+  drop_joined_df =  F
 )
+
 
 #-- Exportar Output ----
 
@@ -97,9 +99,13 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
+etiquetas_nuevas <- data.frame(
+  variable_nombre = c("nivel_agregacion"),
+  descripcion = c("Indicador de si el registro se refiere a un 'pais' o una 'agregacion' de países")
+)
 
 descripcion <- armador_descripcion(metadatos = metadatos,
-                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   etiquetas_nuevas = etiquetas_nuevas,
                                    output_cols = output_cols)
 
 
@@ -127,16 +133,15 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 
 df_output %>%
   argendataR::write_output(
-    control = comparacion,
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
-    analista = "",
-    pk = c("iso3"),
-    es_serie_tiempo = F,
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
+    analista = analista,
+    pk = c("anio",'iso3c'),
+    es_serie_tiempo = T,
+    control = comparacion, 
+    columna_geo_referencia = 'iso3c',
+    columna_indice_tiempo = 'anio',
     descripcion_columnas = descripcion,
-    unidades = list("share_trabajo_no_remun" = "unidades")
+    unidades = list("va_agro_sobre_pbi" = "porcentaje")
   )
-

@@ -158,6 +158,6 @@ df_output %>%
     columna_indice_tiempo = 'anio',
     cambio_nombre_cols = list('participacion_vab_pb' = 'participacion_pbi'),
     descripcion_columnas = descripcion,
-    aclaracion = "Se modifico el cociente, antes se utilizaba como denominador el PIB en pesos corrientes, ahora el denominador es la misma variable que el numerador VAB a precios básicos en pesos corrientes"
+    aclaracion = "Se modifico el cociente, antes se utilizaba como denominador el PIB en pesos corrientes, ahora el denominador es la misma variable que el numerador VAB a precios básicos en pesos corrientes",
     unidades = list("participacion_vab_pb" = "unidades")
   )
