@@ -10,7 +10,7 @@ gc()   #Garbage Collection
 
 subtopico <- "AGROPE"
 output_name <- "apertura_cuentas_actividad_agropecuaria"
-analista = "Franco Antonio Mendoza"
+analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R223C94" # Valor Agregado Bruto a precios básicos por rama de actividad económica. Valores anuales en millones de pesos a precios corrientes
 
 

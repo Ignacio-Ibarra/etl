@@ -10,7 +10,7 @@ gc()   #Garbage Collection
 
 subtopico <- "AGROPE"
 output_name <- "agro_global"
-analista = "Franco Antonio Mendoza"
+analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R295C0" # The World Bank. Agriculture, forestry, and fishing, value added (% of GDP)
 
 

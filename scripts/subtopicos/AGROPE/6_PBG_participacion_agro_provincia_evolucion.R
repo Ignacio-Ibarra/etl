@@ -10,7 +10,7 @@ gc()   #Garbage Collection
 
 subtopico <- "AGROPE"
 output_name <- "PBG_participacion_agro_provincia_evolucion"
-analista = "Daniel Schteingart y Juan Gabriel Juara"
+analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R221C92" # Desagregacion provincial CEPAL-MECON
 
 df_cepal <- arrow::read_parquet(argendataR::get_clean_path(fuente1))

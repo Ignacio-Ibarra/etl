@@ -10,7 +10,7 @@ gc()   #Garbage Collection
 
 subtopico <- "AGROPE"
 output_name <- "share_cultivos"
-analista = "Daniel Schteingart y Juan Gabriel Juara"
+analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R296C0" # Estimaciones Agrícolas - MAGyP
 
 df_magyp <- read.csv(argendataR::get_raw_path(fuente1), 
