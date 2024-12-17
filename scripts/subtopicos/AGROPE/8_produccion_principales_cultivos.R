@@ -9,62 +9,47 @@ gc()   #Garbage Collection
 
 
 subtopico <- "AGROPE"
-output_name <- "apertura_cuentas_actividad_agropecuaria"
+output_name <- "produccion_principales_cultivos"
 analista = "Franco A. Mendoza y Kevin Corfield"
-fuente1 <- "R223C94" # Valor Agregado Bruto a precios básicos por rama de actividad económica. Valores anuales en millones de pesos a precios corrientes
+fuente1 <- "R296C0" # Estimaciones Agrícolas - MAGyP
 
+df_magyp <- read.csv(argendataR::get_raw_path(fuente1), 
+                     na.strings = c("NA", "#N/A", "SD", " "),
+                     fileEncoding = "ISO-8859-1")
 
+sacar <- c('Poroto alubia', 'Poroto negro', 'Poroto otros', 'Soja 1ra', 'Soja 2da', 'Trigo candeal')
 
-df_vabpb <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) %>% 
-  dplyr::filter(trimestre == "Total")
-
-
-df_vab_total <- df_vabpb %>% 
-  dplyr::filter(sub_sector == "Total sector") %>% 
-  group_by(anio) %>% 
-  summarise(
-    vab_pb_total = sum(vab_pb, na.rm = T)
-  ) %>% 
-  ungroup()
-
-df_vab_agro <- df_vabpb %>% 
-  dplyr::filter(letra == "A") %>% 
+df_output <- df_magyp %>% 
+  dplyr::filter(!(cultivo %in% sacar)) %>% 
+  dplyr::filter(grepl("Maíz|Soja|Trigo", cultivo)) %>% 
   mutate(
-    cuenta = case_when(
-      sub_sector == "Total sector" ~ "Total",
-      sub_sector == "Cultivos agrícolas" ~ "Agricultura",
-      sub_sector == "Cría de animales" ~ "Pecuario",
-      TRUE ~ "Otros"
+    cultivo = case_when(
+      grepl("Soja", cultivo) ~ "Soja",
+      grepl("Trigo", cultivo) ~ "Trigo",
+      TRUE ~ cultivo
     )
   ) %>% 
-  group_by(anio, cuenta) %>% 
-  summarise(
-    vab_pb = sum(vab_pb, na.rm = T)
-  ) %>% 
-  ungroup()
-
-
-df_output <- df_vab_agro %>% 
-  left_join(df_vab_total, join_by(anio)) %>% 
-  mutate(
-    participacion_vab_pb = vab_pb / vab_pb_total
-  ) %>% 
-  select(anio, cuenta, participacion_vab_pb)
+  group_by(cultivo, campania = ciclo) %>% 
+  summarise(q_total = as.numeric(sum(produccion, na.rm = T))) %>% 
+  ungroup() 
 
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             entrega_subtopico = "primera_entrega") %>% 
-  rename(participacion_vab_pb = participacion_pbi)
-
+  mutate(
+    anio = as.integer(str_extract(campania, "(\\d{4})\\/.*", group=1)),
+    campania = paste0(anio,"/",anio + 1)
+  ) %>% 
+  select(-anio)
 
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
   nombre = output_name,
-  pk = c("anio", 'cuenta'), 
+  pk = c('cultivo','campania'), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -115,9 +100,11 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("participacion_vab_pb"),
-  descripcion = c("Participación en el Valor Agregado Bruto a precios básicos en pesos corrientes")
+  variable_nombre = c("q_total"),
+  descripcion = c(
+    "Cantidad de toneladas producidas")
 )
+
 
 descripcion <- armador_descripcion(metadatos = metadatos,
                                    etiquetas_nuevas = etiquetas_nuevas,
@@ -146,18 +133,19 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio",'cuenta'),
+    pk = c("campania",'cultivo'),
     es_serie_tiempo = T,
     control = comparacion, 
-    columna_indice_tiempo = 'anio',
-    cambio_nombre_cols = list('participacion_vab_pb' = 'participacion_pbi'),
+    columna_indice_tiempo = 'campania',
     descripcion_columnas = descripcion,
-    aclaracion = "Se modifico el cociente, antes se utilizaba como denominador el PIB en pesos corrientes, ahora el denominador es la misma variable que el numerador VAB a precios básicos en pesos corrientes",
-    unidades = list("participacion_vab_pb" = "unidades")
+    unidades = list("q_total" = "toneladas"),
+    aclaraciones = "Se modifica la columna 'campania' para que quede con el formato actual"
   )

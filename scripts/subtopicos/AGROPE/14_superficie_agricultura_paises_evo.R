@@ -9,62 +9,31 @@ gc()   #Garbage Collection
 
 
 subtopico <- "AGROPE"
-output_name <- "apertura_cuentas_actividad_agropecuaria"
+output_name <- "superficie_agricultura_paises_evo"
 analista = "Franco A. Mendoza y Kevin Corfield"
-fuente1 <- "R223C94" # Valor Agregado Bruto a precios básicos por rama de actividad económica. Valores anuales en millones de pesos a precios corrientes
+fuente1 <- "R298C166" # FAO - RL
+
+df_fao <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 
-
-df_vabpb <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) %>% 
-  dplyr::filter(trimestre == "Total")
-
-
-df_vab_total <- df_vabpb %>% 
-  dplyr::filter(sub_sector == "Total sector") %>% 
-  group_by(anio) %>% 
-  summarise(
-    vab_pb_total = sum(vab_pb, na.rm = T)
-  ) %>% 
-  ungroup()
-
-df_vab_agro <- df_vabpb %>% 
-  dplyr::filter(letra == "A") %>% 
-  mutate(
-    cuenta = case_when(
-      sub_sector == "Total sector" ~ "Total",
-      sub_sector == "Cultivos agrícolas" ~ "Agricultura",
-      sub_sector == "Cría de animales" ~ "Pecuario",
-      TRUE ~ "Otros"
-    )
-  ) %>% 
-  group_by(anio, cuenta) %>% 
-  summarise(
-    vab_pb = sum(vab_pb, na.rm = T)
-  ) %>% 
-  ungroup()
-
-
-df_output <- df_vab_agro %>% 
-  left_join(df_vab_total, join_by(anio)) %>% 
-  mutate(
-    participacion_vab_pb = vab_pb / vab_pb_total
-  ) %>% 
-  select(anio, cuenta, participacion_vab_pb)
+df_output <- df_fao %>% 
+  dplyr::filter(element == "Area", item == "Cropland") %>% 
+  select(iso3, pais, anio = year, valor = value)
 
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             entrega_subtopico = "primera_entrega") %>% 
-  rename(participacion_vab_pb = participacion_pbi)
-
+  rename(pais = iso3_desc_fundar) %>% 
+  mutate(anio = as.integer(anio))
 
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
   nombre = output_name,
-  pk = c("anio", 'cuenta'), 
+  pk = c('iso3','anio'), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -113,11 +82,14 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 # Guardo en una variable las columnas del output que queremos escribir
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
-
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("participacion_vab_pb"),
-  descripcion = c("Participación en el Valor Agregado Bruto a precios básicos en pesos corrientes")
+  variable_nombre = c("pais"
+  ),
+  descripcion = c(
+    "Nombre del país de referencia"
+  )
 )
+
 
 descripcion <- armador_descripcion(metadatos = metadatos,
                                    etiquetas_nuevas = etiquetas_nuevas,
@@ -146,18 +118,21 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
+
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio",'cuenta'),
+    pk = c("iso3",'anio'),
     es_serie_tiempo = T,
     control = comparacion, 
     columna_indice_tiempo = 'anio',
-    cambio_nombre_cols = list('participacion_vab_pb' = 'participacion_pbi'),
+    columna_geo_referencia = 'iso3',
     descripcion_columnas = descripcion,
-    aclaracion = "Se modifico el cociente, antes se utilizaba como denominador el PIB en pesos corrientes, ahora el denominador es la misma variable que el numerador VAB a precios básicos en pesos corrientes",
-    unidades = list("participacion_vab_pb" = "unidades")
+    cambio_nombre_cols = list('pais' = 'iso3_desc_fundar'),
+    unidades = list("valor" = "miles de hectáreas"),
+    aclaraciones = "Se agregaron países que no estaban en la dataset anterior y además todos los años disponibles"
   )
