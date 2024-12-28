@@ -10,7 +10,7 @@ fecha_ultima_actualizacion <- as.Date("2024-07-31")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
 
-source("scripts/utils/magyp_scraper_datos_abiertos.R")
+source("scripts/utils/magyp_scraper_links.R")
 
 
 result <- MAGYP.extraer_links_datos_abiertos(page_suffix = "estimaciones-agricolas", h3_target = "Estimaciones agrícolas")

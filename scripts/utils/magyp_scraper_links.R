@@ -71,3 +71,42 @@ MAGYP.extraer_links_datos_abiertos <- function(page_suffix, h3_target ){
   
   return(result)
 }
+
+
+
+MAGYP.extraer_links_informes_bovinos <- function(pattern){
+  
+  # URL de la página que quieres scrapear
+  base_url <- "https://www.magyp.gob.ar/sitio/areas/bovinos/informacion_interes/informes"
+  
+  
+  url <- paste0(base_url, "/index.php")
+  
+  web_content <- rvest::read_html(url)
+  
+    # Extraer los nodos <a> con href que coincidan con el patrón
+  target_a_nodes <- web_content %>% 
+    html_nodes('a') %>% 
+    keep(~ grepl(pattern, html_attr(., "href"), ignore.case = TRUE))
+  
+  planillas <- target_a_nodes %>% 
+    map_df(~ {
+      href <- html_attr(., "href")
+      texto <- html_text(.)
+      data.frame(
+        texto = texto,
+        link = file.path(base_url, href),
+        stringsAsFactors = FALSE
+      )
+    }) %>% 
+    dplyr::filter(texto!="")
+  
+  if (nrow(planilla) == 0){
+    stop("No se han encontrado planillas de cálculo para descargar en la página")
+  }
+  
+  return(planillas)
+  
+}
+
+# pattern <- "\\.xls$|\\.xlsx$"
