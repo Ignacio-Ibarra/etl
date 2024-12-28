@@ -19,7 +19,16 @@ df_fao_fbs <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 
 carnes <- c("Bovine Meat" = "Vacuna",
-            "Meat, Aquatic Mammals" = "Pescados y mariscos",
+            "Fish, Body Oil" = "Pescados y mariscos",
+            "Fish, Liver Oi" = "Pescados y mariscos",
+            "Freshwater Fish" = "Pescados y mariscos",
+            "Demersal Fish" = "Pescados y mariscos",
+            "Pelagic Fish" = "Pescados y mariscos",
+            "Marine Fish, Other" = "Pescados y mariscos",
+            "Crustaceans" = "Pescados y mariscos",
+            "Cephalopods" = "Pescados y mariscos", 
+            "Molluscs, Other" = "Pescados y mariscos",
+            "Aquatic Animals, Others" = "Pescados y mariscos",
             "Meat, Other" = "Otras carnes",
             "Mutton & Goat Meat" = "Caprina y ovina",
             "Pigmeat" = "Porcina",
@@ -32,7 +41,9 @@ df_fao_fbs_filtered <- df_fao_fbs %>%
 
 df_output <- df_fao_fbs_filtered %>% 
   mutate(tipo_carne = carnes[item]) %>% 
-  select(anio = year, iso3, pais, tipo_carne, valor = value)
+  group_by(anio = year, iso3, pais, tipo_carne) %>% 
+  summarise( valor = sum(value, na.rm = T)) %>% 
+  ungroup()
 
 
 

@@ -5,23 +5,25 @@ gc()   #Garbage Collection
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-periodicidad <- months(2)
-fecha_ultima_actualizacion <- as.Date("2024-07-31")
+periodicidad <- months(12)
+fecha_ultima_actualizacion <- as.Date("2024-03-31")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
 
 source("scripts/utils/magyp_scraper_links.R")
 
 
-result <- MAGYP.extraer_links_datos_abiertos(page_suffix = "estimaciones-agricolas", h3_target = "Estimaciones agrícolas")
+resultados <- MAGYP.extraer_links_informes_bovinos(pattern <- "\\.xls$|\\.xlsx$")
 
-url <- result$url
+result <- resultados %>% dplyr::filter(grepl("Stock Bovino por departamento y estratificacion.*", texto))
 
-nombre <- glue::glue("{result$title} - {result$text}")
+url <- result$link
 
-institucion <- "Subsecretaria de Agricultura. Dirección Nacional de Agricultura. Dirección de Estimaciones Agrícolas"
+nombre <- result$texto
 
-download_filename <- "estimaciones_agricolas.csv"
+institucion <- "Subsecretaria de Agricultura, Ganadería y Pesca. Dirección Nacional de Producción Animal"
+
+download_filename <- "stock_bovino_departamento_y_estratificacion.xls"
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
@@ -39,7 +41,7 @@ GET(url,
 #                    script = code_name,
 #                    fecha_actualizar = fecha_actualizar)
 
-actualizar_fuente_raw(id_fuente = 296,
+actualizar_fuente_raw(id_fuente = 304,
                       url = url,
                       nombre = title_raw,
                       fecha_actualizar = fecha_actualizar, 

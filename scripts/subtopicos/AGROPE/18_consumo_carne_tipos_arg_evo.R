@@ -15,23 +15,22 @@ fuente1 <- "R299C167" # FAO FBS
 fuente2 <- "R300C168" # FAO FBSH
 
 
-# nombres_fao <- c("Meat, beef | 00002731 || Food available for consumption | 0645pc || kilograms per year per capita" = "Bovine Meat",
-#                  "Fish and seafood | 00002960 || Food available for consumption | 0645pc || kilograms per year per capita" = "Meat, Aquatic Mammals",
-#                  "Meat, Other | 00002735 || Food available for consumption | 0645pc || kilograms per year per capita" = "Meat, Other",
-#                  "Meat, sheep and goat | 00002732 || Food available for consumption | 0645pc || kilograms per year per capita" = "Mutton & Goat Meat",
-#                  "Meat, pig | 00002733 || Food available for consumption | 0645pc || kilograms per year per capita" = "Pigmeat",
-#                  "Meat, poultry | 00002734 || Food available for consumption | 0645pc || kilograms per year per capita" = "Poultry Meat")
+# nombres_fao <- c("Meat, beef | 00002731 || Food available for consumption | 0645pc || kilograms per year per capita" = "Vacuna",
+#                  "Fish and seafood | 00002960 || Food available for consumption | 0645pc || kilograms per year per capita" = "Pescados y mariscos",
+#                  "Meat, Other | 00002735 || Food available for consumption | 0645pc || kilograms per year per capita" = "Otras carnes",
+#                  "Meat, sheep and goat | 00002732 || Food available for consumption | 0645pc || kilograms per year per capita" = "Caprina y ovina",
+#                  "Meat, pig | 00002733 || Food available for consumption | 0645pc || kilograms per year per capita" = "Porcina",
+#                  "Meat, poultry | 00002734 || Food available for consumption | 0645pc || kilograms per year per capita" = "Aviar")
 # 
 # 
-# df_owid_arg <- read_csv("per-capita-meat-type.csv") %>% 
-#   dplyr::filter(Code == "ARG") %>% 
-#   select(-Entity, -Code) %>% 
-#   rename(anio = Year) %>% 
-#   pivot_longer(!matches("anio"), 
-#                names_to = 'item',
-#                values_to = 'value_owid') %>% 
+# df_owid_arg <- read_csv("per-capita-meat-type.csv") %>%
+#   select(-Entity) %>%
+#   rename(anio = Year, iso3 = Code) %>%
+#   pivot_longer(!matches("anio|iso3"),
+#                names_to = 'grupo_carne',
+#                values_to = 'value_owid') %>%
 #   mutate(
-#     item = recode(item, !!!nombres_fao)
+#     grupo_carne = recode(grupo_carne, !!!nombres_fao)
 #   )
 
 df_fao_fbs <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
@@ -40,7 +39,16 @@ df_fao_fbsh <- arrow::read_parquet(argendataR::get_clean_path(fuente2))
 
 
 carnes <- c("Bovine Meat" = "Vacuna",
-            "Meat, Aquatic Mammals" = "Pescados y mariscos",
+            "Fish, Body Oil" = "Pescados y mariscos",
+            "Fish, Liver Oi" = "Pescados y mariscos",
+            "Freshwater Fish" = "Pescados y mariscos",
+            "Demersal Fish" = "Pescados y mariscos",
+            "Pelagic Fish" = "Pescados y mariscos",
+            "Marine Fish, Other" = "Pescados y mariscos",
+            "Crustaceans" = "Pescados y mariscos",
+            "Cephalopods" = "Pescados y mariscos", 
+            "Molluscs, Other" = "Pescados y mariscos",
+            "Aquatic Animals, Others" = "Pescados y mariscos",
             "Meat, Other" = "Otras carnes",
             "Mutton & Goat Meat" = "Caprina y ovina",
             "Pigmeat" = "Porcina",
@@ -48,14 +56,18 @@ carnes <- c("Bovine Meat" = "Vacuna",
 
 df_fao_fbs_filtered <- df_fao_fbs %>% 
   dplyr::filter(item %in% names(carnes), element == "Food supply quantity (kg/capita/yr)")  %>% 
-  select(-flags, -notes, -element_code, -element) %>% 
-  rename(value_new = value)
+  mutate( grupo_carne = carnes[item]) %>% 
+  group_by(year, iso3, pais, grupo_carne) %>% 
+  summarise(value_new = sum(value, na.rm = T)) %>% 
+  ungroup()
 
 
 df_fao_fbsh_filtered <- df_fao_fbsh %>% 
-  dplyr::filter(item %in% names(carnes), element == "Food supply quantity (kg/capita/yr)")  %>% 
-  select(-element_code, -element) %>% 
-  rename(value_old = value)
+  dplyr::filter(item %in% names(carnes), element == "Food supply quantity (kg/capita/yr)")   %>% 
+  mutate( grupo_carne = carnes[item]) %>% 
+  group_by(year, iso3, pais, grupo_carne) %>% 
+  summarise(value_old = sum(value, na.rm = T)) %>% 
+  ungroup()
 
 impute_backward <- function(A, B) {
   # Calcular las variaciones relativas de B
@@ -81,38 +93,39 @@ impute_backward <- function(A, B) {
 
 
 df_fao_fbs_empalme <- df_fao_fbs_filtered %>% 
-  full_join(df_fao_fbsh_filtered, join_by(year, iso3, pais, item_code, item, unit)) %>% 
-  group_by(iso3, item_code) %>%
+  full_join(df_fao_fbsh_filtered, join_by(year, iso3, pais, grupo_carne)) %>% 
+  group_by(iso3, grupo_carne) %>%
   filter(any(year == 2010 & !is.na(value_new) & !is.na(value_old))) %>%
   ungroup() %>% 
-  arrange(iso3, item_code, year) %>% 
-  group_by(iso3, item_code) %>% 
+  arrange(iso3, grupo_carne, year) %>% 
+  group_by(iso3, grupo_carne) %>% 
   mutate(valor_ = impute_backward(value_new, value_old),
          valor_empalme = ifelse(is.na(value_new), valor_, value_new)) %>% 
-  ungroup() %>% 
-  mutate(
-    grupo_carne = carnes[item]
-  )
+  ungroup() 
 
 
-# argentina_df <- df_fao_fbs_empalme %>% 
-#   dplyr::filter(iso3 == "ARG") %>% 
+# comparacion_df <- df_fao_fbs_empalme %>%
 #   select(anio = year,
-#          item,
+#          iso3,
+#          pais,
+#          grupo_carne,
 #          value_new,
 #          value_old,
-#          valor_empalme) %>% 
-#   left_join(df_owid_arg, join_by(anio, item)) %>% 
+#          valor_empalme) %>%
+#   left_join(df_owid_arg, join_by(anio, iso3, grupo_carne)) %>%
 #   pivot_longer(cols = starts_with("val"),
 #                names_to = "variable",
 #                values_to = 'consumo_kg_anio_capita')
 # 
-# 
-# ggplot(argentina_df, aes(x = anio, y = consumo_kg_anio_capita, color = variable)) + 
+# ggplot(comparacion_df %>% filter(iso3 == "USA"), aes(x = anio, y = consumo_kg_anio_capita, color = variable)) +
 #   geom_line()+
-#   facet_wrap(~item, scales = 'free') 
+#   facet_wrap(~grupo_carne, scales = 'free')
 # 
-# ggplot(argentina_df %>% filter(item == "Bovine Meat"), aes(x = anio, y = consumo_kg_anio_capita, color = variable))
+# ggplot(comparacion_df %>%
+#          filter(iso3 == "USA") %>%
+#          filter(grupo_carne == "Vacuna"),
+#        aes(x = anio, y = consumo_kg_anio_capita, color = variable)) +
+#   geom_line()
 
 
 df_output <- df_fao_fbs_empalme %>% 
