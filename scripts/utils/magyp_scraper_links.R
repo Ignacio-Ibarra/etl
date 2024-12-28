@@ -1,4 +1,20 @@
 require(httr)
+library(urltools)
+
+corregir_url <- function(url) {
+  
+  # Separa la URL en sus componentes para trabajar con ella
+  componentes <- url_parse(url)
+  
+  # Codifica caracteres especiales solo en el path
+  componentes$path <- gsub(" ", "%20", componentes$path)  # Codifica espacios
+  componentes$path <- URLencode(componentes$path, reserved = TRUE)
+  
+  # Reconstruye la URL a partir de sus componentes
+  url_corregida <- url_compose(componentes)
+  
+  return(url_corregida)
+}
 
 
 MAGYP.extraer_links_datos_abiertos <- function(page_suffix, h3_target ){
@@ -95,18 +111,16 @@ MAGYP.extraer_links_informes_bovinos <- function(pattern){
       texto <- html_text(.)
       data.frame(
         texto = texto,
-        link = file.path(base_url, href),
+        link = file.path(base_url, href) %>% corregir_url(.),
         stringsAsFactors = FALSE
       )
     }) %>% 
     dplyr::filter(texto!="")
   
-  if (nrow(planilla) == 0){
+  if (nrow(planillas) == 0){
     stop("No se han encontrado planillas de cálculo para descargar en la página")
   }
   
   return(planillas)
   
 }
-
-# pattern <- "\\.xls$|\\.xlsx$"
