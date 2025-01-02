@@ -31,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Evolución del ingreso laboral horario en Argentina y América Latina 1992 - 2021",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -31,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Ingresos laborales mensuales por tipo de trabajo (en dólares a PPA). 2021 o año más cercano",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

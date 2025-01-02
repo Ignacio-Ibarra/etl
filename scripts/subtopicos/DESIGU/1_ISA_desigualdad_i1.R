@@ -58,6 +58,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Participación de deciles en el ingreso total, 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

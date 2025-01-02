@@ -30,6 +30,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Salario medio real 1947 -2022",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

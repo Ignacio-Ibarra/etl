@@ -31,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Índice de Salarios de INDEC a precios constantes 2016 -2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

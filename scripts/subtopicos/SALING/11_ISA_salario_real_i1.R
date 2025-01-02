@@ -30,6 +30,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Ingreso laboral horario e ingreso laboral mensual en términos reales. 1992 -2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -31,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Ingresos laborales mensuales a precios constantes por tipo de empleo 1992 -2024. La version anterior del dataset era con ingresos laborales horarios",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

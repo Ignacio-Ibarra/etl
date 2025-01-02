@@ -56,6 +56,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Coeficiente de correlación de años de educación entre miembros de una pareja. 1980 - 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -28,6 +28,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Tasas de pobreza y de indigencia según máximo nivel educativo alcanzado. 2003-2023",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

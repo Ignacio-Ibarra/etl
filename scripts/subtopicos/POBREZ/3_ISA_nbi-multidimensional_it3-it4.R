@@ -29,6 +29,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Porcentaje de personas pobres multidimensionales. Por region y total país, semestral 2003 - 2023",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -111,6 +111,8 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      descripcion = "Se extraen datos de tabla de PDF",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 77,
-                        dir = tempdir())
+comparacion <- comparar_fuente_clean(df = df_clean, df_anterior = read_fuente_clean("R211C77"), pk = "anio")
+
+actualizar_fuente_clean(id_fuente_clean = 77,df = df_clean,
+                        comparacion = comparacion)
 

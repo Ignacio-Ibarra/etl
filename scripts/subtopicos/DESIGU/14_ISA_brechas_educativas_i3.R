@@ -59,6 +59,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Índice de igualdad de oportunidades educativas por grupo etario. 1992 - 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     control = comparacion,
@@ -67,7 +68,6 @@ df_output %>%
     es_serie_tiempo = T,
     columna_indice_tiempo = 'ano',
     # nivel_agregacion =[DEFINIR],
-    aclaraciones = "Actualizado a 2023",
     etiquetas_indicadores = etiquetas,
     unidades = list("valor" = "unidades")
   )
