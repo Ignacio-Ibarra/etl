@@ -15,7 +15,7 @@ options(download.file.method="curl", download.file.extra="-k -L")
 path_raw <- "ceped_salario_usd_ppa_internacional.xlsx"
 
 # Es necesario buscar la URL haciendo la consulta con el browser o hacerlo dinámicamente con Selenium
-temp_url <- "https://ceped-data.shinyapps.io/ceped-data/_w_5b18e441/session/e4fba857e77d82db4c5842d13e349408/download/salarios-download_database?w=5b18e441"
+temp_url <- "https://ceped-data.shinyapps.io/ceped-data/_w_4bbe6c53/session/f818a10d5210512c90175f00b655b4da/download/salarios-download_database?w=4bbe6c53"
 
 destfile <- glue::glue("{tempdir()}/{path_raw}")
 
@@ -36,4 +36,4 @@ nombre_fuente <- "Salario real en dólares de paridad de poder adquisitivo de 20
 #                    script = code_name
 # )
 
-actualizar_fuente_raw(id_fuente = 209, dir = tempdir())
+actualizar_fuente_raw(id_fuente = 209, dir = tempdir(), fecha_actualizar = "Sin informacion")

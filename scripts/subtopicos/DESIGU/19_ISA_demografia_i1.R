@@ -57,6 +57,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "promedio de niños por hogar en el quintil 5 y el quintil 1. 1992 - 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

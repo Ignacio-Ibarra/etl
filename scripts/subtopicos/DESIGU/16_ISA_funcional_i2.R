@@ -11,7 +11,8 @@ output_name <- 'ISA_funcional_i2'
 
 meta_desigu <- metadata("DESIGU")
 meta_desigu <- meta_desigu %>% 
-  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+  filter(str_detect(dataset_archivo, output_name)) %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key, .keep_all = T)
 
 
 
@@ -66,21 +67,20 @@ print(comparacion)
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 etiquetas <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(descripcion) %>% 
   as.list()
 
 names(etiquetas) <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(variable_nombre)
 
 pks <- meta_desigu %>% 
-  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  filter(primary_key == "TRUE") %>% 
   pull(variable_nombre)
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Desigualdad de ingresos en Argentina - Distribución funcional 2016 - 2023",
     subtopico = subtopico,
     fuentes = c(fuente_1, fuente_2, fuente_3),
     analista = "",
@@ -88,7 +88,6 @@ df_output %>%
     es_serie_tiempo = T,
     control = comparacion,
     columna_indice_tiempo = "anio",
-    # aclaraciones = "El dataset posee algunas diferencias con respecto al realizado por el analista",
     etiquetas_indicadores = list("participacion" = "Participación en el Valor Agregado Bruto a precios básicos"),
     unidades = list("participacion" = "porcentaje")
   )

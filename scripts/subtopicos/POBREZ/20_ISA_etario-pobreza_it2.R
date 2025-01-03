@@ -29,6 +29,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Tasas de pobreza y de indigencia según composición del hogar por adultos mayores e infancias. 2003 - 2023", 
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

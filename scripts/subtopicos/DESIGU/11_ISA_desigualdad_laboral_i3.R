@@ -59,6 +59,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaracion = "Brecha de tasas de empleo y horas trabajadas entre trabajadores calificados y no calificados 1992 - 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",
@@ -67,7 +68,6 @@ df_output %>%
     es_serie_tiempo = T,
     columna_indice_tiempo = 'ano',
     # nivel_agregacion =[DEFINIR],
-    aclaraciones = "CEDLAS actualizo los datos de 2023 con una variacion sustantiva de la brechahoras.",
     etiquetas_indicadores = etiquetas,
     unidades = list("valor" = "unidades")
   )

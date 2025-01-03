@@ -12,13 +12,21 @@ fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
 df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1)) 
 
+df_output <- df_output %>% 
+  separate_wider_delim(delim = ";", cols = `province;year;nbi_rate`, names = c("province",
+                                                                               "year",
+                                                                               "nbi_rate")) %>% 
+  mutate(across(c(year, nbi_rate), as.numeric))
+
+
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 #-- Controlar Output ----
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  df_anterior,
+  df_anterior %>% 
+    mutate(across(c(year, nbi_rate), as.numeric)),
   pk = c('province','year'),
   drop_joined_df = F
 )
@@ -28,6 +36,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Porcentaje de Hogares con NBI. Provincias y total  país, 1980 - 2010",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

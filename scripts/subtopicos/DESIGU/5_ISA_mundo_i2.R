@@ -52,6 +52,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Coeficiente de Gini del consumo per cápita familiar e ingreso nacional per cápita. Año 2015 o año más cercano.",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

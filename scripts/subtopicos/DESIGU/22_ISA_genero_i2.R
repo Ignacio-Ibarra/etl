@@ -5,17 +5,20 @@ gc()   #Garbage Collection
 limpiar_temps()
 
 
-meta_desigu <- metadata("DESIGU")
-meta_desigu <- meta_desigu %>% 
-  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
-
-
 
 code_name <- '22_ISA_genero_i2.R'
 subtopico <- 'DESIGU'
 output_name <- 'ISA_genero_i2.csv'
 id_fuente <- 198
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
+
+
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  filter(str_detect(dataset_archivo, output_name)) %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key, .keep_all = T)
+
+
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
                                     filter(codigo == fuente_raw1) %>% 
@@ -44,22 +47,21 @@ comparacion <- argendataR::comparar_outputs(
 print(comparacion)
 
 etiquetas <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(descripcion) %>% 
   as.list()
 
 names(etiquetas) <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(variable_nombre)
 
 pks <- meta_desigu %>% 
-  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  filter(primary_key == "TRUE") %>% 
   pull(variable_nombre)
 
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Tasa de participación laboral por género y calificación. 2003 - 2023",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

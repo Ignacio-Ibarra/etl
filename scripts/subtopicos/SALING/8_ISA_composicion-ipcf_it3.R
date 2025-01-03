@@ -28,6 +28,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Participación de las distintas fuentes en el ingreso familiar total. Por edad del jefe, 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

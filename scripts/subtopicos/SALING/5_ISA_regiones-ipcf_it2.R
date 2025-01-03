@@ -29,6 +29,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Evolución del ingreso per cápita familiar, 2003-2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",
