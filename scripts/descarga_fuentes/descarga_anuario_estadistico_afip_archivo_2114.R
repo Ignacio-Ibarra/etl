@@ -2,7 +2,9 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
+
 
 source("scripts/utils/afip_anuario_estadistico_scraper.R", encoding = "UTF-8")
 
@@ -48,4 +50,4 @@ datos <- datos %>%
 tematica_archivo <- "Impuesto al Valor Agregado, presentaciones, ventas y exportaciones por actividad económica"
 
 # Ya está todo lo viejo cargado, con actualizar = F, solo va a agregar anios nuevos
-afip_anuario_estadistico.a_fuente_raw(datos = datos, code_name = code_name, tematica_archivo = tematica_archivo, actualizar = T)
+afip_anuario_estadistico.a_fuente_raw(datos = datos, code_name = code_name, tematica_archivo = tematica_archivo, actualizar = F)

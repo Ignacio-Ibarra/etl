@@ -2,17 +2,23 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
 id_fuente <- 257
 fuente_raw <- sprintf("R%sC0",id_fuente)
+
+# Guardado de archivo
+nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
+                                    filter(codigo == fuente_raw) %>% 
+                                    select(path_raw) %>% 
+                                    pull(), pattern = "\\.")[1]
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
 
 
 cleaning_func <- function(name_cols, sheet_name, cell_range){
@@ -24,7 +30,11 @@ cleaning_func <- function(name_cols, sheet_name, cell_range){
   
   names(df_raw) <- name_cols
   
-  df_clean <- df_raw %>% pivot_longer(!all_of("actividad_economica"), names_to = c("destino_venta", "detalle"), names_sep = "#", values_to = "valor") %>% 
+  df_clean <- df_raw %>% 
+    pivot_longer(!all_of("actividad_economica"), 
+                 names_to = c("destino_venta", "detalle"), 
+                 names_sep = "#", 
+                 values_to = "valor") %>% 
     mutate(
       cod_act = if_else(
         str_detect(actividad_economica, "^\\w -"),
@@ -61,23 +71,11 @@ cell_range <- "C12:I254"
 
 df_clean <- cleaning_func(name_cols = name_cols, sheet_name = sheet_name, cell_range = cell_range)
 
-# Guardado de archivo
-nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
-                            filter(codigo == fuente_raw) %>% 
-                            select(path_raw) %>% 
-                            pull())
-
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
-
-titulo.raw <- fuentes_raw() %>% 
-  filter(codigo == fuente_raw) %>% 
-  select(nombre) %>% pull()
 
 clean_title <- glue::glue("{titulo.raw}")
 
