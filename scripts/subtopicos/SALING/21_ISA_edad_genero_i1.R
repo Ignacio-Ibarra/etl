@@ -31,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Perfil de ingresos laborales mensuales por edad y género. Primer semestre 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

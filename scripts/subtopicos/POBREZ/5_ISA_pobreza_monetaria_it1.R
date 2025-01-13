@@ -29,6 +29,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Porcentaje de Hogares Pobres. Gran Buenos Aires, 1974-1989",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

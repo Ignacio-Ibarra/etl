@@ -51,6 +51,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Movilidad intergeneracional educativa en el mundo para cohorte de 1980",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -118,6 +118,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Participación de los ingresos del trabajo en el Valor Agregado Bruto a precios básicos. 1935 - 2022",
     subtopico = subtopico,
     fuentes = c(fuente_1, fuente_2, fuente_3),
     analista = "",

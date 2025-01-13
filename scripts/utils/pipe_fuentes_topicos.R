@@ -8,8 +8,10 @@ data_path <- "~/data/"
 
 subtopicos <- list.files(data_path)
 
-# subtopicos <- c("DESIGU" 
-#                  )
+subtopicos <- c(#"DESIGU",
+                "POBREZ"
+                #"SALING"
+                 )
 
 archivos <- list()
 
@@ -59,5 +61,5 @@ fuentes <- fuentes %>%
 fuentes <- fuentes %>% 
   select(dataset, fuente, fuente_raw, script_clean = script, script_raw)
 
-print(scripts_clean)
+
 

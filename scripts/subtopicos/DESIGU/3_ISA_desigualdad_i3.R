@@ -52,6 +52,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Brecha de ingresos entre el decil más rico y el más pobre. Q1 y Q3 2003 - 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

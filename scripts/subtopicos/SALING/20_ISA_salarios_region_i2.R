@@ -31,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Evolución de los ingresos laborales reales medios por región. 2016 -2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

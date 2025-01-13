@@ -59,6 +59,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Brecha salarial y coeficiente de Gini de los ingresos laborales entre trabajadores calificados y no calificados 1992 - 2024.",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

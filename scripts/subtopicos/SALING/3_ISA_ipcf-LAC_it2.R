@@ -28,6 +28,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Ingreso familiar per cápita mensual en dólares a PPA (2017), 1992-2021",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

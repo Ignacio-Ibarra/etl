@@ -29,6 +29,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Ingresos laborales de cada región por tipo de calificación del trabajador. Primer semestre 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

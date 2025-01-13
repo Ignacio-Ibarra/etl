@@ -8,13 +8,17 @@ gc()   #Garbage Collection
 
 subtopico <- "DESIGU"
 output_name <- "brecha_horas_trabajadas_genero"
-codigos.eph <- fuentes_raw() %>% filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>% select(nombre, codigo) 
-
+codigos.eph <- fuentes_raw() %>%
+  filter(grepl("Encuesta Permanente de Hogares, Individual*", nombre)) %>%
+  select(nombre, codigo) 
 
 
 meta_desigu <- metadata("DESIGU")
 meta_desigu <- meta_desigu %>% 
-  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+  filter(str_detect(dataset_archivo, output_name)) %>% 
+  distinct(dataset_archivo, variable_nombre,
+           descripcion, primary_key, .keep_all = T)
+
 
 # librerías
 
@@ -105,16 +109,14 @@ comparacion <- argendataR::comparar_outputs(
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 etiquetas <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(descripcion) %>% 
   as.list()
 
 names(etiquetas) <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(variable_nombre)
 
 pks <- meta_desigu %>% 
-  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
+  filter(primary_key == "TRUE") %>% 
   pull(variable_nombre)
 
 df_output %>%
@@ -129,5 +131,5 @@ df_output %>%
     columna_indice_tiempo = "anio",
     etiquetas_indicadores = list("hs_trabajadas_sem" = "Horas promedio trabajadas semanalmente"),
     unidades = list("hs_trabajadas_sem" = "unidades"),
-    aclaraciones = "El dataset update contiene algunas diferencias para el ultimo anio disponible 2023, dado que el analista creo un dataset sin tener todos los trimestres completos de dicho año, las clases de las variables genero_cod y anio no coinciden, aunque el mismatch no es dado que en el dataset del analista vienen como numeric y en el dataset nuevo se encuentran como integer."
+    aclaraciones = "Cantidad de horas trabajadas remuneradas por semana por género. 2003 - 2023."
   )

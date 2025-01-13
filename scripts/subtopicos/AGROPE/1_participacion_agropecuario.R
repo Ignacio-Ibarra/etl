@@ -12,7 +12,7 @@ gc()   #Garbage Collection
 
 subtopico <- "AGROPE"
 output_name <- "participacion_agropecuario"
-analista = "Daniel Schteingart y Juan Gabriel Juara"
+analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R36C13"
 fuente2 <- "R38C7"
 

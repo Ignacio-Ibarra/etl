@@ -14,9 +14,7 @@ df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1))
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
-df_anterior <- df_anterior %>% 
-  filter(fgt_parameter == 0) %>% 
-  select(-fgt_parameter)
+df_anterior <- df_anterior 
 
 #-- Controlar Output ----
 
@@ -33,6 +31,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Porcentaje de Personas por debajo de la linea de pobreza y de indigencia. Total Nacional, 1992-2023",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

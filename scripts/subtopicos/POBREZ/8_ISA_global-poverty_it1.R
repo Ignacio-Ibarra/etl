@@ -28,6 +28,7 @@ print(comparacion)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Tasas de pobreza por ingresos en 2019, línea de 6.85 dólares diarios a PPP (2017) por país.",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -57,6 +57,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Coeficiente de variación del ingreso entre regiones y brecha de ingresos entre GBA y Noreste. 1992 - 2023",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -53,6 +53,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Indicador de movilidad intergeneracional educativa para cinco diferentes cohortes de nacimiento, entre 1940 y 1989",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

@@ -10,7 +10,7 @@ gc()   #Garbage Collection
 
 subtopico <- "AGROPE"
 output_name <- "pbi_agro"
-analista = "Franco Antonio Mendoza"
+analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R36C82"
 fuente2 <- "R223C93"
 
