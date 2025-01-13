@@ -101,13 +101,13 @@ path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
+# 
+# agregar_fuente_clean(id_fuente_raw = id_fuente,
+#                      path_clean = clean_filename,
+#                      nombre = clean_title,
+#                      script = code_name)
 
-agregar_fuente_clean(id_fuente_raw = id_fuente,
-                     path_clean = clean_filename,
-                     nombre = clean_title,
-                     script = code_name)
-
-id_fuente_clean <- 23
+id_fuente_clean <- 175
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
