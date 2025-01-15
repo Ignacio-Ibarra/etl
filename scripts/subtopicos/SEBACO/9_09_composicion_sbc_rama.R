@@ -11,78 +11,42 @@ output_name <- "09_composicion_sbc_rama"
 analista = "Nicolas Sidicaro"
 fuente1 <- "R238C138"
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-
-#readr::read_csv(argendataR::get_temp_path("RXXCX"))
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
 ## traigo la data
-data <- arrow::read_parquet(get_clean_path(fuente1))
-
-#-- Parametros Generales ----
-
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
-
-#-- Procesamiento ----
-
-# Paso 1: Filtrar solo los valores donde 'rama_de_actividad' es 'Total'
-totales_anuales <- data %>%
-  filter(rama_de_actividad == 'Total' & !is.na(anio)) %>%
-  select(anio, total_puestos = cant_promedio_puestos_privados)
+data <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 # Paso 2: Filtrar las actividades específicas de SBC (Servicios Basados en Conocimientos)
-empleo_sbc <- data %>% 
-  filter(ciiu_rev3_4d %in% c('2213',
-                     '3530',
-                     '7210','7220','7230','7240','7290',
-                     '7300',
-                     '7410','7421','7430','7494',
-                     '7491',
-                     '9211'
-                     #,'7499' # Se agregan "Servicios empresariales ncp, pese a que pueden tomar actividades que no estan dentro de SBC
-  ))
-
-empleo_sbc <- empleo_sbc %>% 
+sbc_puestos <- data %>% 
+  dplyr::filter(ciiu_rev3_4d %in% c(
+               '2213', # Edición de grabaciones
+               '3530', # Fabricación y reparación de aeronaves (????)
+               '7210', # Servicios de consultores en equipo de informática
+               '7220', # Servicios de consultores en informática y suministros de programas de informática
+               '7230', # Procesamiento de datos
+               '7240', # Servicios relacionados con bases de datos
+               '7290', # Actividades de informática n.c.p.
+               '7300', # Investigación y desarrollo
+               '7410', # Servicios jurídicos y de contabilidad, teneduría de libros y auditoría; asesoramiento en materia de impuestos; estudios de mercados y realización de encuestas de opinión pública; asesoramiento empresarial y en materia de gestión
+               '7421', # Servicios de arquitectura e ingeniería y servicios conexos de asesoramiento técnico
+               '7430', # Servicios de publicidad
+               '7494', # Servicios de fotografía
+               '7491', # Obtención y dotación de personal
+               '9211'  # Producción y distribución de filmes y videocintas
+  )) %>% 
   mutate(rama_de_actividad = case_when(ciiu_rev3_4d %in% c('7210','7220','7230','7240','7290') ~ 'SSI',
                                        ciiu_rev3_4d %in% c('7300') ~ 'Investigación y desarrollo',
                                        ciiu_rev3_4d %in% c('7410') ~ 'Ss. Jurídicos y de contabilidad',
                                        ciiu_rev3_4d %in% c('7421') ~ 'Ss. Arquitectura',
                                        ciiu_rev3_4d %in% c('7430') ~ 'Ss. publicidad',
-                                       TRUE ~ 'Otras'))
-empleo_sbc$ciiu_rev3_4d <- NULL
+                                       TRUE ~ 'Otras')) %>%
+  group_by(anio,rama = rama_de_actividad) %>%
+  summarize(puestos_sbc = sum(cant_promedio_puestos_privados, na.rm = TRUE)) %>% 
+  ungroup()
 
-# Paso 3: Calcular la suma de puestos privados solo para SBC por año
-sbc_puestos <- empleo_sbc %>%
-  group_by(anio,rama_de_actividad) %>%
-  summarize(puestos_sbc = sum(cant_promedio_puestos_privados, na.rm = TRUE))
-
-sbc_puestos <- sbc_puestos %>% 
+df_output <- sbc_puestos %>% 
   group_by(anio) %>% 
-  mutate(sbc = sum(puestos_sbc)) %>% 
+  mutate(prop_rama = puestos_sbc / sum(puestos_sbc, na.rm =T)) %>% 
   ungroup() %>% 
-  mutate(prop_sbc = puestos_sbc / sbc)
-sbc_puestos$sbc <- NULL
-sbc_puestos$empleo <- NULL
-sbc_puestos <- sbc_puestos %>% 
-  rename(prop_rama = prop_sbc)
-sbc_puestos <- sbc_puestos %>% 
-  rename(rama = rama_de_actividad) %>% 
-  select(rama,anio,prop_rama)
-
-
-# Limpiar nombres de columnas 
-df_clean <- sbc_puestos 
-
-##########################
-
-df_output <- df_clean 
+  select(anio, rama, prop_rama)
 
 #-- Controlar Output ----
 
@@ -91,7 +55,10 @@ df_output <- df_clean
 
 ## data anterior
 
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre =output_name, 
+                                            subtopico = subtopico, 
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
@@ -102,29 +69,90 @@ comparacion <- argendataR::comparar_outputs(
 
 #-- Exportar Output ----
 
-# Usar write_output con exportar = T para generar la salida
-# Cambiar los parametros de la siguiente funcion segun su caso
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name,".csv"), dataset_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+etiquetas_nuevas <- data.frame(
+  variable_nombre = c("prop_rama"),
+  descripcion = c("Proporción del empleo registrado de cada rama dentro del sector SBC")
+)
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     control = comparacion,
     subtopico = subtopico,
-    fuentes = c("R238C138"),
+    fuentes = colectar_fuentes(),
     analista = analista,
     pk = c("anio","rama"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    #columna_geo_referencia = "",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("rama"="Rama de actividad",
-                                 "anio"="Año de referencia",
-                                 "prop_rama"="Composición del empleo en SBC (proporción explicada por cada rama"),
+    descripcion_columnas = descripcion,
     unidades = list("prop_rama" = "proporción")
   )
 
-
-#temp_files <- list.files(temp_dir, full.names = TRUE)
-#view(temp_files)
-#list.files(tempdir())
 
