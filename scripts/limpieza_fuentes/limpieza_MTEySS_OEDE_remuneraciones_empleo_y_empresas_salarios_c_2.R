@@ -2,9 +2,26 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
+
 
 id_fuente <- 239
 fuente_raw <- sprintf("R%sC0",id_fuente)
+
+
+# Guardado de archivo
+nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
+                                    filter(codigo == fuente_raw) %>% 
+                                    select(path_raw) %>% 
+                                    pull(), pattern = "\\.")[1]
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
+
+
 
 # Función para verificar si el número de NAs en cada fila es mayor o igual a un umbral
 check_na_threshold <- function(df, threshold) {
@@ -80,12 +97,6 @@ df_clean <- clean_cuadro_c2(sheet_name = sheet_name, skip = skip, filas_columnas
 
 
 
-# Guardado de archivo
-nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
-                            filter(codigo == fuente_raw) %>% 
-                            select(path_raw) %>% 
-                            pull())
-
 normalized_sheet_name <- sheet_name %>% janitor::make_clean_names(.)
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_{normalized_sheet_name}_CLEAN.parquet")
@@ -93,12 +104,6 @@ clean_filename <- glue::glue("{nombre_archivo_raw}_{normalized_sheet_name}_CLEAN
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
-
-titulo.raw <- fuentes_raw() %>% 
-  filter(codigo == fuente_raw) %>% 
-  select(nombre) %>% pull()
 
 clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 
