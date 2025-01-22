@@ -1,18 +1,24 @@
-#limpio la memoria
+# limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 id_fuente <- 238
 fuente_raw <- sprintf("R%sC0",id_fuente)
+
+# Guardado de archivo
+nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
+                            filter(codigo == fuente_raw) %>% 
+                            select(path_raw) %>% 
+                            pull())
+
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
 
 # Función para verificar si el número de NAs en cada fila es mayor o igual a un umbral
 check_na_threshold <- function(df, threshold) {
@@ -25,17 +31,14 @@ white_cols <- function(df) {
   sapply(df, function (col) all(is.na(col)))
 }
 
-
-
-
 clean_cuadro_c5 <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
-  str_titulos <- readxl::read_excel(get_raw_path(fuente_raw), 
+  str_titulos <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                     sheet = sheet_name,
                                     range = "A1:A1",
                                     col_names = F) %>% pull() %>% str_replace(., "Cuadro 4:","Cuadro 5:")
   
-  cols_ <- readxl::read_excel(get_raw_path(fuente_raw), 
+  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                               sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
@@ -50,7 +53,7 @@ clean_cuadro_c5 <- function(sheet_name, skip, filas_columnas, names_to, values_t
   cols <- c('ciiu_rev3_4d',cols$concatenado)
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = skip, 
                                    col_names = F)
@@ -101,12 +104,6 @@ clean_filename <- glue::glue("{nombre_archivo_raw}_{normalized_sheet_name}_CLEAN
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
-
-titulo.raw <- fuentes_raw() %>% 
-  filter(codigo == fuente_raw) %>% 
-  select(nombre) %>% pull()
 
 clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 
