@@ -12,13 +12,6 @@ fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
 df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1)) 
 
-df_output <- df_output %>% 
-  separate_wider_delim(delim = ";", cols = `province;year;nbi_rate`, names = c("province",
-                                                                               "year",
-                                                                               "nbi_rate")) %>% 
-  mutate(across(c(year, nbi_rate), as.numeric))
-
-
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 #-- Controlar Output ----
