@@ -1,11 +1,12 @@
-# Censo Nacional 2022 - Resultados provisionales
-#limpio la memoria
+# limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
-limpiar_temps()
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
+periodicidad <- months(1)
+fecha_ultima_actualizacion <- as.Date("2023-12-31")
 fecha_actualizar <- "Sin informacion"
 
 # Descargo datos
@@ -21,6 +22,11 @@ destfile <- glue::glue("{tempdir()}/{download_filename}")
 
 download.file(url, destfile = destfile, mode = "wb")
 
+nombre = "Fichas Sectoriales"
+
+institucion = "Centro de Estudios para la Producción (CEP XXI). Secretaría de Coordinación de Producción. Ministerio de Economía"
+
+
 # agregar_fuente_raw(url = url,
 #                    nombre = "Fichas Sectoriales CEP XXI",
 #                    institucion = "Ministerio de Desarrollo Productivo. Unidad Gabinete de Asesores. Dirección Nacional de Estudios para la Producción (CEP XXI)",
@@ -31,4 +37,9 @@ download.file(url, destfile = destfile, mode = "wb")
 # )
 
 actualizar_fuente_raw(id_fuente = 229,
-                     path_raw = download_filename)
+                      nombre = nombre,
+                      institucion = institucion,
+                      fecha_actualizar = fecha_actualizar,
+                      path_raw = download_filename, 
+                      script = code_name,
+                      api = F)
