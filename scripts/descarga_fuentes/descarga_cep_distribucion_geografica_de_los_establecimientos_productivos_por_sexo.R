@@ -14,29 +14,32 @@ fecha_actualizar <- "Sin informacion"
 # Desactivo la verificacion de SSL
 options(download.file.method="curl", download.file.extra="-k -L")
 
-url <- "https://cdn.produccion.gob.ar/cdn-cep/fichas-sectoriales/Fichas-Sectoriales-FINAL.csv"
+url <- "https://cdn.produccion.gob.ar/cdn-cep/establecimientos-productivos/distribucion_establecimientos_productivos_sexo.csv"
 
-download_filename <- "Fichas-Sectoriales-FINAL.csv"
+download_filename <- "distribucion_establecimientos_productivos_sexo.csv"
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
 download.file(url, destfile = destfile, mode = "wb")
 
-nombre = "Fichas Sectoriales"
+
+nombre = "Distribución geográfica de establecimientos productivos por sexo"
 
 institucion = "Centro de Estudios para la Producción (CEP XXI). Secretaría de Coordinación de Producción. Ministerio de Economía"
 
 
+
 # agregar_fuente_raw(url = url,
-#                    nombre = "Fichas Sectoriales CEP XXI",
-#                    institucion = "Ministerio de Desarrollo Productivo. Unidad Gabinete de Asesores. Dirección Nacional de Estudios para la Producción (CEP XXI)",
-#                    actualizable = F,
-#                    fecha_actualizar = fecha_actualizar,
-#                    path_raw = download_filename,
+#                    nombre = "Distribución geográfica de establecimientos productivos por sexo",
+#                    institucion = "CEP",
+#                    actualizable = T,
+#                    fecha_descarga = Sys.Date(),
+#                    directorio = tempdir(),
+#                    path_raw = "distribucion_establecimientos_productivos_sexo.csv",
 #                    script = code_name
 # )
 
-actualizar_fuente_raw(id_fuente = 229,
+actualizar_fuente_raw(id_fuente = 107,
                       nombre = nombre,
                       institucion = institucion,
                       fecha_actualizar = fecha_actualizar,

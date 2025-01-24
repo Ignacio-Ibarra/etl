@@ -1,3 +1,7 @@
+# limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 

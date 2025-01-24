@@ -1,13 +1,13 @@
-#limpio la memoria
+# limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
-
-periodicidad <- months(12)
+periodicidad <- months(1)
 fecha_ultima_actualizacion <- as.Date("2023-12-31")
-fecha_actualizar <- fecha_ultima_actualizacion + periodicidad
+fecha_actualizar <- "Sin informacion"
 
 url <- "https://cdn.produccion.gob.ar/cdn-cep/establecimientos-productivos/Datos_por_departamento_y_actividad.csv"
 
@@ -23,7 +23,7 @@ destfile <- glue::glue("{tempdir()}/{download_filename}")
 download.file(url, destfile = destfile, mode = "wb")
 
 nombre = "Distribución geográfica de los establecimientos productivos. Datos de establecimientos por departamento y actividad"
-institucion = "Ministerio de Economía. Secretaría de Industria. Dirección Nacional de Estudios para la Producción (CEP XXI) "
+institucion = "Centro de Estudios para la Producción (CEP XXI). Secretaría de Coordinación de Producción. Ministerio de Economía"
 
 # agregar_fuente_raw(url = url, 
 #                    nombre = nombre,
@@ -35,5 +35,9 @@ institucion = "Ministerio de Economía. Secretaría de Industria. Dirección Nac
 
 
 actualizar_fuente_raw(id_fuente = 240,
+                      nombre = nombre,
+                      institucion = institucion,
                       fecha_actualizar = fecha_actualizar,
-                      path_raw = download_filename)
+                      path_raw = download_filename, 
+                      script = code_name,
+                      api = F)
