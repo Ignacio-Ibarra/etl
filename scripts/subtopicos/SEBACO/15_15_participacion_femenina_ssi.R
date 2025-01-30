@@ -10,23 +10,33 @@ fuente1 <- 'R235C147'
 df_oede <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet(.) %>% 
   mutate(
-    anio = as.integer(str_extract(trimestre_anio, "[0-9]+"))
+    anio = as.integer(str_extract(trimestre_anio, "[0-9]+")),
+    trimestre = case_when(
+      str_remove(trimestre_anio, " [0-9]+") == "I" ~ 1,
+      str_remove(trimestre_anio, " [0-9]+") == "II" ~ 2,
+      str_remove(trimestre_anio, " [0-9]+") == "III" ~ 3,
+      str_remove(trimestre_anio, " [0-9]+") == "IV" | str_remove(trimestre_anio, " [0-9]+") == "VI" ~ 4,
+      TRUE ~ NA_integer_
+    )
   ) %>% 
-  group_by(rama_de_actividad, anio, sexo) %>% 
-  dplyr::filter(n() == 4) %>% # Años completos
-  ungroup()
+  arrange(anio, trimestre)
 
 df_ssi <- df_oede %>% 
   dplyr::filter(rama_de_actividad == "Actividades de informática") %>% 
-  mutate(sector = "SSI") %>% 
+  mutate(sector = "SSI") %>%
+  group_by(anio, sexo, sector) %>% 
+  dplyr::filter(n()>=3 ) %>%  # Que al menos tengan tres trimestres por año
+  complete(trimestre = 1:4, fill = list(cantidad_puestos_privados_registrados = NA)) %>% 
+  fill(cantidad_puestos_privados_registrados, .direction = "down") %>%  # Rellenar valores faltantes con el mes anterior
+  ungroup() %>% 
   group_by(anio, sector, sexo) %>%
   summarise(
-    suma_meses = sum(cantidad_puestos_privados_registrados, na.rm = T)
+    suma_trimestres = sum(cantidad_puestos_privados_registrados, na.rm = T)
   ) %>% 
   ungroup() %>% 
   group_by(anio, sector) %>% 
   mutate(
-    prop_mujeres = suma_meses / sum(suma_meses)
+    prop_mujeres = suma_trimestres / sum(suma_trimestres)
   ) %>% 
   ungroup() %>% 
   dplyr::filter(sexo == "Mujer") %>% 
@@ -34,16 +44,25 @@ df_ssi <- df_oede %>%
 
 
 df_total <- df_oede %>% 
-  # dplyr::filter(rama_de_actividad == "Actividades de informática") %>% 
   mutate(sector = "Total privados") %>% 
-  group_by(anio, sector, sexo) %>%
+  group_by(anio, trimestre, sector, sexo) %>%
   summarise(
-    suma_meses = sum(cantidad_puestos_privados_registrados, na.rm = T)
+    cantidad_puestos_privados_registrados = sum(cantidad_puestos_privados_registrados, na.rm = T)
+  ) %>% 
+  ungroup() %>% 
+  group_by(anio, sexo, sector) %>% 
+  dplyr::filter(n()>=3 ) %>%  # Que al menos tengan tres trimestres por año
+  complete(trimestre = 1:4, fill = list(cantidad_puestos_privados_registrados = NA)) %>% 
+  fill(cantidad_puestos_privados_registrados, .direction = "down") %>%  # Rellenar valores faltantes con el mes anterior
+  ungroup() %>%
+  group_by(anio, sector, sexo) %>% 
+  summarise(
+    suma_trimestre = sum(cantidad_puestos_privados_registrados, na.rm = T)
   ) %>% 
   ungroup() %>% 
   group_by(anio, sector) %>% 
   mutate(
-    prop_mujeres = suma_meses / sum(suma_meses)
+    prop_mujeres = suma_trimestre / sum(suma_trimestre)
   ) %>% 
   ungroup() %>% 
   dplyr::filter(sexo == "Mujer") %>% 
@@ -149,7 +168,7 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
   return(valores[valores %in% posibles_codigos])
 }
 
-aclaracion <- "Se tomaron los datos mensuales de aquellos años que poseían 4 trimestres completos. En sector == 'Promedio economia' se imputó 'Total privados' dado que el registro corresponde a los puestos de trabajo privados únicamente"
+aclaracion <- "Se tomaron los años que tuvieran al menos 3 trimestres, para el trimestre faltante se imputó el dato del trimestre anterior, con ello se construyeron luego datos anuales promediando los 12 meses. En sector == 'Total economia' se imputó 'Total privados' dado que el registro corresponde a los puestos de trabajo privados únicamente"
 
 
 

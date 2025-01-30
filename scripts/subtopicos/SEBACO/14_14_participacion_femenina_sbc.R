@@ -2,6 +2,9 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
+library(lubridate)
+library(forecast)
+
 subtopico <- "SEBACO"
 output_name <- "14_participacion_femenina_sbc"
 analista <- "Nicolás Sidicaro"
@@ -38,22 +41,42 @@ df_merge <- df_participacion %>%
 df_sbc <- df_merge %>% 
   dplyr::filter(clae6 %in% sectores_elegidos) %>% 
   mutate(sector = 'SBC') %>% 
+  arrange(fecha) %>% 
   group_by(fecha, sector) %>% 
   summarize(share_mujer = stats::weighted.mean(share_mujer,puestos)) %>% 
-  ungroup()
+  ungroup() %>%
+  mutate(anio = year(fecha), mes = month(fecha)) %>%  # Extraer año y mes
+  group_by(anio, sector) %>%
+  filter(n() >= 11) %>%  # Filtrar años con al menos 11 meses disponibles
+  complete(mes = 1:12, fill = list(share_mujer = NA)) %>%  # Asegurar todos los meses
+  fill(share_mujer, .direction = "down") %>%  # Rellenar valores faltantes con el mes anterior
+  ungroup() %>%
+  mutate(fecha = make_date(anio, mes, 1)) %>%    # Reconstruir la columna fecha
+  select(fecha, sector, share_mujer)
 
 
 df_total <- df_merge %>% 
   mutate(sector = "Total privados") %>% 
+  arrange(fecha) %>% 
   group_by(fecha, sector) %>% 
   summarize(share_mujer = stats::weighted.mean(share_mujer,puestos)) %>% 
-  ungroup()
+  ungroup() %>%
+  mutate(anio = year(fecha), mes = month(fecha)) %>%  # Extraer año y mes
+  group_by(anio, sector) %>%
+  filter(n() >= 11) %>%  # Filtrar años con al menos 11 meses disponibles
+  complete(mes = 1:12, fill = list(share_mujer = NA)) %>%  # Asegurar todos los meses
+  fill(share_mujer, .direction = "down") %>%  # Rellenar valores faltantes con el mes anterior
+  ungroup() %>%
+  mutate(fecha = make_date(anio, mes, 1)) %>%    # Reconstruir la columna fecha
+  select(fecha, sector, share_mujer)
+ 
+
+# completo diciembre del ultimo año. 
 
 
 df_output <- bind_rows(df_sbc, df_total) %>% 
   mutate(anio = year(fecha)) %>% 
   group_by(anio, sector) %>% 
-  dplyr::filter(n() == 12) %>% # Me quedo con los años completos
   summarise(
     prop_mujeres = mean(share_mujer)
   ) %>% 
@@ -156,7 +179,7 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
   return(valores[valores %in% posibles_codigos])
 }
 
-aclaracion <- "Se tomaron los datos mensuales de aquellos años que poseían 12 meses completos. En sector == 'Total economia' se imputó 'Total privados' dado que el registro corresponde a los puestos de trabajo privados únicamente"
+aclaracion <- "Se tomaron los años que tuvieran al menos 11 meses, para el mes faltante se imputó el dato del mes anterior, con ello se construyeron luego datos anuales promediando los 12 meses. En sector == 'Total economia' se imputó 'Total privados' dado que el registro corresponde a los puestos de trabajo privados únicamente"
   
   
   

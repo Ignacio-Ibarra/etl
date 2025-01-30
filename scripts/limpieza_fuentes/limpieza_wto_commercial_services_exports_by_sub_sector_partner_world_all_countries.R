@@ -6,13 +6,9 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 245
+id_fuente <- 317
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
-library(rsdmx)
-df <- rsdmx::readSDMX(argendataR::get_raw_path(fuente_raw), isURL = F)
-df_clean <- as.data.frame(df) %>% 
-  mutate(OBS_VALUE = as.numeric(OBS_VALUE))
 
 # Guardado de archivo
 nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
@@ -24,12 +20,46 @@ titulo.raw <- fuentes_raw() %>%
   filter(codigo == fuente_raw) %>% 
   select(nombre) %>% pull()
 
+
+
+df_raw <- argendataR::get_raw_path(fuente_raw) %>% 
+  readr::read_csv(.) 
+
+
+source("scripts/utils/wto_timeseries_api.R")
+
+paises_wto <- wto_timeseries_api.get_reporting_economies() %>% 
+  dplyr::filter(!is.na(iso3A)) %>% 
+  distinct(ccode = code, iso3 = iso3A)
+  
+
+geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+  dplyr::filter(nivel_agregacion == 'pais') %>% 
+  select(iso3 = codigo_fundar, country_name_es = desc_fundar)
+
+
+diccionario_paises <- paises_wto %>% 
+  inner_join(geonomenclador, join_by(iso3)) # filtro codigos que no son de países. 
+
+
+df_clean <- df_raw %>% 
+  right_join(., diccionario_paises, join_by( ReportingEconomyCode == ccode)) %>% # filtro codigos que no son de países.
+  select(year = Year,
+         m49_code = ReportingEconomyCode, 
+         iso3,
+         country_name_es,
+         product_code = ProductOrSectorCode, 
+         product_desc = ProductOrSector, 
+         unit = Unit,
+         value_flag = ValueFlag,
+         value = Value) 
+  
+
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
-
 
 clean_title <- glue::glue("{titulo.raw} - Dataset limpio")
 
@@ -38,30 +68,19 @@ clean_title <- glue::glue("{titulo.raw} - Dataset limpio")
 #                      nombre = clean_title,
 #                      path_clean = clean_filename,
 #                      script = code_name,
+#                      descripcion = "Se sacan columnas demás, se cambian nombres de columnas, se filtra codigos de paises que no eran países c('EEC','CEM')"
 #                      )
 
-id_fuente_clean <- 133
+id_fuente_clean <- 186
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
-df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) %>% 
-  mutate(OBS_VALUE = as.numeric(OBS_VALUE))
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) 
 
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c('COUNTERPART_AREA',
-                                            'REF_SECTOR',
-                                            'COUNTERPART_SECTOR',
-                                            'ACCOUNTING_ENTRY',
-                                            'INT_ACC_ITEM',
-                                            'FUNCTIONAL_CAT',
-                                            'INSTR_ASSET',
-                                            'MATURITY',
-                                            'CURRENCY_DENOM',
-                                            'VALUATION',
-                                            'COMP_METHOD',
-                                            'TIME_PERIOD')
+                                     pk = c('year','iso3','product_code', 'unit')
 )
 
 
@@ -70,6 +89,3 @@ actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         nombre = clean_title, 
                         script = code_name,
                         comparacion = comparacion)
-
-
-

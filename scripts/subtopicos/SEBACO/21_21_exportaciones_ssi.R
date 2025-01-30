@@ -1,60 +1,194 @@
-################################################################################
-##                              Dataset: nombre                               ##
-################################################################################
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
+subtopico <- "SEBACO"
+output_name <- "21_exportaciones_ssi"
+analista <- "Nicolás Sidicaro"
+fuente1 <- 'R245C133' # INDEC Estadísticas de balanza de pagos, en formato SDMX-ML.
 
-output_name <- "nombre del archivo de salida"
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
+df_bop <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet() %>% 
+  mutate(
+    anio = as.integer(str_extract(TIME_PERIOD,'[0-9]+'))
+  )
 
 
-#-- Parametros Generales ----
+anio_max <- df_bop %>% 
+  distinct(trimestre = TIME_PERIOD, anio) %>% 
+  group_by(anio) %>% 
+  dplyr::filter(n() == 4) %>% 
+  ungroup() %>% 
+  summarise(anio_max = max(anio)) %>% 
+  pull(anio_max)
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
-#-- Procesamiento ----
 
-df_output <- proceso
+data <- df_bop %>% 
+  mutate(sdmx = paste(FREQ,ADJUSTMENT,REF_AREA,COUNTERPART_AREA,REF_SECTOR,COUNTERPART_SECTOR,FLOW_STOCK_ENTRY,ACCOUNTING_ENTRY,INT_ACC_ITEM,FUNCTIONAL_CAT,INSTR_ASSET,MATURITY,UNIT_MEASURE,CURRENCY_DENOM,VALUATION,COMP_METHOD,sep='.'),
+         sdmx_desc = case_when(sdmx== 'Q.N.AR.W1.S1.S1.T.B.G._Z._Z._Z.USD._T._X.N' ~ 'Bienes - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.G._Z._Z._Z.USD._T._X.N' ~ 'Bienes - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.S._Z._Z._Z.USD._T._X.N' ~ 'Servicios - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.S._Z._Z._Z.USD._T._X.N' ~ 'Servicios - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.SH._Z._Z._Z.USD._T._X.N' ~ 'Propiedad intelectual - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.SH._Z._Z._Z.USD._T._X.N' ~ 'Propiedad intelectual - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.SI2._Z._Z._Z.USD._T._X.N' ~ 'SSI - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.SI2._Z._Z._Z.USD._T._X.N' ~ 'SSI - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.SJ1._Z._Z._Z.USD._T._X.N' ~ 'Investigación y desarrollo - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.SJ1._Z._Z._Z.USD._T._X.N' ~ 'Investigación y desarrollo - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.SJ2._Z._Z._Z.USD._T._X.N' ~ 'Servicios profesionales - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.SJ2._Z._Z._Z.USD._T._X.N' ~ 'Servicios profesionales - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.SJ3._Z._Z._Z.USD._T._X.N' ~ 'Ss. arquitectura, ingeniería y otros - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.SJ3._Z._Z._Z.USD._T._X.N' ~ 'Ss. arquitectura, ingeniería y otros - BC',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.C.SK1._Z._Z._Z.USD._T._X.N' ~ 'Ss. audiovisuales - Expo',
+                               sdmx == 'Q.N.AR.W1.S1.S1.T.B.SK1._Z._Z._Z.USD._T._X.N' ~ 'Ss. audiovisuales - BC',
+                               TRUE ~ 'Otras')
+         
+  ) %>% 
+  dplyr::filter(anio <= anio_max ) %>% 
+  group_by(sdmx, sdmx_desc, anio) %>% 
+  summarize(OBS_VALUE = sum(OBS_VALUE)) %>% 
+  ungroup() %>% 
+  dplyr::filter(sdmx_desc != 'Otras') %>% 
+  mutate(tipo_dato = if_else(str_detect(sdmx_desc,'Expo$'),'expo','balanza'),
+         descripcion = str_remove(sdmx_desc,' - .*')) %>% 
+  select(-sdmx_desc, -sdmx) %>% 
+  distinct() %>% 
+  pivot_wider(names_from=tipo_dato,values_from=OBS_VALUE) %>% 
+  mutate(impo = expo - balanza)
 
-#-- Controlar Output ----
 
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+df_ssi <- data %>% 
+  dplyr::filter(descripcion == "SSI") %>% 
+  select(anio, expo) 
+
+df_expo <- data %>% 
+  dplyr::filter(descripcion %in% c("Bienes","Servicios")) %>% 
+  group_by(anio) %>% 
+  summarise(
+    expo_total = sum(expo, na.rm = T)
+  ) %>% 
+  ungroup()
+
+
+df_output <- df_ssi %>% 
+  left_join(df_expo, join_by(anio)) %>% 
+  mutate(share_ssi = expo / expo_total) %>% 
+  select(anio, expo, share_ssi)
+
+
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  rename(
+    share_ssi = prop_sobre_expo_total,
+    expo = exportaciones
+  ) %>% 
+  mutate(anio = as.integer(anio))
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
+  df_anterior = df_anterior,
+  df = df_output,
   nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  pk = c('anio'),
+  drop_joined_df =  F
 )
+
 
 #-- Exportar Output ----
 
-# Usar write_output con exportar = T para generar la salida
-# Cambiar los parametros de la siguiente funcion segun su caso
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name,".csv"), dataset_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+etiquetas_nuevas <- data.frame(
+  variable_nombre = c("expo", 
+                      "share_ssi"),
+  descripcion = c("Valor de las exportaciones del sector 'Servicios de Software e Informática (SSI)' en millones de dólares corrientes",
+                  "Participación del sector 'Servicios de Software e Informática (SSI)' en el total exportado, en propoción")
+)
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    fuentes = colectar_fuentes(),
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c('anio','sector'),
     es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
-    nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    control = comparacion, 
+    descripcion_columnas = descripcion,
+    cambio_nombre_cols = list('expo' = 'exportaciones',
+                              'share_ssi' = 'prop_sobre_expo_total'),
+    unidades = list("share_ssi" = "proporcion",
+                    'expo' = 'millones de dólares corrientes')
   )
+
 
