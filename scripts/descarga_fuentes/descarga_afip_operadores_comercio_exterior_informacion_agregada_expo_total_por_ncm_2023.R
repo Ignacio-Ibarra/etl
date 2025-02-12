@@ -40,7 +40,7 @@ df_raw %>% write_csv_fundar(., destfile)
 actualizar_fuente_raw(id_fuente = 318,
                       url = url, 
                       nombre = nombre, 
-                      institucion = "Instituto Nacional de Estadísticas y Censos",
+                      institucion = institucion,
                       fecha_actualizar = fecha_actualizar,
                       path_raw = download_filename,
                       script = code_name)
