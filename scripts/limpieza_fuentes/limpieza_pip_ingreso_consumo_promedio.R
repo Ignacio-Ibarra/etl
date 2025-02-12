@@ -43,5 +43,10 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      nombre = "Ingreso per cápita diario por año, país, tipo de bienestar y nivel de reporte",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 89, path_clean = clean_filename, directorio = tempdir(),
+comparacion <- comparar_fuente_clean(df_clean, id = 89, pk = c("iso3", "anio", "reporting_level", "welfare_type"))
+
+actualizar_fuente_clean(id_fuente_clean = 89,
+                        comparacion = comparacion,
+                        path_clean = clean_filename, 
+                        directorio = tempdir(),
                         descripcion = "Para el codigo XKX se pone el código KOS")
