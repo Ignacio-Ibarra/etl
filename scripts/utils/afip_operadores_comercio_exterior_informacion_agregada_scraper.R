@@ -47,12 +47,15 @@ listar_links_descarga <- function(anio){
 }
 
 # Función que descarga los archivos de las URLs - Posee progresión de descarga
-descargar_archivos_zip <- function(urls, output_dir = tempdir(), max_retries = 3) {
+descargar_archivos_zip <- function(urls, output_dir = tempdir()) {
   
   filenames <- str_extract(urls, "\\d{6}\\.zip$")
   destfiles <- glue::glue("{tempdir()}/{filenames}")
   
-  curl::multi_download(urls, destfiles = destfiles, resume = T, progress = T)
+  response <- multi_download(urls 
+                             ,destfiles = destfiles 
+                             ,progress = TRUE 
+                             )
   
   return(destfiles)
   
@@ -61,21 +64,33 @@ descargar_archivos_zip <- function(urls, output_dir = tempdir(), max_retries = 3
 #Función que descomprime todos los archivos zip
 descomprimir_archivos <- function(paths, exdir = tempdir(), pattern_archivo){
   
-  archivos_descomprimidos <- c()
+  archivos_descomprimidos <- list()
   
   for (destfile in paths){
     
-    filename <- unzip(destfile, list = T) %>% filter(grepl(pattern_archivo, Name)) %>% pull(Name)
-    
-    unzip(destfile, files = filename, exdir = exdir)
-    
-    outpath <- file.path(exdir, filename)
-    
-    archivos_descomprimidos <- c(archivos_descomprimidos, outpath)
+    zipfilename <- str_extract(destfile, "\\d{6}\\.zip$")
+    tryCatch(
+      {
+        filename <- unzip(destfile, list = T) %>% dplyr::filter(grepl(pattern_archivo, Name)) %>% pull(Name)
+        
+        unzip(destfile, files = filename, exdir = exdir)
+        
+        outpath <- file.path(exdir, filename)
+        
+        archivos_descomprimidos[[zipfilename]] = list("destfile"  = destfile, "outpath" = outpath)
+        }, 
+      error = function(e) {
+        cat("Error al descomprimir:", zipfilename, "\n")
+      }
+    )
     
   }
   
-  return(archivos_descomprimidos)
+  # result <- list(archivos_descomprimidos = archivos_descomprimidos, archivos_fallidos = archivos_fallidos)
+  
+  result <- archivos_descomprimidos
+  
+  return(result)
   
 }
 
@@ -97,35 +112,75 @@ compilar_archivos <- function(paths){
   df_completo <- paths %>%
     map_dfr(~ leer_archivo(.))
   
-  retunr(df_completo)
+  return(df_completo)
 }
 
 
 # Le pasás el año y hace toda la magia. 
-afip_comex_info_agregada.obtener_datos_expo = function(anio){
+afip_comex_info_agregada.obtener_datos_expo = function(anio, intentos_maximos = 3){
   
   pattern_archivo = "total_expo_agregado.*"
   
-  urls <- listar_links_descarga(anio = anio)
+  urls_iniciales <- listar_links_descarga(anio = anio)
   
   cat("Links encontrados!!\n\n")
   
-  destfiles <- descargar_archivos_zip(urls)
+  descargado <- data.frame(
+    url = urls_iniciales,
+    path = str_extract(urls_iniciales, "\\d{6}\\.zip$") %>% file.path(tempdir(), .),
+    downloaded = FALSE,
+    uncompressed = FALSE,
+    outpath = NA
+  )
   
-  cat("Descarga de archivos mensuales completa!!\n\n")
+  a_descargar <- descargado
   
-  archivos_descomprimidos <- descomprimir_archivos(paths = destfiles, pattern_archivo = pattern_archivo)
+  intentos <- 0
   
-  cat("Se completó la descompresión de archivos!!\n\n")
+  while (nrow(a_descargar)>0 & intentos < intentos_maximos){
+    
+    urls <-  a_descargar %>% dplyr::filter(!uncompressed) %>% pull(url)
   
-  df <- compilar_archivos(paths = archivos_descomprimidos)
+    destfiles <- descargar_archivos_zip(urls)
+    
+    descargado[descargado$path %in% destfiles, c("downloaded")] = TRUE
+    
+    resultado_descomprimir <- descomprimir_archivos(paths = destfiles, pattern_archivo = pattern_archivo)
+    
+    destfiles_descomprimidos_ok <- purrr::map_chr(resultado_descomprimir, 
+                                  function(x){x$destfile}) %>% unname()
+    
+    outpaths_ok <- purrr::map_chr(resultado_descomprimir, 
+                                  function(x){x$outpath}) %>% unname()
+    
+    descargado[descargado$path %in% destfiles_descomprimidos_ok, c("uncompressed")] = TRUE
+    
+    descargado[descargado$path %in% destfiles_descomprimidos_ok, c("outpath")] = outpaths_ok
+    
+    a_descargar <- descargado %>% filter(!uncompressed)
+    
+    intentos <- intentos + 1
+    
+    
+  }
   
-  cat("Se compilaron todos los archvios del año: ", anio)
-  
-  return(df)
-  
+  if (nrow(a_descargar) == 0){
+    
+    df <- compilar_archivos(paths = descargado$outpath)
+    
+    cat("Se compilaron todos los archvios del año: ", anio)
+    
+    return(df)
+    
+  }
+  if (intentos_maximos  == intentos){
+    
+    str_error <- glue::glue("No se pudo descromprimir \n\n {a_descargar}")
+    stop(str_error)
   }
 
+}
 
+# anio <- 2023
+# df_2023 <- afip_comex_info_agregada.obtener_datos_expo(anio = anio)
 
-# df_2023 <- afip_comex_info_agregada.obtener_datos_expo()
