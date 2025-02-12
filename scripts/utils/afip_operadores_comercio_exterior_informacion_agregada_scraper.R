@@ -47,7 +47,7 @@ listar_links_descarga <- function(anio){
 }
 
 # Función que descarga los archivos de las URLs - Posee progresión de descarga
-descargar_archivos_zip <- function(urls, output_dir = tempdir(), max_retries = 3) {
+descargar_archivos_zip <- function(urls, output_dir = tempdir()) {
   
   filenames <- str_extract(urls, "\\d{6}\\.zip$")
   destfiles <- glue::glue("{tempdir()}/{filenames}")
