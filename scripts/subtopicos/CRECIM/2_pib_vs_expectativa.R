@@ -76,8 +76,10 @@ df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = su
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
-  df_anterior = df_anterior,
+  df_output %>% 
+    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
+  df_anterior = df_anterior %>% 
+    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
   nombre = output_name,
   pk = c("iso3", "anio"), 
   drop_joined_df = F
@@ -99,9 +101,13 @@ df_output %>%
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
+    control = comparacion,
+    aclaraciones = "La version anterior usaba PBI per cápita PPA en u$s a precios constantes internacionales de 2017. Se actualizo usando u$s a precios constantes internacionales de 2021",
     etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios constantes internacionales de 2021)",
                                  "expectativa_al_nacer" = "Número promedio de años de vida restantes esperados por una cohorte hipotética de individuos al nacer que estarían sujetos durante el resto de sus vidas a las tasas de mortalidad de un año determinado"),
-    unidades = list('pib_pc' = "unidades",
+    unidades = list('pib_pc' = "u$s a precios constantes internacionales de 2021",
                     'expectativa_al_nacer' = "cantidad de años")
   )
 
+mandar_data(nombre_archivo = paste0(output_name, ".csv"), branch = "dev")
+mandar_data(nombre_archivo = paste0(output_name, ".json"), branch = "dev")

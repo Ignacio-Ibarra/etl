@@ -113,3 +113,5 @@ df_output %>%
     unidades = list("ranking_pib_pc" = "Ranking que ocupa según el PIB per capita")
   )
 
+mandar_data(nombre_archivo = paste0(output_name, ".csv"), branch = "dev")
+mandar_data(nombre_archivo = paste0(output_name, ".json"), branch = "dev")
