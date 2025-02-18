@@ -162,9 +162,8 @@ INDEC.intercambio_comercial_argentino.extraer_links = function(id, pattern){
     stop("Error: 'url' debe ser una cadena de caracteres no vacía y de longitud 1.")
   }
   
-  
   # Construye la URL completa
-  url <- paste0(url_base, "/", filtered_links)
+  url <- paste0(url_base, "/", filtered_links) 
   
   # Devuelve una lista con la URL y el texto asociado
   result <- list(url = url, text = filtered_texts)
