@@ -70,3 +70,9 @@ df_output %>%
     etiquetas_indicadores = etiquetas,
     unidades = list("valor" = "unidades")
   )
+
+output_name <- gsub("\\.csv", "",output_name)
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "DESIGU", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "DESIGU",  branch = "dev")
+
