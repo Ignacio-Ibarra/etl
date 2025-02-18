@@ -28,9 +28,6 @@ get_clean_path <- function(codigo){
 }
 
 
-
-
-
 # Cargo data desde server
 data_pibpc_ppp <- read_csv(get_raw_path(fuente1)) %>% 
   select(iso3 = iso3c, anio = year, pib_pc =`NY.GDP.PCAP.PP.KD`) %>% 
@@ -44,18 +41,28 @@ data_pibpc_ppp <- read_csv(get_raw_path(fuente1)) %>%
 # Dado que Argentina no tiene "nacional" elijo las filas donde tengo Argentina (urbana) o las filas del resto
 # de los países donde el reporting level es "nacional"
 data_ing <- arrow::read_parquet(get_clean_path(fuente2)) %>% 
-  dplyr::filter(((iso3 == "ARG") | (reporting_level == "national")) & (reporting_level != "rural")) 
+  dplyr::filter((iso3 == "ARG"  & reporting_level == "urban") | (reporting_level == "national" & iso3 != "ARG"))
 
-geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar, nivel_agregacion) 
+data_ing <- data_ing %>% 
+  select(iso3, anio, welfare_type, mean, reporting_level, reporting_gdp)
+
+# geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+#   select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar, nivel_agregacion) 
   
 
-df_output <- data_pibpc_ppp %>% 
-  left_join(data_ing, by=join_by(iso3, anio)) %>% 
-  dplyr::filter(!is.na(ingreso_consumo_medio)) %>% 
-  dplyr::filter(!is.na(pib_pc)) %>% 
-  left_join(geonomenclador, join_by(iso3)) %>% 
-  rename(medida_bienestar = welfare_type, promedio = ingreso_consumo_medio)
+df_output <- data_ing %>% 
+  dplyr::filter(!is.na(mean)) %>% 
+  # dplyr::filter(!is.na(pib_pc)) %>% 
+  # left_join(geonomenclador, join_by(iso3)) %>% 
+  rename(medida_bienestar = welfare_type,
+         promedio = mean,
+         pib_pc = reporting_gdp)
+
+df_output <-  df_output %>% 
+  select(-c(reporting_level)) %>% 
+  mutate(medida_bienestar = ifelse(medida_bienestar == "consumption", "consumo", "ingreso"))
+
+check_iso3(df_output$iso3)
 
 
 #-- Controlar Output ----
@@ -64,18 +71,24 @@ df_output <- data_pibpc_ppp %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
+df_anterior <- argendataR::descargar_output(nombre = "pib_vs_ingreso.csv", subtopico = subtopico, branch = "main") %>% 
   rename(pib_pc = pib_percapita_ppp_2017)
 
 
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  df_anterior = df_anterior,
+  df_anterior = df_anterior %>% 
+    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
   nombre = output_name,
-  pk = c("iso3", "anio"), 
+  pk = c("iso3", "anio", "medida_bienestar"), 
   drop_joined_df = F
 )
+
+df_output %>%
+  distinct(iso3, anio) %>% 
+  count(anio) %>% 
+  arrange(-anio)
 
 #-- Exportar Output ----
 
@@ -93,10 +106,15 @@ df_output %>%
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021)",
+    control = comparacion,
+    aclaraciones = "La version anterior usaba PBI per cápita PPA en u$s a precios constantes internacionales de 2017. Se actualizo usando u$s a precios constantes internacionales de 2021.",
+    etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021) / hab.",
                                  "promedio" = "Ingreso/consumo per cápita diario PPA (en u$s a percios internacionales constantes de 2021)"),
     unidades = list('pib_pc' = "unidades",
                     'promedio' = "unidades")
   )
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 
 

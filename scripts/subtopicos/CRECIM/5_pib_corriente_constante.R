@@ -28,15 +28,13 @@ data_gdp_kd <- read_csv(get_raw_path(fuente1)) %>%
   select(iso3 = iso3c, anio = year, pib_constante =`NY.GDP.MKTP.KD`) %>% 
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(iso3)) %>% 
-  sjlabelled::zap_labels() %>% 
-  mutate(iso3 = ifelse(iso3 == "XKX", "KOS", iso3))
+  sjlabelled::zap_labels()
 
 data_gdp_cd <- read_csv(get_raw_path(fuente2)) %>% 
   select(iso3 = iso3c, anio = year, pib_corriente =`NY.GDP.MKTP.CD`) %>% 
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(iso3)) %>% 
-  sjlabelled::zap_labels() %>% 
-  mutate(iso3 = ifelse(iso3 == "XKX", "KOS", iso3))
+  sjlabelled::zap_labels() 
 
 
 
@@ -46,11 +44,12 @@ geonomenclador <- argendataR::get_nomenclador_geografico() %>%
 
 df_output <- data_gdp_cd %>% 
   left_join(data_gdp_kd, by=join_by(iso3, anio)) %>% 
-  dplyr::filter(!(is.na(pib_constante) | is.na(pib_corriente)) ) %>%
-  left_join(geonomenclador, join_by(iso3)) 
+  dplyr::filter(!(is.na(pib_constante) | is.na(pib_corriente)) )
   
 
 #-- Controlar Output ----
+
+check_iso3(df_output$iso3)
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
@@ -79,6 +78,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
     analista = analista,
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
@@ -89,4 +89,9 @@ df_output %>%
     unidades = list('pib_constante' = "unidades",
                     'pib_corriente' = "unidades")
   )
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
+
 

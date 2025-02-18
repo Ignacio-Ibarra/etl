@@ -34,9 +34,9 @@ data_pibpc_ppp <- read_csv(get_raw_path(fuente1)) %>%
   sjlabelled::zap_labels() 
 
 
-df_output <- data_pibpc_ppp %>% 
-  left_join(geonomenclador, join_by(iso3)) %>% 
-  dplyr::filter(nivel_agregacion!="agregacion")
+df_output <- data_pibpc_ppp #%>%
+#   left_join(geonomenclador, join_by(iso3)) %>%
+#   dplyr::filter(nivel_agregacion!="agregacion")
 
 
 
@@ -64,12 +64,17 @@ df_output %>%
     fuentes = c(fuente1),
     analista = analista,
     pk = c("anio", "iso3"),
+    control = comparacion,
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
     aclaraciones = "Respecto al dataset entregado por el analista este dataset posee un cambio sustancial debido a que ha variado el dato en la fuente ya que el Banco Mundial ha modificado el año base de 2017 a 2021",
-    etiquetas_indicadores = list("pbi_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021)"),
-    unidades = list("pbi_pc" = "unidades")
+    etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021)"),
+    unidades = list("pib_pc" = "unidades")
   )
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 

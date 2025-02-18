@@ -62,12 +62,16 @@ data <- data_pib %>%
 
 df_comparar <- data %>% 
   filter(anio == 2021) %>% 
-  select(-anio, -pib, -pib_pc) %>% 
+  select(-anio, -pib, -pib_pc, -pais_nombre) %>% 
   mutate(ranking_pib = as.numeric(ranking_pib),
          ranking_pib_pc = as.numeric(ranking_pib_pc))
  
   
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+
+
+df_anterior <- df_anterior %>% 
+  select(-pais_nombre)
 
 #-- Controlar Output ----
 
@@ -113,5 +117,5 @@ df_output %>%
     unidades = list("ranking_pib_pc" = "Ranking que ocupa según el PIB per capita")
   )
 
-mandar_data(nombre_archivo = paste0(output_name, ".csv"), branch = "dev")
-mandar_data(nombre_archivo = paste0(output_name, ".json"), branch = "dev")
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")

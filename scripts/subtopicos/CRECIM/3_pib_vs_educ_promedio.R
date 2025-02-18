@@ -54,6 +54,9 @@ df_output <- data_pibpc_ppp %>%
   dplyr::filter(!is.na(pib_pc)) %>% 
   left_join(geonomenclador, join_by(iso3))
 
+df_output <- df_output %>% 
+  select(-c(pais_nombre, continente_fundar, nivel_agregacion))
+
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
@@ -67,7 +70,8 @@ df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = su
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  df_anterior = df_anterior,
+  df_anterior = df_anterior %>% 
+    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
   nombre = output_name,
   pk = c("iso3", "anio"), 
   drop_joined_df = F
@@ -84,17 +88,21 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
     analista = analista,
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    aclaraciones = "Entre una versión 2023 y 2024 del Human Development Report, los países Antigua y Barbuda, Benin, Burkina Faso, Camerún, Congo, Cabo Verde, Djibouti, Etiopía, Micronesia, Ghana, Guinea, Guinea Ecuatorial, Granada, Saint Kitts y Nevis, Lesotho, Malí, Malawi, Níger y Sierra Leona poseen diferencias elevadas con respecto a la variable referida a los años promedio de educación",
+    aclaraciones = "La version anterior usaba PBI per cápita PPA en u$s a precios constantes internacionales de 2017. Se actualizo usando u$s a precios constantes internacionales de 2021. Entre una versión 2023 y 2024 del Human Development Report, los países Antigua y Barbuda, Benin, Burkina Faso, Camerún, Congo, Cabo Verde, Djibouti, Etiopía, Micronesia, Ghana, Guinea, Guinea Ecuatorial, Granada, Saint Kitts y Nevis, Lesotho, Malí, Malawi, Níger y Sierra Leona poseen diferencias elevadas con respecto a la variable referida a los años promedio de educación",
     etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021)",
                                  "anios_escol_prom" = "Promedio de años de escolaridad alcanzados"),
-    unidades = list('pib_pc' = "unidades",
+    unidades = list('pib_pc' = "u$s a precios constantes internacionales de 2021 / hab",
                     'anios_escol_prom' = "cantidad de años promedio de escolaridad")
   )
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 
 
 

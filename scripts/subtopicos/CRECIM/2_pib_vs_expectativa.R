@@ -66,6 +66,9 @@ df_output <- data_pibpc_ppp %>%
   rename(expectativa_al_nacer = expectativa_vida) %>% 
   left_join(geonomenclador, join_by(iso3))
 
+df_output <- df_output %>% 
+  select(-c(pais_nombre, continente_fundar, nivel_agregacion))
+
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
@@ -76,8 +79,7 @@ df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = su
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output %>% 
-    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
+  df_output,
   df_anterior = df_anterior %>% 
     select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
   nombre = output_name,
@@ -105,9 +107,10 @@ df_output %>%
     aclaraciones = "La version anterior usaba PBI per cápita PPA en u$s a precios constantes internacionales de 2017. Se actualizo usando u$s a precios constantes internacionales de 2021",
     etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios constantes internacionales de 2021)",
                                  "expectativa_al_nacer" = "Número promedio de años de vida restantes esperados por una cohorte hipotética de individuos al nacer que estarían sujetos durante el resto de sus vidas a las tasas de mortalidad de un año determinado"),
-    unidades = list('pib_pc' = "u$s a precios constantes internacionales de 2021",
+    unidades = list('pib_pc' = "u$s a precios constantes internacionales de 2021 / hab",
                     'expectativa_al_nacer' = "cantidad de años")
   )
 
-mandar_data(nombre_archivo = paste0(output_name, ".csv"), branch = "dev")
-mandar_data(nombre_archivo = paste0(output_name, ".json"), branch = "dev")
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
+
