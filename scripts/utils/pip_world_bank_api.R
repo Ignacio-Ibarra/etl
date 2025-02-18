@@ -1,7 +1,5 @@
 # manual_api = "https://pip.worldbank.org/api"
 #limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
 
 
 library(httr)
