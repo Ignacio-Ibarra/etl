@@ -21,8 +21,7 @@ df_raw <- read_csv(get_raw_path(fuente_raw))
 
 
 df_clean <- df_raw %>% 
-  select(iso3 = country_code, anio = reporting_year, reporting_level, welfare_type, ingreso_consumo_medio = mean) %>% 
-  mutate(iso3 = ifelse(iso3=="XKX", "KOS", iso3))
+  rename(iso3 = country_code, anio = reporting_year) 
 
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
                                     filter(codigo == fuente_raw) %>% 
