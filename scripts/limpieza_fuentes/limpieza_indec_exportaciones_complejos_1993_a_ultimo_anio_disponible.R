@@ -32,7 +32,12 @@ white_cols <- function(df) {
   sapply(df, function (col) all(is.na(col)))
 }
 
-clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
+clean_sheet <- function(sheet_name){
+  
+  skip = ifelse(sheet_name == "2017-2019", 5, 6) 
+  filas_columnas = 3:4
+  names_to = 'columnas' 
+  values_to = 'valores'
   
   
   cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
@@ -88,11 +93,7 @@ sheets <- readxl::excel_sheets(argendataR::get_raw_path(fuente_raw))
 
 
 df_raw <- purrr::map_dfr(sheets, 
-                           function(x){clean_sheet(sheet_name = x, 
-                                                   skip = 6, 
-                                                   filas_columnas = 3:4,
-                                                   names_to = 'columnas', 
-                                                   values_to = 'valores')}) 
+                           function(x){clean_sheet(sheet_name = x)}) 
 
 df_clean <- df_raw %>% 
   rename(anio = columnas) %>% 
