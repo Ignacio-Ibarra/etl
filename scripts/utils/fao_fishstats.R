@@ -34,41 +34,64 @@ get_response_json <- function(response){
 
 
 
-FAO_FISHSTATS.get_download_link <- function(topic, token_manual, filetype = "csv"){
+FAO_FISHSTATS.get_available_datasets <- function(token_manual){
   
+  url <- "https://www.fao.org/fishery/services/statistics/api/datasets/en"
   
-  param_list <- list(alias = topic, lang = "en")
-  
-  
-  response <- make_request(url = URL_BUSQUEDAS, params = param_list, auth_token = token_manual)
-  
+  response <- make_request(url, params = NULL, auth_token = token_manual)
   
   json_response <- get_response_json(response)
   
-  institution <- json_response$document$coverPage$author
-  
-  serie <- json_response$document$coverPage$series
-  
-  title <- json_response$document$title
-  
-  resources <- json_response$document$resources
-  
-  link <- resources %>% 
-    dplyr::filter(type == filetype) %>% 
-    pull(text) %>% 
-    str_extract(., 'href="([^"]+)"', group=1) %>% 
-    paste0(URL_BASE, ., collapse = "")
-  
-  result <- list(link = link, 
-                 institution = institution, 
-                 serie = serie,
-                 title = title)
-  return(result)
+  return(json_response)
   
 }
 
 
 
+FAO_FISHSTATS.get_topic_metadata <- function(topic_id, token_manual){
+  
+  url <- glue::glue("https://www.fao.org/fishery/services/statistics/api/dataset/{topic_id}/timeseries/en")
+  
+  response <- make_request(url, params = NULL, auth_token = token_manual)
+  
+  json_response <- get_response_json(response)
+  
+  return(json_response)
+}
+
+
+FAO_FISHSTATS.get_download_link <- function(topic, token_manual, filetype = "csv"){
+
+
+  param_list <- list(alias = topic, lang = "en")
+
+
+  response <- make_request(url = URL_BUSQUEDAS, params = param_list, auth_token = token_manual)
+
+
+  json_response <- get_response_json(response)
+
+  institution <- json_response$document$coverPage$author
+
+  serie <- json_response$document$coverPage$series
+
+  title <- json_response$document$title
+
+  resources <- json_response$document$resources
+
+  link <- resources %>%
+    dplyr::filter(type == filetype) %>%
+    pull(text) %>%
+    str_extract(., 'href="([^"]+)"', group=1) %>%
+    paste0(URL_BASE, ., collapse = "")
+
+  result <- list(link = link,
+                 institution = institution,
+                 serie = serie,
+                 title = title)
+  return(result)
+
+}
 
 
 
