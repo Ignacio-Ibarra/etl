@@ -8,7 +8,7 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 323
+id_fuente <- 328
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -32,12 +32,8 @@ white_cols <- function(df) {
   sapply(df, function (col) all(is.na(col)))
 }
 
-clean_sheet <- function(sheet_name){
+clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
-  skip = ifelse(sheet_name == "2017-2019", 5, 6) 
-  filas_columnas = 3:4
-  names_to = 'columnas' 
-  values_to = 'valores'
   
   
   cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
@@ -63,7 +59,7 @@ clean_sheet <- function(sheet_name){
   
   sheet_data <- sheet_data[!white_cols(sheet_data)]
   
-  cols <- cols$concatenado %>% gsub("complejo.*", "complejos", ., ignore.case = T)
+  cols <- c('codigo', 'nombre_apertura', cols$concatenado[-1])
   
   names(sheet_data) <- cols
   
@@ -76,10 +72,12 @@ clean_sheet <- function(sheet_name){
   # pivoteo datos y genero columna con nombre de provincia
   df <- sheet_data %>% 
     dplyr::filter(!filter_bool) %>%
-    pivot_longer(cols = !matches("(.*complejo.*export.*|.*complejo.*)"), 
-                              names_to = names_to,
-                              values_to = values_to, 
-                              values_transform = as.numeric) 
+    pivot_longer(cols = !c(codigo, nombre_apertura), 
+                 names_to = names_to,
+                 values_to = values_to, 
+                 values_transform = as.numeric) %>% 
+    mutate(anio = as.integer(str_extract(anio, "\\d{4}"))
+    )
   
   
   return(df)
@@ -87,18 +85,29 @@ clean_sheet <- function(sheet_name){
 
 
 
+sheet_name <- "% del PIB"
+skip = 5
+filas_columnas = 4
+names_to = 'anio' 
+values_to = 'valores'
 
 
-sheets <- readxl::excel_sheets(argendataR::get_raw_path(fuente_raw))
+
+df_raw <- clean_sheet(sheet_name, skip, filas_columnas, names_to, values_to)
 
 
-df_raw <- purrr::map_dfr(sheets, 
-                           function(x){clean_sheet(sheet_name = x)}) 
+diccionario_finalidad <- df_raw %>% 
+  mutate(filtrar = str_remove_all(codigo, "\\.") %>% nchar(.) == 2) %>% 
+  dplyr::filter(filtrar) %>%
+  distinct(codigo_finalidad = codigo, nombre_finalidad = nombre_apertura)
+
 
 df_clean <- df_raw %>% 
-  rename(anio = columnas) %>% 
-  dplyr::filter(grepl("Años.*", anio)) %>% 
-  mutate(anio = str_extract(anio, ".*#(\\d{4})", group = 1) %>% as.integer(.))
+  mutate(filtrar = str_remove_all(codigo, "\\.") %>% nchar(.) == 2) %>% 
+  dplyr::filter(!filtrar) %>% 
+  mutate(codigo_finalidad = str_extract(codigo, "(^[0-9]\\.[0-9])\\..*", group = 1)) %>%
+  left_join(diccionario_finalidad, join_by(codigo_finalidad)) %>% 
+  select(codigo_finalidad, nombre_finalidad, codigo_funcion = codigo, nombre_funcion = nombre_apertura, anio, porcentaje_pib = valores)
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -116,7 +125,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 
-id_fuente_clean <- 196
+id_fuente_clean <- 203
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -125,7 +134,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c('complejos', 'anio')
+                                     pk = c('codigo_finalidad', 'codigo_funcion', 'anio')
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
