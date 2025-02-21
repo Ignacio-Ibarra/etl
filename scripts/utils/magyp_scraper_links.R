@@ -90,6 +90,38 @@ MAGYP.extraer_links_datos_abiertos <- function(page_suffix, h3_target ){
 
 
 
+MAGYP.extraer_links_pesca_maritima_desembarques <- function(pattern = ".*(\\.zip$|\\.rar$)"){
+  
+  url_consulta <- "https://www.magyp.gob.ar/sitio/areas/pesca_maritima/desembarques"
+  
+  # Obtiene el contenido de la página web
+  web_content <- read_html(page_url)
+  
+  # Obtiene los href y el texto de cada enlace
+  links <- web_content %>%
+    html_nodes("a") %>%
+    html_attr("href")
+  
+  text_links <- web_content %>%
+    html_nodes("a") %>%
+    html_text(trim = TRUE)
+  
+  # Filtra los links que contienen la URL base y aplican el pattern
+  filtered_links <- links[grepl(pattern, links)] %>% 
+    gsub("//", "/", .) %>% 
+    file.path(url_consulta,.)
+  filtered_texts <- text_links[grepl(pattern, links)]
+  
+  resultado <- data.frame(nombre = filtered_texts, url = filtered_links) %>% dplyr::filter(nombre != "")
+  
+  return(resultado)
+  
+}
+
+
+
+
+
 MAGYP.extraer_links_informes_bovinos <- function(pattern){
   
   # URL de la página que quieres scrapear
