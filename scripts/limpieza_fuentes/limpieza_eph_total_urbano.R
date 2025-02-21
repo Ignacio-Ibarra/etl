@@ -50,7 +50,7 @@ df_clean <- df_clean %>%
     caes_seccion_cod = ifelse(PP04B_COD == "8403", "O", caes_seccion_cod),
     letra_desc = ifelse(PP04B_COD == "8403", "Administración pública y defensa; planes de seguro social obligatorio", letra_desc),
     letra_desc_abrev = ifelse(PP04B_COD == "8403", "Administración pública", letra_desc_abrev),
-    ) %>% 
+  ) %>% 
   janitor::clean_names()
 
 
@@ -87,8 +87,14 @@ codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
 
 
-comparacion <- comparar_fuente_clean(df_clean,
-                                     df_clean_anterior,
+comparacion <- comparar_fuente_clean(df_clean %>% 
+                                       arrange(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente) %>% 
+                                       slice_head(n = 1000) %>% 
+                                       select(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente, pondera),
+                                     df_clean_anterior %>% 
+                                       arrange(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente) %>% 
+                                       slice_head(n = 1000)%>% 
+                                       select(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente, pondera),
                                      pk = c('codusu', 'trimestre', 'ano4', 'provincia', 'aglomerado', 'nro_hogar', 'componente')
 )
 
@@ -96,6 +102,10 @@ actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         path_clean = clean_filename,
                         nombre = clean_title, 
                         script = code_name,
-                        comparacion = comparacion)
+                        comparacion = comparacion,
+                        descripcion = "En la comparación se seleccionaron las key y la variable pondera, comparando muestras de 1000 registros")
+
+
+
 
 
