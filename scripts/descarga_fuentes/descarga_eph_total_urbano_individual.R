@@ -11,7 +11,7 @@ tipo_encuesta <- "individual"
 anio_start <- 2016
 
 #TODO el anio podría definirse programáticamente.
-anio_end <- 2023  
+anio_end <- 2024  
 
 today <- format(Sys.Date(), format="%Y%m%d")
 
