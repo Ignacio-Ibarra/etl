@@ -28,9 +28,7 @@ get_clean_path <- function(codigo){
   return(paste0(prefix, path_clean))
 }
 
-geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  select(iso3 = codigo_fundar, area_desc = desc_fundar, continente_fundar, nivel_agregacion) 
-
+geonomenclador <- argendataR::get_nomenclador_geografico() 
 
 # Cargo data desde server
 df_wdi <- readr::read_csv(get_raw_path(fuente1)) %>% 
@@ -50,8 +48,11 @@ df_output <- df_wdi %>%
   left_join(df_1975, join_by(iso3)) %>% 
   mutate(cambio_relativo = (pib_pc / pib_pc_1975)-1) %>% 
   dplyr::filter(!is.na(cambio_relativo)) %>% 
-  select(-pib_pc_1975) %>% 
-  left_join(geonomenclador, join_by(iso3)) 
+  select(-pib_pc_1975)
+  # left_join(geonomenclador, join_by(iso3)) 
+
+
+check_iso3(df_output$iso3)
 
 
 # mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
@@ -77,12 +78,13 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c(fuente1, fuente2),
+    fuentes = c(fuente1),
     analista = analista,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
+    control = comparacion,
     nivel_agregacion = "pais",
     aclaraciones = "El dataset entregado por el analista fue realizado con datos de Maddison Project Database 2020, en cambio en este caso se utilizaron datos de Maddison Project Database 2023. Los países Yugoslavia (YUG), Unión Soviética (SUN) y Checoslovaquia (CSK) fueron incorporados for los autores de la fuente (ver https://onlinelibrary.wiley.com/doi/10.1111/joes.12618). ",
     etiquetas_indicadores = list("pib_pc" = "PBI per cápita (en u$s a precios constantes de 2015)",
@@ -90,3 +92,8 @@ df_output %>%
     unidades = list("pib_pc" = "unidades",
                     "cambio_relativo" = "unidades")
   )
+
+output_name <- gsub("\\.csv", "", output_name)
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")

@@ -92,6 +92,23 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+check_iso3(df_output$provincia_id)
+
+geo <- get_nomenclador_geografico()
+
+df_output <- df_output %>%
+  mutate(provincia_nombre = textclean::replace_non_ascii(tolower(provincia_nombre))) %>% 
+  left_join(geo %>% 
+              mutate(name_short = textclean::replace_non_ascii(tolower(name_short))),
+            by = c("provincia_nombre" = "name_short")
+  )
+
+df_output <- df_output %>% 
+  select(-c(provincia_nombre, iso_2, name_long, provincia_id)) %>% 
+  rename(provincia_id = geocodigo)
+
+check_iso3(df_output$provincia_id)
+
 
 
 
@@ -106,6 +123,8 @@ df_output %>%
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1),
+    control = comparacion,
+    aclaraciones = "Se corrigieron los codigos de provincia de acuerdo al geonomenclador de Argendata.",
     analista = analista,
     pk = c("provincia_id"),
     columna_geo_referencia = "provincia_id",
@@ -115,5 +134,8 @@ df_output %>%
     unidades = list("pib_pc_1895" = "en pesos constantes de 2004",
                     "var_pib_pc_1895_ultimo_anio" = "unidades")
   )
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 
 

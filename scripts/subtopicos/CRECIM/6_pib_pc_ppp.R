@@ -8,7 +8,7 @@ gc()   #Garbage Collection
 
 
 subtopico <- "CRECIM"
-output_name <- "pib_pc_ppp_2017"
+output_name <- "pib_pc_ppp"
 analista = "Pablo Sonzogni"
 fuente1 <- "R126C0"
 
@@ -40,7 +40,8 @@ df_output <- data_pibpc_ppp #%>%
 
 
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+df_anterior <- argendataR::descargar_output(nombre = "pib_pc_ppp_2017.csv",
+                                            subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
 
 
@@ -60,6 +61,8 @@ comparacion <- argendataR::comparar_outputs(
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    cambio_nombre_output = list('nombre_nuevo' = 'pib_pc_ppp',
+                                'nombre_anterior' = 'pib_pc_ppp_2017'),
     subtopico = subtopico,
     fuentes = c(fuente1),
     analista = analista,
@@ -70,7 +73,9 @@ df_output %>%
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
     aclaraciones = "Respecto al dataset entregado por el analista este dataset posee un cambio sustancial debido a que ha variado el dato en la fuente ya que el Banco Mundial ha modificado el año base de 2017 a 2021",
-    etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021)"),
+    descripcion_columnas = list("pib_pc" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2021)",
+                                "iso3" = "Codigo del pais segun figura en el geonomenclador de Argendata",
+                                "anio" = "Año"),
     unidades = list("pib_pc" = "unidades")
   )
 

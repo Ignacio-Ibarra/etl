@@ -95,6 +95,26 @@ comparacion <- argendataR::comparar_outputs(
 
 
 
+check_iso3(df_output$provincia_id)
+
+geo <- get_nomenclador_geografico()
+
+df_output <- df_output %>%
+  mutate(provincia_nombre = textclean::replace_non_ascii(tolower(provincia_nombre))) %>% 
+  left_join(geo %>% 
+              mutate(name_short = textclean::replace_non_ascii(tolower(name_short))),
+            by = c("provincia_nombre" = "name_short")
+  )
+
+df_output <- df_output %>% 
+  select(-c(provincia_nombre, iso_2, name_long, provincia_id)) %>% 
+  rename(provincia_id = geocodigo)
+
+check_iso3(df_output$provincia_id)
+
+
+
+
 
 #-- Exportar Output ----
 
@@ -107,6 +127,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1),
     analista = analista,
+    control = comparacion,
     pk = c("anio", "provincia_id"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
@@ -116,5 +137,10 @@ df_output %>%
     etiquetas_indicadores = list("pib_pc_relativo" = "Producto bruto interno per cápita relativo a la media (media nacional = 100)"),
     unidades = list("pib_pc_relativo" = "porcentaje")
   )
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
+
+
 
 

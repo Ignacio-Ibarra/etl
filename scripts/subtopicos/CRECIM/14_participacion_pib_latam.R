@@ -28,8 +28,7 @@ get_clean_path <- function(codigo){
   return(paste0(prefix, path_clean))
 }
 
-geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  select(iso3 = codigo_fundar, pais_nombre = desc_fundar) 
+geonomenclador <- argendataR::get_nomenclador_geografico() 
 
 
 # Cargo data desde server
@@ -47,7 +46,7 @@ pib_latam <- df_madd_r %>% dplyr::filter(iso3 == "LAC_MPD") %>%
 
 df_no_resto <- df_madd_latam %>% 
   left_join(pib_latam, join_by(anio)) %>% 
-  left_join(geonomenclador, join_by(iso3)) %>% 
+  # left_join(geonomenclador, join_by(iso3)) %>% 
   mutate(participacion = pib / pib_latam) %>% 
   select(-pib, -pib_latam) %>% 
   dplyr::filter(!is.na(participacion)) %>% 
@@ -60,14 +59,17 @@ df_resto <- df_no_resto %>%
   mutate(iso3 = "CRECIM_AML-RESTO",
          pais_nombre = "Resto de América Latina")
   
-df_output <- df_no_resto %>% bind_rows(df_resto)
+df_output <- df_no_resto %>% bind_rows(df_resto) %>% 
+  select(-pais_nombre)
 
+check_iso3(df_output$iso3)
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")  
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_anterior = df_anterior,
+  df_anterior = df_anterior %>% 
+    mutate(iso3 = replace_na(iso3, "CRECIM_AML-RESTO")),
   df = df_output,
   nombre = output_name,
   pk = c("anio", "iso3"), # variables pk del dataset para hacer el join entre bases
@@ -85,6 +87,7 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
     analista = analista,
+    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
@@ -94,4 +97,10 @@ df_output %>%
     etiquetas_indicadores = list("participacion" = "Participación en el PBI PPA (en u$s a precios internacionales constantes de 2011) con respecto a Latino América"),
     unidades = list("participacion" = "unidades")
   )
+
+
+output_name <- gsub("\\.csv", "", output_name)
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 

@@ -28,18 +28,16 @@ get_clean_path <- function(codigo){
   return(paste0(prefix, path_clean))
 }
 
-geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  select(iso3 = codigo_fundar, continente_fundar, nivel_agregacion) 
-
+geonomenclador <- argendataR::get_nomenclador_geografico() 
 
 # Cargo data desde server
 df_madd_c <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
   dplyr::filter(anio>=1900) %>% 
-  select(anio, iso3, pais_nombre, gdppc) 
+  select(anio, iso3, gdppc) 
 
 df_madd_r <- arrow::read_parquet(get_clean_path(fuente2)) %>%
   dplyr::filter(anio>=1900) %>% 
-  select(anio, iso3, pais_nombre = region, gdppc)
+  select(anio, iso3, gdppc)
 
 df_all <- df_madd_c %>% 
   bind_rows(df_madd_r) %>% 
@@ -54,9 +52,20 @@ df_output <- df_all %>%
   mutate(cambio_relativo = (gdppc / gdppc_1900)-1) %>% 
   dplyr::filter(!is.na(cambio_relativo)) %>% 
   rename(pib_per_capita = gdppc) %>% 
-  select(-gdppc_1900) %>% 
-  left_join(geonomenclador, join_by(iso3)) %>% 
-  mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
+  select(-gdppc_1900) #%>% 
+  # left_join(geonomenclador, join_by(iso3)) %>% 
+  # mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
+
+check_iso3(df_output$iso3)
+
+df_output <- df_output %>% 
+  mutate(iso3 = case_when(
+    iso3 == "YUG" ~ "SER",
+    iso3 == "SUN" ~ "SVU",
+    T ~ iso3
+  ))
+
+check_iso3(df_output$iso3)
 
 
 # mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
@@ -72,6 +81,7 @@ comparacion <- argendataR::comparar_outputs(
   pk = c("anio", "iso3"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
+
 
 armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
   # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
@@ -146,6 +156,7 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
   # solo devuelvo las fuentes que existen
   return(valores[valores %in% posibles_codigos])
 }
+
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
@@ -154,6 +165,7 @@ df_output %>%
     output_name = output_name,
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
+    control = comparacion,
     analista = analista,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
@@ -164,4 +176,9 @@ df_output %>%
     unidades = list("pib_per_capita" = "unidades",
                     "cambio_relativo" = "unidades")
   )
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
+
 

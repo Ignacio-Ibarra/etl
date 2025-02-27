@@ -28,16 +28,14 @@ get_clean_path <- function(codigo){
   return(paste0(prefix, path_clean))
 }
 
-geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  select(iso3 = codigo_fundar, continente_fundar, nivel_agregacion) 
-
+geonomenclador <- argendataR::get_nomenclador_geografico() 
 
 # Cargo data desde server
 df_madd_c <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
-  select(anio, iso3, area_desc = pais_nombre, gdppc) 
+  select(anio, iso3,  gdppc) 
 
 df_madd_r <- arrow::read_parquet(get_clean_path(fuente2)) %>%
-  select(anio, iso3, area_desc = region, gdppc)
+  select(anio, iso3, gdppc)
 
 df_all <- df_madd_c %>% 
   bind_rows(df_madd_r) %>% 
@@ -45,10 +43,20 @@ df_all <- df_madd_c %>%
 
 
 df_output <- df_all %>% 
-  rename(pib_per_capita = gdppc) %>% 
-  left_join(geonomenclador, join_by(iso3)) %>% 
-  mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
+  rename(pib_per_capita = gdppc) 
+  # left_join(geonomenclador, join_by(iso3)) %>% 
+  # mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
 
+check_iso3(df_output$iso3)
+
+df_output <- df_output %>% 
+  mutate(iso3 = case_when(
+    iso3 == "YUG" ~ "SER",
+    iso3 == "SUN" ~ "SVU",
+    T ~ iso3
+  ))
+
+check_iso3(df_output$iso3)
 
 # mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
 
@@ -76,6 +84,7 @@ df_output %>%
     fuentes = c(fuente1, fuente2),
     analista = analista,
     pk = c("anio", "iso3"),
+    control = comparacion,
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
@@ -83,3 +92,8 @@ df_output %>%
     etiquetas_indicadores = list("pib_per_capita" = "PBI per cápita PPA (en u$s a precios internacionales constantes de 2011)"),
     unidades = list("pib_per_capita" = "unidades")
   )
+
+output_name <- gsub("\\.csv", "", output_name)
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")

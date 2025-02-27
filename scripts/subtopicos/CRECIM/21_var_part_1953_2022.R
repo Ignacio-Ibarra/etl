@@ -94,6 +94,25 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+check_iso3(df_output$provincia_id)
+
+geo <- get_nomenclador_geografico()
+
+df_output <- df_output %>%
+  mutate(provincia_nombre = textclean::replace_non_ascii(tolower(provincia_nombre))) %>% 
+  left_join(geo %>% 
+              mutate(name_short = textclean::replace_non_ascii(tolower(name_short))),
+            by = c("provincia_nombre" = "name_short")
+  )
+
+df_output <- df_output %>% 
+  select(-c(provincia_nombre, iso_2, name_long, provincia_id)) %>% 
+  rename(provincia_id = geocodigo)
+
+check_iso3(df_output$provincia_id)
+
+
+
 armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
   # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
   # proviene de la info declarada por el analista 
@@ -175,6 +194,7 @@ df_output %>%
     analista = analista,
     pk = c("provincia_id"),
     control = comparacion, 
+    aclaraciones = "Se corrigieron los codigos de provincia de acuerdo al geonomenclador de Argendata.",
     columna_geo_referencia = "provincia_id",
     cambio_nombre_output = list('nombre_nuevo' = output_name,
                                 'nombre_anterior' = output_anterior),
@@ -182,4 +202,9 @@ df_output %>%
     descripcion_columnas = descripcion,
     unidades = list("var_participacion" = "puntos porcentuales")
   )
-Y
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
+
+
+

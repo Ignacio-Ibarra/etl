@@ -28,17 +28,15 @@ get_clean_path <- function(codigo){
   return(paste0(prefix, path_clean))
 }
 
-geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  select(iso3 = codigo_fundar, continente_fundar, nivel_agregacion) 
 
 
 # Cargo data desde server
 df_madd_c <- arrow::read_parquet(get_clean_path(fuente1)) %>% 
   dplyr::filter(anio>=1820) %>% 
-  select(anio, iso3, area_desc = pais_nombre, pib) 
+  select(anio, iso3, pib) 
 
 df_madd_r <- arrow::read_parquet(get_clean_path(fuente2)) %>%
-  select(anio, iso3, area_desc = region, pib)
+  select(anio, iso3, pib)
 
 
 pib_mundial <- df_madd_r %>% dplyr::filter(iso3 == "WLD") %>% 
@@ -48,14 +46,24 @@ df_output <- df_madd_c %>%
   bind_rows(df_madd_r) %>%
   dplyr::filter(iso3 != "WLD") %>%
   left_join(pib_mundial, join_by(anio)) %>% 
-  left_join(geonomenclador, join_by(iso3)) %>% 
+  # left_join(geonomenclador, join_by(iso3)) %>% 
   mutate(participacion = pib / pib_mundial) %>% 
-  mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion)) %>% 
+  # mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion)) %>% 
   select(-pib, -pib_mundial) %>% 
   dplyr::filter(!is.na(participacion))
   
-  
-  
+check_iso3(df_output$iso3)  
+
+
+df_output <- df_output %>% 
+  mutate(iso3 = case_when(
+    iso3 == "YUG" ~ "SER",
+    iso3 == "SUN" ~ "SVU",
+    T ~ iso3
+  ))
+
+check_iso3(df_output$iso3)  
+
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")  
 
 
@@ -80,6 +88,7 @@ df_output %>%
     analista = analista,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
+    control = comparacion,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
@@ -88,3 +97,5 @@ df_output %>%
     unidades = list("participacion" = "unidades")
   )
 
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")

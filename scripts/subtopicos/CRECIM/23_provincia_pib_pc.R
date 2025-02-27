@@ -83,6 +83,26 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+check_iso3(df_output$provincia_id)
+
+geo <- get_nomenclador_geografico()
+
+df_output <- df_output %>%
+  mutate(provincia_nombre = textclean::replace_non_ascii(tolower(provincia_nombre))) %>% 
+  left_join(geo %>% 
+              mutate(name_short = textclean::replace_non_ascii(tolower(name_short))),
+            by = c("provincia_nombre" = "name_short")
+  )
+
+df_output <- df_output %>% 
+  select(-c(provincia_nombre, iso_2, name_long, provincia_id)) %>% 
+  rename(provincia_id = geocodigo)
+
+check_iso3(df_output$provincia_id)
+
+
+
+
 
 
 
@@ -97,6 +117,7 @@ df_output %>%
     output_name = output_name,
     subtopico = subtopico,
     fuentes = c(fuente1),
+    control = comparacion,
     analista = analista,
     pk = c("anio", "provincia_id"),
     es_serie_tiempo = T,
@@ -106,5 +127,10 @@ df_output %>%
     etiquetas_indicadores = list("pib_pc" = "VAB a precios básicos per cápita a pesos constantes de 2004"),
     unidades = list("pib_pc" = "unidades")
 )
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
+
+
 
 
