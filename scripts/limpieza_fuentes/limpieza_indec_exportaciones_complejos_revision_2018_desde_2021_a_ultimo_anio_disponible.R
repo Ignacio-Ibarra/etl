@@ -6,7 +6,7 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 323
+id_fuente <- 338
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -30,22 +30,17 @@ white_cols <- function(df) {
   sapply(df, function (col) all(is.na(col)))
 }
 
-clean_sheet <- function(sheet_name){
+clean_sheet <- function(skip, filas_columnas, names_to, values_to){
   
-  skip = ifelse(sheet_name == "2017-2019", 5, 6) 
-  filas_columnas = 3:4
-  names_to = 'columnas' 
-  values_to = 'valores'
-  
-  
+ 
   cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
-                              sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
   cols <- cols_[!white_cols(cols_)] %>%
     t() %>% # Transponer
     as.data.frame() %>% 
-    fill(V1, .direction = "down")
+    fill(V1, .direction = "down") %>% 
+    fill(V3, .direction = "down")
   
   cols$concatenado <- apply(cols, 1, function(x) {
     paste(stats::na.omit(x), collapse = "#")
@@ -55,7 +50,6 @@ clean_sheet <- function(sheet_name){
   
   # Leo datos
   sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
-                                   sheet = sheet_name, 
                                    skip = skip, 
                                    col_names = F)
   
@@ -75,28 +69,27 @@ clean_sheet <- function(sheet_name){
   df <- sheet_data %>% 
     dplyr::filter(!filter_bool) %>%
     pivot_longer(cols = !matches("(.*complejo.*export.*|.*complejo.*)"), 
-                              names_to = names_to,
-                              values_to = values_to, 
-                              values_transform = as.numeric) 
+                 names_to = names_to,
+                 names_sep = "#",
+                 values_to = values_to, 
+                 values_transform = as.numeric) 
   
   
   return(df)
 }
 
+skip = 5
+filas_columnas = 3:5
+names_to = c('variable','anio','unidad_medida') 
+values_to = 'expo'
 
 
-
-
-sheets <- readxl::excel_sheets(argendataR::get_raw_path(fuente_raw))
-
-
-df_raw <- purrr::map_dfr(sheets, 
-                           function(x){clean_sheet(sheet_name = x)}) 
+df_raw <- clean_sheet(skip, filas_columnas, names_to, values_to)
 
 df_clean <- df_raw %>% 
-  rename(anio = columnas) %>% 
-  dplyr::filter(grepl("Años.*", anio)) %>% 
-  mutate(anio = str_extract(anio, ".*#(\\d{4})", group = 1) %>% as.integer(.))
+  mutate(anio = str_extract(anio, "(\\d{4}).*", group = 1) %>% as.integer(.)) %>% 
+  dplyr::filter(unidad_medida == "Millones de USD") %>% 
+  select(complejos, anio, unidad_medida, expo)
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -114,7 +107,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 
-id_fuente_clean <- 196
+id_fuente_clean <- 211
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 

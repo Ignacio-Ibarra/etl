@@ -12,26 +12,10 @@ output_name <- "pib_pc_cambio_1975"
 analista = "Pablo Sonzogni"
 fuente1 <- "R220C0"
 
-
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
-get_clean_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
-  df_fuentes_clean <- fuentes_clean() 
-  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
-  return(paste0(prefix, path_clean))
-}
-
 geonomenclador <- argendataR::get_nomenclador_geografico() 
 
 # Cargo data desde server
-df_wdi <- readr::read_csv(get_raw_path(fuente1)) %>% 
+df_wdi <- readr::read_csv(argendataR::get_raw_path(fuente1)) %>% 
   select(iso3 = iso3c, anio = year, pib_pc=`NY.GDP.PCAP.KD`) %>% 
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(pib_pc)) %>% 
@@ -48,8 +32,8 @@ df_output <- df_wdi %>%
   left_join(df_1975, join_by(iso3)) %>% 
   mutate(cambio_relativo = (pib_pc / pib_pc_1975)-1) %>% 
   dplyr::filter(!is.na(cambio_relativo)) %>% 
-  select(-pib_pc_1975)
-  # left_join(geonomenclador, join_by(iso3)) 
+  select(-pib_pc_1975) %>% 
+  left_join(geonomenclador %>% select(geocodigo, name_short), join_by(iso3==geocodigo)) 
 
 
 check_iso3(df_output$iso3)

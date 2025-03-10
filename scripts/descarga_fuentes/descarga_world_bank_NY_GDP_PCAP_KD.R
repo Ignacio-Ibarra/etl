@@ -5,7 +5,8 @@ gc()   #Garbage Collection
 library(sjlabelled)
 library(WDI)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 periodicidad <- months(2)
 fecha_ultima_actualizacion <- as.Date("2024-07-31")
