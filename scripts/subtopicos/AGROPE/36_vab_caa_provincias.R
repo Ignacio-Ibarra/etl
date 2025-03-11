@@ -26,61 +26,35 @@ df_output <- df_sprys %>%
   select(provincia_id, provincia, cadena, share)
 
 
-# require(sf)
-# 
-# provs <- sf::read_sf("provincia.json")
-# 
-# provincias_geom <- provs %>%
-#   mutate(provincia_id = as.integer(in1)) %>%
-#   select(provincia_id, geometry) %>%
-#   right_join(df_output, join_by(provincia_id))
-# 
-# 
-# mi_paleta <- scale_fill_gradient(low = "#FFCC9E", high = "#24693D")
-# 
-# # Crear archivo PDF
-# pdf("mapas_provincias.pdf", width = 10, height = 8)  # Ajusta el tamaño del gráfico según necesites
-# 
-# # Iterar sobre cada valor único de la variable 'cadena'
-# valores_cadena <- unique(provincias_geom$cadena)
-# 
-# for (cadena in valores_cadena) {
-#   # Filtrar los datos para la cadena actual
-#   data_filtrada <- provincias_geom %>% filter(cadena == !!cadena)
-#   
-#   # Generar el gráfico para la cadena actual
-#  gg <-  ggplot() +
-#     geom_sf(data = data_filtrada %>% filter(provincia_id != 94),
-#             aes(fill = share)) +
-#     mi_paleta +
-#     labs(
-#       title = paste("Mapa para", cadena),
-#       fill = "Participación provincial (%)"
-#     ) +
-#     theme_minimal() +
-#     theme(plot.title = element_text(hjust = 0.5)) # Centra el título
-#   
-#   print(gg)
-#   # La salida del gráfico se almacena automáticamente en una página del PDF
-# }
-# 
-# # Cerrar el archivo PDF
-# dev.off()
+subtopico_outputs_df <- argendataR::subtopico_outputs(subtopico_nombre = subtopico, 
+                                                      entrega_subtopico =  "primera_entrega")
+id_output <- subtopico_outputs_df$id[grepl(output_name_old, 
+                                           subtopico_outputs_df$name)]
 
-# Cargo datos utilizados por los analistas 
-df_anterior <- read.csv("CAA_provincias.csv") %>%
-  select(provincia_id, cadena, valor) %>% 
-  mutate(valor = as.numeric(valor))
+nombre_anterior <- tools::file_path_sans_ext(output_name_old)
 
+filetemp <- tempfile(pattern = sprintf("%s_%s_%s_argdt", 
+                                       nombre_anterior, "primera_entrega", subtopico), fileext = ".geojson")
 
-comparable_df <- df_output %>% 
-  select(provincia_id, cadena, valor = share) %>% 
-  mutate(cadena = tolower(cadena))
+if(!file.exists(filetemp)){
+  googledrive::drive_download(file = googledrive::as_id(id_output), 
+                              path = filetemp)
+}
+
+library(sf)
+
+df_geo <- st_read(filetemp, quiet = TRUE) %>% st_drop_geometry()
+
+df_anterior <- df_geo %>% 
+  mutate(provincia = toupper(nombres_provincia),
+         cadena = tolower(cadena) %>% str_replace("^\\w", toupper),
+         provincia_id = as.integer(id_provincia)) %>% 
+  select(provincia_id, provincia, cadena, share = valor)
 
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
-  df = comparable_df,
+  df = df_output,
   nombre = output_name,
   pk = c('provincia_id','cadena'), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
@@ -139,7 +113,7 @@ etiquetas_nuevas <- data.frame(
   descripcion = c("Número identificador de provincia",
                   "Provincia",
                   "Cadena agroinudstial",
-                  "Participacion del VAB de la cadena provincial en el VAB nacional de la cadena")
+                  "Participación del VAB de la cadena provincial en el VAB nacional de la cadena")
 )
 
 
@@ -170,7 +144,7 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-aclaracion = c("Se pasó de un archivo json a un archivo csv",
+aclaracion = c("Para la comparación se tomaron los datos del analista.",
                "Se utilizó una fuente de información distinta: los datos inicialmente fueron tomados de un excel no publico del Laboratorio de Desarrollo Sectorial y Territorial de la FCE-UNLP. En esta versión, se tomaron datos publicados en la web del MECON aunque difieren de los iniciales",
                "La modificación de la fuente trae aparejada una modificación sustancial de los nombres de las cadenas y los valores arrojados, es por ello que la comparación da muy mal",
                "Se modificó el nombre del archivo, de drawing_data.geojson a vab_caa_provincias.csv")
