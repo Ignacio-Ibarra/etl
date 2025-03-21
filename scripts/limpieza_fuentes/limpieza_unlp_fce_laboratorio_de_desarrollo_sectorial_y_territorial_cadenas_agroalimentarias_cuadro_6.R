@@ -155,12 +155,12 @@ df_clean <- bind_rows(resultado_p29, resultado_p30) %>%
   mutate(across(as.character(2001:2021), ~as.numeric(str_remove(.x, "\\.")))) %>% 
   pivot_longer(!cadena, names_to = 'anio', 
                values_to = 'vab') %>% 
-  mutate(unidad_medida = "precios constantes de 2007, en miles de millones")
+  mutate(unidad_medida = "precios constantes de 2007, en millones de pesos")
 
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_cuadro6_CLEAN.parquet")
 
-clean_title <- glue::glue("{titulo.raw} - Anexo Cuadros - Cuadro 6 (Valor Agregado Bruto a precios constantes de 2007 por año, según CAA (en miles de millones)")
+clean_title <- glue::glue("{titulo.raw} - Anexo Cuadros - Cuadro 6 (Valor Agregado Bruto a precios constantes de 2007 por año, según CAA (en millones de pesos)")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
