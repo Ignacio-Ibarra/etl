@@ -6,46 +6,60 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-subtopico <- "SEBACO"
-output_name <- "08_i_d_sbc"
-analista = "Nicolás Sidicaro"
-fuente1 <- "R342C217"
+subtopico <- "AGROPE"
+output_name <- "participacion_CAA_PIB_arg_evo"
+analista = "Franco A. Mendoza y Kevin Corfield"
+fuente1 <- "R341C214"
+fuente2 <- "R341C215"
+fuente3 <- "R38C7"
+
+df_caa_constantes <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet(.) %>% 
+  mutate(cadena_merge = toupper(stringi::stri_trans_general(cadena, "Latin-ASCII")))
+
+df_caa_implicitos <- argendataR::get_clean_path(fuente2) %>% 
+  arrow::read_parquet(.) %>% 
+  mutate(cadena_merge = toupper(stringi::stri_trans_general(cadena, "Latin-ASCII"))) %>% 
+  select(-cadena)
+
+df_pib_pcorr <- argendataR::get_clean_path(fuente3) %>% 
+  arrow::read_parquet(.) %>% 
+  dplyr::filter(trim == "Total", indicador == "valor_agregado_bruto_a_precios_basicos") %>% 
+  mutate(vab_total = valor / 1000000) %>% 
+  select(anio, vab_total)
+  
 
 
-df_base <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet(.) 
-
-act_sbc <- c(
-  "Software y servicios informáticos"
-  ,"Servicios de I+D"
-  ,"Otros servicios empresariales"
-  )
-
-
-df_output <- df_base %>% 
+df_output <- df_caa_constantes %>% 
+  inner_join(df_caa_implicitos, join_by(cadena_merge, anio)) %>% 
+  select(-cadena_merge) %>% 
+  mutate(vab_pcorr = vab * indice / 100, 
+         unidad_medida = "millones de pesos corrientes",
+         anio = as.integer(anio)) %>% 
+  select(cadena, anio, vab_pcorr, unidad_medida) %>% 
   group_by(anio) %>% 
-  mutate(prop = inversion_i_d_constantes / sum(inversion_i_d_constantes)) %>% 
-  ungroup() %>% 
-  dplyr::filter(sector %in% act_sbc) %>% 
-  select(anio, sector, prop)
+  summarise(
+    vab_pcorr = sum(vab_pcorr, na.rm = T)
+  ) %>% 
+  inner_join(df_pib_pcorr, join_by(anio)) %>% 
+  mutate(
+    share_caa = vab_pcorr / vab_total
+  ) %>% 
+  select(anio, vab_pcorr, share_caa)
+  
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             entrega_subtopico = "primera_entrega") %>% 
-  mutate(
-    sector = case_when(
-      sector == "Servicios de inversión y desarrollo" ~ "Servicios de I+D",
-      sector == "Otros servicios (empresariales, relacionados con la salud humana y animal y comunicaciones)" ~ "Otros servicios empresariales",
-      TRUE ~ sector
-    ),
-    anio = as.integer(anio))
+  rename(share_caa = valor)
+
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
   nombre = output_name,
-  pk = c("anio","sector"), # variables pk del dataset para hacer el join entre bases
+  pk = c("anio"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -96,13 +110,12 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c(
-    "sector",
-    "prop"
-    ),
+  variable_nombre = c("vab_pcorr",
+                      "share_caa"
+  ),
   descripcion = c(
-    "Sector de la economía del conocimiento",
-    "Proporción de gasto en I+D en relación al gasto en I + D de toda la economía"
+    "Valor Agregado Bruto en precios básicos, en millones de pesos corrientes",
+    "Participación de las CAA en el Valor Agregado Bruto a precios básicos en pesos corrientes"
   )
 )
 
@@ -140,10 +153,16 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk =  c("anio","sector"),
+    pk =  c("anio"),
     es_serie_tiempo = T,
     control = comparacion, 
     descripcion_columnas = descripcion,
-    unidades = list("prop" = "proporcion"),
-    aclaraciones = "Se modificaron los nombres de los sectores, tomando el archivo input como válido y sin tomar en cuenta el archivo que utilizó el analista."
+    cambio_nombre_cols = list('share_caa' = 'valor'),
+    unidades = list("vab_pcorr" = "millones de pesos corrientes",
+                    "share_caa" = "proporción"),
+    aclaraciones = "Se tomaron los datos del Cuadro 6. CAA. VALOR AGREGADO BRUTO A PRECIOS CONSTANTES DE 2007 POR AÑO SEGÚN CAA (EN MILES DE MILLONES).
+    Se tomaron los datos del Cuadro 7. CAA. PRECIOS IMPLÍCITOS POR AÑO SEGÚN CAA (BASE 2007=100). 
+    Con dichas variables se construyó la variable a pesos corrientes, para el total de las CAA. 
+    Se tomó el dato de VABpb (no PIBpm, a diferencia del cálculo hecho por los analistas) de INDEC a pesos corrientes.
+    Con esas dos variables se calculó la participación del VABpb de todas las CAA en el VABpb de la economía, en pesos corrientes"
   )

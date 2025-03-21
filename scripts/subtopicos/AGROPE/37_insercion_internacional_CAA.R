@@ -6,46 +6,48 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-subtopico <- "SEBACO"
-output_name <- "08_i_d_sbc"
-analista = "Nicolás Sidicaro"
-fuente1 <- "R342C217"
+subtopico <- "AGROPE"
+output_name <- "insercion_internacional_CAA"
+analista = "Franco A. Mendoza y Kevin Corfield"
+fuente1 <- "R341C216"
 
 
 df_base <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet(.) 
 
-act_sbc <- c(
-  "Software y servicios informáticos"
-  ,"Servicios de I+D"
-  ,"Otros servicios empresariales"
-  )
+df_cadenas <- df_base %>% 
+  select(cadena, expo_vbp_ratio)
+
+df_total <- df_base %>% 
+  group_by(cadena = "Total CAA") %>% 
+  summarise(
+    expo_vbp_ratio = 100*sum(expo_Mpcor) / sum(vbp_Mpcor)
+  ) %>% 
+  ungroup()
+
+df_output <- bind_rows(df_cadenas, df_total)
 
 
-df_output <- df_base %>% 
-  group_by(anio) %>% 
-  mutate(prop = inversion_i_d_constantes / sum(inversion_i_d_constantes)) %>% 
-  ungroup() %>% 
-  dplyr::filter(sector %in% act_sbc) %>% 
-  select(anio, sector, prop)
+df_comparable <- df_output %>% 
+  mutate(cadena_merge = toupper(stringi::stri_trans_general(cadena, "Latin-ASCII"))) 
+
+
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             entrega_subtopico = "primera_entrega") %>% 
-  mutate(
-    sector = case_when(
-      sector == "Servicios de inversión y desarrollo" ~ "Servicios de I+D",
-      sector == "Otros servicios (empresariales, relacionados con la salud humana y animal y comunicaciones)" ~ "Otros servicios empresariales",
-      TRUE ~ sector
-    ),
-    anio = as.integer(anio))
+  rename(expo_vbp_ratio = valor,
+         cadena = tipo_cadena) %>% 
+  mutate(expo_vbp_ratio = 100*expo_vbp_ratio, 
+         cadena_merge = toupper(stringi::stri_trans_general(cadena, "Latin-ASCII")))
+
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
-  df = df_output,
+  df = df_comparable,
   nombre = output_name,
-  pk = c("anio","sector"), # variables pk del dataset para hacer el join entre bases
+  pk = c("cadena_merge"), # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -96,13 +98,10 @@ output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c(
-    "sector",
-    "prop"
-    ),
+  variable_nombre = c("expo_vbp_ratio", "cadena"),
   descripcion = c(
-    "Sector de la economía del conocimiento",
-    "Proporción de gasto en I+D en relación al gasto en I + D de toda la economía"
+    "Ratio entre las exportaciones y el valor bruto de producción, en porcentaje",
+    "Cadena agroalimentaria de referencia"
   )
 )
 
@@ -140,10 +139,11 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk =  c("anio","sector"),
-    es_serie_tiempo = T,
+    pk =  c("cadena"),
+    es_serie_tiempo = F,
     control = comparacion, 
     descripcion_columnas = descripcion,
-    unidades = list("prop" = "proporcion"),
-    aclaraciones = "Se modificaron los nombres de los sectores, tomando el archivo input como válido y sin tomar en cuenta el archivo que utilizó el analista."
+    cambio_nombre_cols = list('expo_vbp_ratio' = 'valor', 'cadena' = 'tipo_cadena'),
+    unidades = list("expo_vbp_ratio" = "porcentaje"),
+    aclaraciones = "Se tomaron los datos del Cuadro 4. ESTRUCTURA DE LAS CADENAS AGROALIMENTARIAS EN EL VBP Y EXPORTACIONES (EN PESOS CORRIENTES). AÑO 2021."
   )
