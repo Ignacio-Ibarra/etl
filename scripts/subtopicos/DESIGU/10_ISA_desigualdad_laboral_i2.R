@@ -4,6 +4,9 @@ gc()   #Garbage Collection
 
 limpiar_temps()
 
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
 
 
 code_name <- '10_ISA_desigualdad_laboral_i2.R'
@@ -30,7 +33,7 @@ pks <- meta_desigu %>%
   filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
   pull(variable_nombre)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   janitor::clean_names()
 
 df_output <- df_output %>% 
@@ -49,12 +52,14 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+print(comparacion)
 
 
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Brecha salarial y coeficiente de Gini de los ingresos laborales entre trabajadores calificados y no calificados 1992 - 2024.",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

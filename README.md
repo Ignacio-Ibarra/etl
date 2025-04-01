@@ -82,7 +82,8 @@ Al momento de empezar a trabajar en `argendata` debemos configurar primero las v
 ```
 USER_GMAIL = "mail de fundar"
 ARGENDATA_DRIVE = "id del drive de argendata"
-
+RUTA_FUENTES = "/ruta/al/directorio/etl-fuentes/"
+IP_FUENTES = "ruta-ip/al/etl-fuentes/"
 ```
 
 Luego el trabajo con un subtópico dado se puede definir en 2 partes. Por un lado está la captura y preparación de **(1) fuentes de datos**, y por el otro lado está la **(2) generación de los outputs** propiamente dichos.

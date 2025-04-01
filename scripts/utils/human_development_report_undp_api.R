@@ -26,7 +26,7 @@ hdr_api.get_metadata <- function(apikey, entityName){
   }
   
   # Parsear el contenido a JSON y convertirlo a data frame
-  content <- content(response, as = "text")
+  content <- httr::content(response, as = "text")
   json_data <- fromJSON(content)
   
   # Convertir el JSON a data frame
@@ -60,30 +60,30 @@ hdr_api.get_data <- function(apikey, country_code, year, indicator) {
   }
   
   # Parsear el contenido a JSON y convertirlo a data frame
-  content <- content(response, as = "text")
+  content <- httr::content(response, as = "text")
   json_data <- fromJSON(content)
   
   # Convertir el JSON a data frame
   df <- as.data.frame(json_data)
-  return(df)
+  return(list(data = df, url = url))
 }
 
 
-countries <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
-                                  entityName = "Countries")
-
-hdr_regions <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
-                                    entityName = "HDRegions")
-
-hdr_groups <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
-                                   entityName = "HDGroups")
-
-hdr_indictators <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
-                                        entityName = "Indicators")
-
-area_codes <- c(countries$code, hdr_regions$code, hdr_groups$code)
-
-df <- hdr_api.get_data(apikey = Sys.getenv("hdr_key"),
-                       country_code = area_codes,
-                       year = 1950:2023,
-                       indicator = "le")
+# countries <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
+#                                   entityName = "Countries")
+# 
+# hdr_regions <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
+#                                     entityName = "HDRegions")
+# 
+# hdr_groups <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
+#                                    entityName = "HDGroups")
+# 
+# hdr_indictators <- hdr_api.get_metadata(apikey = Sys.getenv("hdr_key"),
+#                                         entityName = "Indicators")
+# 
+# area_codes <- c(countries$code, hdr_regions$code, hdr_groups$code)
+# 
+# df <- hdr_api.get_data(apikey = Sys.getenv("hdr_key"),
+#                        country_code = area_codes,
+#                        year = 1950:2023,
+#                        indicator = "le")

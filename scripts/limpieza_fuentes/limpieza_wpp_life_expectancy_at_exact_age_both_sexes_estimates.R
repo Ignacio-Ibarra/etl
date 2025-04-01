@@ -5,7 +5,7 @@ gc()   #Garbage Collection
 
 
 get_raw_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
   df_fuentes_raw <- fuentes_raw() 
   path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
   return(paste0(prefix, path_raw))
@@ -54,4 +54,13 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      nombre = "Life expectancy at exact age, both sexes (estimates)",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 86, df=df_clean, path_clean = clean_filename)
+comparacion <- comparar_fuente_clean(df_clean %>% 
+                        mutate(edad = as.numeric(edad)) %>% 
+                        filter(anio >= 2020),
+                      df_anterior = read_fuente_clean(86) %>% 
+                        mutate(edad = as.numeric(edad)) %>% 
+                        filter(anio >= 2020),
+                      pk = c("iso3", "anio", "edad"))
+
+actualizar_fuente_clean(id_fuente_clean = 86, comparacion = comparacion,
+                        df=df_clean, path_clean = clean_filename)

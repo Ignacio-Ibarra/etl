@@ -4,6 +4,12 @@ gc()   #Garbage Collection
 
 limpiar_temps()
 
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
+
+
 code_name <- '9_ISA_desigualdad_laboral_i1.R'
 subtopico <- 'DESIGU'
 output_name <- 'ISA_desigualdad_laboral_i1.csv'
@@ -15,7 +21,7 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   janitor::clean_names()
 
 df_output <- df_output %>% 
@@ -49,6 +55,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = " coeficiente de Gini del ingreso per cápita familiar de todas las personas y el Gini del ingreso laboral de los trabajadores con ingresos positivos entre 1992 y 2024.",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

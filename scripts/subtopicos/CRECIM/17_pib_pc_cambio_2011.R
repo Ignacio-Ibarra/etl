@@ -2,41 +2,76 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
-
-output_name <- "nombre del archivo de salida"
-
-#-- Librerias ----
-
-#-- Lectura de Datos ----
-
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R"
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-readr::read_csv(argendataR::get_temp_path("RXXCX"))
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
 
-#-- Parametros Generales ----
+subtopico <- "CRECIM"
+output_name <- "pib_pc_cambio_2011"
+analista = "Pablo Sonzogni"
+fuente1 <- "R220C0"
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
-#-- Procesamiento ----
 
-df_output <- proceso
+get_raw_path <- function(codigo){
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
+  df_fuentes_raw <- fuentes_raw() 
+  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
+  return(paste0(prefix, path_raw))
+}
 
-#-- Controlar Output ----
+get_clean_path <- function(codigo){
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
+  df_fuentes_clean <- fuentes_clean() 
+  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
+  return(paste0(prefix, path_clean))
+}
 
-# Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
-# Cambiar los parametros de la siguiente funcion segun su caso
+geonomenclador <- argendataR::get_nomenclador_geografico() 
+
+# Cargo data desde server
+df_wdi <- readr::read_csv(get_raw_path(fuente1)) %>% 
+  select(iso3 = iso3c, anio = year, pib_pc=`NY.GDP.PCAP.KD`) %>% 
+  dplyr::filter(iso3!="") %>% 
+  dplyr::filter(!is.na(pib_pc)) %>% 
+  dplyr::filter(!is.na(iso3)) %>% 
+  sjlabelled::zap_labels() %>% 
+  dplyr::filter(anio>=2011)
+
+
+df_2011 <- df_wdi %>% 
+  dplyr::filter(anio == 2011) %>% 
+  select(iso3, pib_pc_2011 = pib_pc)
+
+df_output <- df_wdi %>% 
+  left_join(df_2011, join_by(iso3)) %>% 
+  mutate(cambio_relativo = (pib_pc / pib_pc_2011)-1) %>% 
+  dplyr::filter(!is.na(cambio_relativo)) %>% 
+  select(-pib_pc_2011,-pib_pc) 
+  # left_join(geonomenclador, join_by(iso3)) 
+
+
+# mutate(nivel_agregacion = ifelse(is.na(nivel_agregacion), "agregacion", nivel_agregacion))
+
+
+check_iso3(df_output$iso3)
+
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")  
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
+  df_anterior = df_anterior,
+  df = df_output,
   nombre = output_name,
-  pk = c("var1", "var2"), # variables pk del dataset para hacer el join entre bases
-  drop_output_drive = F
+  pk = c("anio", "iso3"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
+
+
+metadata_17 <- argendataR::metadata("CRECIM") %>% filter(str_detect(dataset_archivo, output_name))
+
+
 
 #-- Exportar Output ----
 
@@ -47,14 +82,21 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = c("R37C1", "R34C2"),
+    fuentes = c(fuente1),
     analista = analista,
     pk = c("anio", "iso3"),
+    control = comparacion,
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    aclaraciones = "El dataset entregado por el analista fue realizado con datos de Maddison Project Database 2020, en cambio en este caso se utilizaron datos de Maddison Project Database 2023. Los países Yugoslavia (YUG), Unión Soviética (SUN) y Checoslovaquia (CSK) fueron incorporados for los autores de la fuente (ver https://onlinelibrary.wiley.com/doi/10.1111/joes.12618). ",
+    etiquetas_indicadores = list("cambio_relativo" = "Tasa de cambio del PBI per cápita de un año con respecto al valor del PBI per cápita de 2011"),
+    unidades = list("cambio_relativo" = "unidades")
   )
+
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 

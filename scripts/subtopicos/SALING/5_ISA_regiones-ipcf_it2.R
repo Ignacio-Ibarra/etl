@@ -10,9 +10,10 @@ output_name <- 'ISA_regiones-ipcf_it2.csv'
 id_fuente <- 175
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
+
 
 #-- Controlar Output ----
 
@@ -23,10 +24,12 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+print(comparacion)
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Evolución del ingreso per cápita familiar, 2003-2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

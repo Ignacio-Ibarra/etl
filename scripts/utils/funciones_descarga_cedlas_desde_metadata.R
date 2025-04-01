@@ -26,6 +26,7 @@ subir.cedlas <- function(links.df, fuentes_raw.df , directorio_descarga, code_na
       
       actualizar_fuente_raw(id_fuente = id_fuente_raw, 
                             dir = directorio_descarga, 
+                            fecha_actualizar = "Sin informacion",
                             nombre = glue::glue("Indicadores Sociales de Argentina: {nombre}"),
                             prompt = F)
       
@@ -37,6 +38,7 @@ subir.cedlas <- function(links.df, fuentes_raw.df , directorio_descarga, code_na
                          institucion = "Centro de Estudios Distributivos, Laborales y Sociales (CEDLAS)",
                          actualizable = T,
                          fecha_descarga = Sys.Date(),
+                         fecha_actualizar = "Sin información",
                          directorio = directorio_descarga,
                          path_raw = filename,
                          script = code_name)

@@ -4,6 +4,11 @@ gc()   #Garbage Collection
 
 limpiar_temps()
 
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
+
 code_name <- '6_ISA_mundo_i3.R'
 subtopico <- 'DESIGU'
 output_name <- 'ISA_mundo_i3.csv'
@@ -15,14 +20,14 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) 
 
 df_output <- df_output %>% 
   pivot_longer(-region, names_to = "ano", values_to = "valor") %>% 
   rename(variable = region) %>% 
   mutate(variable = case_when(
     variable == "América Latina" ~ "americalatina",
-    variable == "Argentina" ~ "argentina "),
+    variable == "Argentina" ~ "argentina"),
     ano = as.numeric(ano)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
@@ -35,6 +40,8 @@ comparacion <- argendataR::comparar_outputs(
   pk = c('ano','variable'),
   drop_joined_df = F
 )
+
+print(comparacion)
 
 etiquetas <- meta_desigu %>% 
   filter(dataset_archivo == output_name) %>% 
@@ -52,6 +59,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Coeficiente de Gini del consumo per cápita familiar e ingreso nacional per cápita",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

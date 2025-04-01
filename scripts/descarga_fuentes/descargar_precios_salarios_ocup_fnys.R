@@ -6,15 +6,17 @@ archivo <- "precios_salarios_ocupaciones_fyns.xlsx"
 download.file(url, mode = "wb",
               destfile = glue::glue("{tempdir()}/{archivo}"))
 
-agregar_fuente_raw(
-  url = url,
-  nombre = "Precios, salarios y ocupaciones",
-  institucion = "Fundación Norte y Sur",
-  actualizable = F,
-  fecha_descarga = Sys.Date(),
-  fecha_actualizar = NULL,
-  path_raw = archivo,
-  script = "descargar_precios_salarios_ocup_fnys.R"
-)
+# agregar_fuente_raw(
+#   url = url,
+#   nombre = "Precios, salarios y ocupaciones",
+#   institucion = "Fundación Norte y Sur",
+#   actualizable = F,
+#   fecha_descarga = Sys.Date(),
+#   fecha_actualizar = NULL,
+#   path_raw = archivo,
+#   script = "descargar_precios_salarios_ocup_fnys.R"
+# )
 
-actualizar_fuente_raw(id_fuente = 120)
+actualizar_fuente_raw(id_fuente = 120,
+                      nombre = "Índices de precios varios, índice de salario industrial, costo salarial del sector público, cargas sociales, ocupacion y empleo en el sector público consolidado",  
+                      fecha_actualizar = Sys.Date()+months(1))

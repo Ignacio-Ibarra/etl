@@ -17,11 +17,13 @@ fuente2 <- "R213C0"
 #-- Librerias ----
 
 get_raw_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
   df_fuentes_raw <- fuentes_raw() 
   path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
   return(paste0(prefix, path_raw))
 }
+
+
 
 
 # Descargo data usando wrapper https://github.com/vincentarelbundock/WDI
@@ -60,12 +62,16 @@ data <- data_pib %>%
 
 df_comparar <- data %>% 
   filter(anio == 2021) %>% 
-  select(-anio, -pib, -pib_pc) %>% 
+  select(-anio, -pib, -pib_pc, -pais_nombre) %>% 
   mutate(ranking_pib = as.numeric(ranking_pib),
          ranking_pib_pc = as.numeric(ranking_pib_pc))
  
   
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+
+
+df_anterior <- df_anterior %>% 
+  select(-pais_nombre)
 
 #-- Controlar Output ----
 
@@ -101,7 +107,7 @@ df_output %>%
     output_name = output_name,
     subtopico = subtopico,
     control = comparacion, 
-    fuentes = c(fente1, fuente2),
+    fuentes = c(fuente1, fuente2),
     analista = analista,
     pk = c("iso3"),
     columna_geo_referencia = "iso3",
@@ -111,3 +117,5 @@ df_output %>%
     unidades = list("ranking_pib_pc" = "Ranking que ocupa según el PIB per capita")
   )
 
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")

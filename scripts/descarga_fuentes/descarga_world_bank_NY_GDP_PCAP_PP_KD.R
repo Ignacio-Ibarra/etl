@@ -1,3 +1,8 @@
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
+
 library(WDI)
 library(sjlabelled)
 

@@ -4,6 +4,12 @@ gc()   #Garbage Collection
 
 limpiar_temps()
 
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
+
+
 code_name <- '12_ISA_brechas_educativas_i1.R'
 subtopico <- 'DESIGU'
 output_name <- 'ISA_brechas_educativas_i1.csv'
@@ -31,7 +37,7 @@ pks <- meta_desigu %>%
   pull(variable_nombre)
 
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   janitor::clean_names()
 
 df_output <- df_output %>% 
@@ -51,9 +57,12 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+print(comparacion)
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "promedio del ingreso laboral de adultos entre 30 y 55 años agrupados por años de educación formal. Primer semestre 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",
@@ -62,7 +71,6 @@ df_output %>%
     es_serie_tiempo = F,
     # columna_indice_tiempo = ,
     # nivel_agregacion =[DEFINIR],
-    # aclaraciones = [DEFINIR],
     etiquetas_indicadores = etiquetas,
     unidades = list("valor" = "unidades")
   )

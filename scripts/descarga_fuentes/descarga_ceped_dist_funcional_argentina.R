@@ -15,7 +15,7 @@ options(download.file.method="curl", download.file.extra="-k -L")
 path_raw <- "ceped_dist_funcional_arg.xlsx"
 
 # Es necesario buscar la URL haciendo la consulta con el browser o hacerlo dinámicamente con Selenium
-temp_url <- "https://ceped-data.shinyapps.io/ceped-data/_w_79e2be4c/session/090a940e9504cdc8aa2989e661fb1d9c/download/df-downloadTable?w=79e2be4c"
+temp_url <- "https://ceped-data.shinyapps.io/ceped-data/_w_4bbe6c53/session/1f119ef9af3358359217a53da3fb06b1/download/df-downloadTable?w=4bbe6c53"
 
 destfile <- glue::glue("{tempdir()}/{path_raw}")
 
@@ -36,4 +36,4 @@ nombre_fuente <- "Distribución Funcional Argentina"
 #                    script = code_name
 # )
 
-actualizar_fuente_raw(id_fuente = 210, dir = tempdir())
+actualizar_fuente_raw(id_fuente = 210, dir = tempdir(), fecha_actualizar = "Sin informacion")

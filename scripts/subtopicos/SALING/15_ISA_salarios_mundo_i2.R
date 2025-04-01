@@ -10,7 +10,7 @@ output_name <- 'ISA_salarios_mundo_i2.csv'
 id_fuente <- 180
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   rename(ano = año) %>% 
   pivot_longer(-ano, names_to = "variable", values_to = "valor")
 
@@ -25,10 +25,13 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+print(comparacion)
+
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Evolución del ingreso laboral horario en Argentina y América Latina 1992 - 2021",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

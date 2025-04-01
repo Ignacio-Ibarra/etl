@@ -10,7 +10,7 @@ output_name <- 'ISA_edad_genero_i2.csv'
 id_fuente <- 169
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   pivot_longer(-edad, names_to = "variable", values_to = "valor")
 
 
@@ -25,10 +25,13 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+print(comparacion)
+
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Perfil de ingresos laborales por hora en la ocupación principal por edad y género. Primer semestres 2024",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

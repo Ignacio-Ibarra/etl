@@ -16,14 +16,13 @@ library(stringr)
 
 
 get_raw_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/raw/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
   df_fuentes_raw <- fuentes_raw() 
   path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
   return(paste0(prefix, path_raw))
 }
-
 get_clean_path <- function(codigo){
-  prefix <- "/srv/shiny-server/static/etl-fuentes2/clean/"
+  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
   df_fuentes_clean <- fuentes_clean() 
   path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
   return(paste0(prefix, path_clean))
@@ -67,6 +66,9 @@ df_output <- data_pibpc_ppp %>%
   rename(expectativa_al_nacer = expectativa_vida) %>% 
   left_join(geonomenclador, join_by(iso3))
 
+df_output <- df_output %>% 
+  select(-c(pais_nombre, continente_fundar, nivel_agregacion))
+
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
@@ -78,7 +80,8 @@ df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = su
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  df_anterior = df_anterior,
+  df_anterior = df_anterior %>% 
+    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
   nombre = output_name,
   pk = c("iso3", "anio"), 
   drop_joined_df = F
@@ -100,7 +103,14 @@ df_output %>%
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("pbi_per_capita_ppa_porcentaje_argentina" = "PBI per cápita PPA como porcentaje del de Argentina"),
-    unidades = list("pbi_per_capita_ppa_porcentaje_argentina" = "porcentaje")
+    control = comparacion,
+    aclaraciones = "La version anterior usaba PBI per cápita PPA en u$s a precios constantes internacionales de 2017. Se actualizo usando u$s a precios constantes internacionales de 2021",
+    etiquetas_indicadores = list("pib_pc" = "PBI per cápita PPA (en u$s a precios constantes internacionales de 2021)",
+                                 "expectativa_al_nacer" = "Número promedio de años de vida restantes esperados por una cohorte hipotética de individuos al nacer que estarían sujetos durante el resto de sus vidas a las tasas de mortalidad de un año determinado"),
+    unidades = list('pib_pc' = "u$s a precios constantes internacionales de 2021 / hab",
+                    'expectativa_al_nacer' = "cantidad de años")
   )
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
 

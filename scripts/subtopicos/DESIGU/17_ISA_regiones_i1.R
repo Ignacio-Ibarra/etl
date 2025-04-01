@@ -4,6 +4,13 @@ gc()   #Garbage Collection
 
 limpiar_temps()
 
+
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  filter(str_detect(dataset_archivo, output_name)) %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key, .keep_all = T)
+
+
 code_name <- '17_ISA_regiones_i1.R'
 subtopico <- 'DESIGU'
 output_name <- 'ISA_regiones_i1.csv'
@@ -15,7 +22,7 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) %>% 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) %>% 
   janitor::clean_names()
 
 df_output <- df_output %>% 
@@ -32,25 +39,25 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
+print(comparacion)
 
 etiquetas <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(descripcion) %>% 
   as.list()
 
 names(etiquetas) <- meta_desigu %>% 
-  filter(dataset_archivo == output_name) %>% 
   pull(variable_nombre)
 
 pks <- meta_desigu %>% 
-  filter(dataset_archivo == output_name & primary_key == "TRUE") %>% 
   pull(variable_nombre)
 
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Desigualdad de ingresos por regiones - Coeficiente de Gini de la distribución del ingreso per cápita familiar. 2006 - 2023",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
+    control = comparacion,
     analista = "",
     pk =  pks,
     es_serie_tiempo = T,

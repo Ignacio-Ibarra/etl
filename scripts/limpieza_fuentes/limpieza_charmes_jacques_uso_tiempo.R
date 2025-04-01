@@ -4,18 +4,23 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-limpiar_temps()
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
 id_fuente <- 96
-fuente_raw1 <- sprintf("R%sC0",id_fuente)
+fuente_raw <- sprintf("R%sC0",id_fuente)
 
-descargar_fuente_raw(id_fuente = id_fuente, tempdir())
-
+# Guardado de archivo
 nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    dplyr::filter(codigo == fuente_raw1) %>% 
+                                    filter(codigo == fuente_raw) %>% 
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
 
 
 # Extraigo países y anios
@@ -62,7 +67,7 @@ extraer_anios <- function(string){
 
 
 countries_years_range <- "A1:A87"
-countries_years_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_names = T, range = countries_years_range)
+countries_years_df <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), col_names = T, range = countries_years_range)
 
 countries_years_df <- countries_years_df %>% 
   select(country_year = `WOMEN (minutes per day)`) %>% 
@@ -84,7 +89,7 @@ traduccion <- c("Trabajo no remunerado" = "Unpaid work",
 
 
 women_range <- "G1:O87"
-jcharm_women <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_names = T, range = women_range) %>% 
+jcharm_women <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), col_names = T, range = women_range) %>% 
   rename(traduccion) %>% 
   mutate(sexo = "Mujeres")
 
@@ -92,7 +97,7 @@ jcharm_women <- bind_cols(countries_years_df, jcharm_women) %>%
   pivot_longer(!any_of(c("country", "anio_inicio", "anio_fin", "sexo")), names_to = "subtipo_actividad", values_to = "minutos") 
 
 men_range <- "W1:AE87"
-jcharm_men <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), col_names = T, range = men_range)  %>% 
+jcharm_men <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), col_names = T, range = men_range)  %>% 
   rename(traduccion) %>% 
   mutate(sexo = "Varones")
 
@@ -143,21 +148,21 @@ geonomenclador.fundar <- argendataR::get_nomenclador_geografico() %>% select(iso
 
 # Agrego nombre en castellano de los países
 jcharm_cleaned <- jcharm %>% left_join(geonomenclador.fundar, by = join_by(iso3)) %>% select(-country) %>% dplyr::filter(!is.na(iso3))
-jcharm_cleaned <- jcharm_cleaned %>% 
+
+df_clean <- jcharm_cleaned %>% 
   mutate(tipo_actividad = ifelse(grepl("Trabajo", subtipo_actividad), "Trabajo", "No trabajo")) %>% 
   dplyr::filter(!(subtipo_actividad %in% c("Trabajo total", "Tiempo total"))) %>% 
   mutate(anios_observados = purrr::map2_chr(anio_inicio, anio_fin, ~ paste0(c(.x, .y), collapse = " - "))) %>%
   select(iso3, pais_desc, continente_fundar, anios_observados, sexo, tipo_actividad, subtipo_actividad, minutos)
 
-nombre_archivo_raw <- nombre_archivo_raw %>% tolower() %>% str_replace_all(" ", "_")
 
-clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.csv")
+clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
+
+clean_title <- glue::glue("{titulo.raw}")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
-jcharm_cleaned %>% write_csv_fundar(., file = path_clean)
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
@@ -167,6 +172,23 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      script = code_name,
 #                      descripcion = "Normalización de sheet de excel, traduccion de nombres de columnas, pivoteo de filas y columnas, normalizacion de nombres de países")
 
-actualizar_fuente_clean(id_fuente_clean = 24,
-                        dir = tempdir())
+
+id_fuente_clean <- 24
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c("iso3", "anios_observados","sexo","tipo_actividad","subtipo_actividad"))
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
+
+
 

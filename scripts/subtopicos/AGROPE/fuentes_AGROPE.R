@@ -1,14 +1,34 @@
-
-
-descargar_fuente("R36C0")
-descargar_fuente_raw(id_fuente = 208, tempdir())
-descargar_fuente_clean(id_fuente = 80, tempdir())
-descargar_fuente_clean(id_fuente = 74, tempdir())
-descargar_fuente_clean(id_fuente = 75, tempdir())
-descargar_fuente_raw(id_fuente = 212, tempdir())
-descargar_fuente_clean(id_fuente = 81, tempdir())
-descargar_fuente_clean(id_fuente = 82, tempdir())
-
-
-rm(list = ls())
-
+source('scripts/descarga_fuentes/descarga_cuentas-nacionales-fund-norte-y-sur.R') # R36C0
+source('scripts/descarga_fuentes/descarga_indec_oferta_demanda_globales.R') # R38C0
+source('scripts/descarga_fuentes/descarga_cepal_vab_provincial.R') # R221C0
+source('scripts/descarga_fuentes/descarga_indec_agregados_macroeconomicos_series_vab_vbp_por_sector.R') # R223C0
+source('scripts/descarga_fuentes/descarga_world_bank_NV_AGR_TOTL_ZS.R') # R295C0
+source('scripts/descarga_fuentes/descarga_magyp_estimaciones_cultivo_por_variable_camapania_depto.R') # R296C0
+source('scripts/descarga_fuentes/descarga_fao_QCL_cultivos_y_productos_de_ganaderia_datos.R') # R297C0
+source('scripts/descarga_fuentes/descarga_fao_RL_uso_tierra_datos.R') # R298C0
+source('scripts/descarga_fuentes/descarga_fao_FBS_balances_de_alimentos_datos.R') # R299C0
+source('scripts/descarga_fuentes/descarga_fao_FBSH_balances_de_alimentos_metodologia_vieja_datos.R') # R300C0
+source('scripts/descarga_fuentes/descarga_harvard_dataverse_international_trade_data_sitc_rev_2_prduct_656.R') # R301C0
+source('scripts/descarga_fuentes/descarga_harvard_dataverse_international_trade_data_country_codes.R') # R302C0
+source('scripts/descarga_fuentes/descarga_harvard_dataverse_international_trade_data_sitc_rev_2_country_32_all_products_4d.R') # R303C0
+source('scripts/descarga_fuentes/descarga_magyp_informes_bovinos_stock_bovino_por_departamento_y_estratificacion.R') # R304C0
+source('scripts/descarga_fuentes/descarga_mecon_base_datasets_provinciales_y_sectoriales_vab_cadenas_productivas_proivincias.R') # R305C0
+source('scripts/descarga_fuentes/descarga_mecon_base_de_datos_economicos_agregados_serie_tiempo_valores_y_metadatos.R') # R306C0
+source('scripts/descarga_fuentes/descarga_indec_precios_cantidades_comercio_exterior_indice_precios_exportacion_rubros_seleccionados.R') # R307C0
+source('scripts/limpieza_fuentes/limpieza_indec_oferta_y_demanda_globales_cuadro12.R') # R38C7
+source('scripts/limpieza_fuentes/limpieza_fundacion_norte_y_sur_pbi_por_sectores_porcentaje_pib_precios_corrientes.R') # R36C13
+source('scripts/limpieza_fuentes/limpieza_fundacion_norte_sur_pbi_sectores_millones.R') # R36C82
+source('scripts/limpieza_fuentes/limpieza_cepal_vab_provincial.R') # R221C92
+source('scripts/limpieza_fuentes/limpieza_indec_VABpb_por_sector_cuadro_3.R') # R223C93
+source('scripts/limpieza_fuentes/limpieza_indec_VABpb_por_sector_cuadro_4.R') # R223C94
+source('scripts/limpieza_fuentes/limpieza_fao_QCL_cultivos_y_productos_de_ganaderia_datos_paises.R') # R297C165
+source('scripts/limpieza_fuentes/limpieza_fao_RL_uso_tierra_datos.R') # R298C166
+source('scripts/limpieza_fuentes/limpieza_fao_FBS_balances_de_alimentos_datos_paises.R') # R299C167
+source('scripts/limpieza_fuentes/limpieza_fao_FBSH_balances_de_alimentos_metodologia_vieja_datos_paises.R') # R300C168
+source('scripts/limpieza_fuentes/limpieza_harvard_dataverse_international_trade_data_sitc_rev_2_prduct_656.R') # R301C169
+source('scripts/limpieza_fuentes/limpieza_harvard_dataverse_international_trade_data_country_codes.R') # R302C170
+source('scripts/limpieza_fuentes/limpieza_harvard_dataverse_international_trade_data_sitc_rev_2_country_32_all_products_4d.R') # R303C171
+source('scripts/limpieza_fuentes/limpieza_magyp_informes_bovinos_stock_bovino_por_departamento_y_estratificacion_cuadro_strock.R') # R304C172
+source('scripts/limpieza_fuentes/limpieza_mecon_base_datasets_provinciales_y_sectoriales_vab_cadenas_productivas_proivincias.R') # R305C173
+source('scripts/limpieza_fuentes/limpieza_mecon_base_de_datos_economicos_agregados_serie_tiempo_valores_y_metadatos.R') # R306C174
+source('scripts/limpieza_fuentes/limpieza_indec_precios_cantidades_comercio_exterior_indice_precios_exportacion_rubros_seleccionados.R') # R307C176

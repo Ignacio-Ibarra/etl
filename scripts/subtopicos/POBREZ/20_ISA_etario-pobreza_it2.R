@@ -10,7 +10,7 @@ output_name <- 'ISA_etario-pobreza_it2.csv'
 id_fuente <- 139
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
@@ -24,9 +24,12 @@ comparacion <- argendataR::comparar_outputs(
 )
 
 
+print(comparacion)
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Tasas de pobreza y de indigencia según composición del hogar por adultos mayores e infancias. 2003 - 2023", 
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",

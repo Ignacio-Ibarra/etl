@@ -4,6 +4,13 @@ gc()   #Garbage Collection
 
 limpiar_temps()
 
+
+meta_desigu <- metadata("DESIGU")
+meta_desigu <- meta_desigu %>% 
+  distinct(dataset_archivo, variable_nombre, descripcion, primary_key)
+
+
+
 code_name <- '8_ISA_movilidad_i2.R'
 subtopico <- 'DESIGU'
 output_name <- 'ISA_movilidad_i2.csv'
@@ -15,7 +22,7 @@ nombre_archivo_raw <- str_split_1(fuentes_raw() %>%
                                     select(path_raw) %>% 
                                     pull(), pattern = "\\.")[1]
 
-df_output <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_raw_path(fuente_raw1)) 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
@@ -44,6 +51,7 @@ pks <- meta_desigu %>%
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    aclaraciones = "Movilidad intergeneracional educativa en el mundo para cohorte de 1980",
     subtopico = subtopico,
     fuentes = c(fuente_raw1),
     analista = "",
