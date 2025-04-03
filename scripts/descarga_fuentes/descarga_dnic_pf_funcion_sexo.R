@@ -13,7 +13,7 @@ fecha_actualizar <- "Sin informacion"
 source("scripts/utils/scraper_dnic.R")
 
 result <- DNIC.listar_links_descarga(patron = ".*\\.csv$") %>% 
-  dplyr::filter(grepl(".*pf_funcion_sexo\\.csv", filtered_links))
+  dplyr::filter(grepl("Recursos humanos dedicados a I\\+D según sexo\\..*", filtered_texts))
 
 
 nombre <- glue::glue("Sistema Integrado de Indicadores. {result$filtered_texts}")

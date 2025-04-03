@@ -13,7 +13,7 @@ fecha_actualizar <- "Sin informacion"
 source("scripts/utils/scraper_dnic.R")
 
 result <- DNIC.listar_links_descarga(patron = ".*\\.csv$") %>% 
-  dplyr::filter(grepl(".*inversion_provincia\\.csv", filtered_links))
+  dplyr::filter(grepl("Inversión en I\\+D por jurisdicción.*", filtered_texts))
 
 
 nombre <- glue::glue("Sistema Integrado de Indicadores. {result$filtered_texts}")

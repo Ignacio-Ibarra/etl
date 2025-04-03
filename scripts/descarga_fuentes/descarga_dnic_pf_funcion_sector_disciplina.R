@@ -13,7 +13,7 @@ fecha_actualizar <- "Sin informacion"
 source("scripts/utils/scraper_dnic.R")
 
 result <- DNIC.listar_links_descarga(patron = ".*\\.csv$") %>% 
-  dplyr::filter(grepl(".*pf_funcion_sector_disciplina\\.csv", filtered_links))
+  dplyr::filter(grepl("Investigadores y becarios según sector de ejecución y disciplina de formación\\..*", filtered_texts))
 
 
 nombre <- glue::glue("Sistema Integrado de Indicadores. {result$filtered_texts}")

@@ -13,7 +13,7 @@ fecha_actualizar <- "Sin informacion"
 source("scripts/utils/scraper_dnic.R")
 
 result <- DNIC.listar_links_descarga(patron = ".*\\.csv$") %>% 
-  dplyr::filter(grepl(".*ejc_funcion_provincia\\.csv", filtered_links))
+  dplyr::filter(grepl("Recursos humanos EJC dedicados a I\\+D por jurisdicción.*", filtered_texts))
 
 
 nombre <- glue::glue("Sistema Integrado de Indicadores. {result$filtered_texts}")
