@@ -13,7 +13,7 @@ fecha_actualizar <- "Sin informacion"
 source("scripts/utils/scraper_dnic.R")
 
 result <- DNIC.listar_links_descarga(patron = ".*\\.csv$") %>% 
-  dplyr::filter(filtered_texts == "Inversión empresarial en I+D según sector de actividad. Años 2015 – 2022")
+  dplyr::filter(grepl("Inversión empresarial en I\\+D según sector de actividad\\..*", filtered_texts))
   
 
 nombre <- glue::glue("Sistema Integrado de Indicadores. {result$filtered_texts}")
