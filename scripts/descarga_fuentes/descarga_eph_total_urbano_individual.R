@@ -27,9 +27,9 @@ download_filename <- glue::glue("eph_total_urbano_{tipo_encuesta}_{anio_start}_{
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
-df <- eph::get_total_urbano(year = anio_start:anio_end, type = "individual")
+df_raw <- eph::get_total_urbano(year = anio_start:anio_end, type = tipo_encuesta)
 
-df %>% write_csv_fundar(destfile)
+df_raw %>% write_csv_fundar(destfile)
 
 # agregar_fuente_raw(url = "https://www.indec.gob.ar/indec/web/Institucional-Indec-BasesDeDatos",
 #                    nombre = glue::glue("Encuesta Permanente de Hogares Total Urbano, {str_to_title(tipo_encuesta)} ({anio_start} - {anio_end})"),
