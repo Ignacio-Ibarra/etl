@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Carbon intensity of electricity generation ------------------------------
 
 url <- "https://ourworldindata.org/grapher/carbon-intensity-electricity"
@@ -29,4 +31,4 @@ intensidad_carbon %>%
 
 # Actualizar la fuente (reemplazar 80 con el ID correcto si es necesario):
 actualizar_fuente_raw(80, script = "descarga_R80C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

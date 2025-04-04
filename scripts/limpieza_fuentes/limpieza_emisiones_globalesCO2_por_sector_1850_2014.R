@@ -1,7 +1,8 @@
 
-#rm(list = ls())
+
+rm(list = ls())
 "list.files(tempdir())
-"limpiar_temps()
+# "limpiar_temps()
 
 ## descargo fuente raw
 descargar_fuente_raw(id_fuente = 132, tempdir())
@@ -37,12 +38,21 @@ mutate(sector = case_when(
 write_csv_fundar(x = emis_global_sector_1850_2014_long_sectores,
                  file = glue::glue("{tempdir()}/emis_global_sectores_1850_2014.csv"))
 
+
 # agrego fuente clean
-agregar_fuente_clean(id_fuente_raw = 132, 
-                     dir = tempdir(),
-                     path_clean = "emis_global_sectores_1850_2014.csv",
-                     nombre = "Emisiones globales por sector año 1850 - 2014",
-                     script = "limpieza_emisiones_globalesCO2_por_sector_1850_2014.R")
+# agregar_fuente_clean(id_fuente_raw = 132, 
+#                      dir = tempdir(),
+#                      # path_clean = "emis_global_sectores_1850_2014.csv",
+#                      # nombre = "Emisiones globales por sector año 1850 - 2014",
+#                      )
+
+lista_comparacion <-  comparar_fuente_clean(df =  emis_global_sector_1850_2014_long_sectores %>% 
+                                              mutate(anio = as.numeric(anio)),
+                                            id = 56, 
+                                            pk = c("anio", "sector"))
+
 
 # actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 56)
+actualizar_fuente_clean(id_fuente_clean = 56,
+                        df = emis_global_sector_1850_2014_long_sectores,
+                        comparacion = lista_comparacion)

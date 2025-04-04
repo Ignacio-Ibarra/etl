@@ -41,8 +41,12 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      nombre = glue::glue("Inventario Nacional de Gases de Efecto Invernadero y Monitoreo de Medidas de Mitigación (2018) - Solapa: {sheet_name}"),
 #                      script = code_name)
 
+lista_comparacion <- comparar_fuente_clean(df_clean,
+                      id = 55,
+                      pk = df_clean %>% select(-c(valor_en_mtco2e)) %>% colnames())
+
 actualizar_fuente_clean(id_fuente_clean = 55, nombre = glue::glue("Inventario Nacional de Gases de Efecto Invernadero y Monitoreo de Medidas de Mitigación (2018) - Solapa: {sheet_name}"),
-                        path_clean = clean_filename, directorio = tempdir())
+                        path_clean = clean_filename, directorio = tempdir(), comparacion = lista_comparacion)
 
 # ## filtro ultimo año 
 # ultimo_anio <- max(emis_sector_2018_arg$Año)  # Encuentra el último año presente en la columna 'anio'

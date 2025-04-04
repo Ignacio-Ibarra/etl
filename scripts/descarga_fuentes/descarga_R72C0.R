@@ -1,3 +1,6 @@
+rm(list = ls())
+
+
 # Electricity generation from hydropower ----------------------------------
 
 url <- "https://ourworldindata.org/grapher/hydropower-consumption"
@@ -29,4 +32,4 @@ generacion_hidroelectrica %>%
 
 # Actualizar la fuente (reemplazar 72 con el ID correcto si es necesario):
 actualizar_fuente_raw(72, script = "descarga_R72C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 
