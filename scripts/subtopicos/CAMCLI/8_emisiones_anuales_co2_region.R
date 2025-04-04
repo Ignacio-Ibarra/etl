@@ -15,8 +15,8 @@ output_name <- "emisiones_anuales_co2_region"
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-emis_anual_co2_region<-readr::read_csv(argendataR::get_temp_path("R119C0"))
+
+emis_anual_co2_region<-readr::read_csv(get_raw_path("R119C0"))
 geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Parametros Generales ----
@@ -26,6 +26,9 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 #-- Procesamiento ----
 
 ## transformo los datos
+
+emis_anual_co2_region <- emis_anual_co2_region %>% 
+  mutate(entities_code = ifelse(entities_name %in% c("International shipping", "International aviation"), "TRANS", entities_code))
 
 # me quedo con las variables que necesitamos
 emis_anual_co2_region <- emis_anual_co2_region %>% 
@@ -40,6 +43,14 @@ emis_anual_co2_region_long <- pivot_longer(emis_anual_co2_region,
 # paso anio a numeric
 emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
   mutate(anio = as.numeric(anio))
+
+print(paste(rep("#", 80), collapse = ""))
+print("Entidades geograficas sin codigo y por tanto excluidas")
+unique(emis_anual_co2_region_long$entities_name[is.na(emis_anual_co2_region_long$entities_code)])
+print(paste(rep("#", 80), collapse = ""))
+
+emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
+  filter(!is.na(entities_code))
 
 # tragio info genomenclador
 emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
@@ -62,18 +73,31 @@ df_output <- emis_anual_co2_region_long
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+df_anterior <- get_output_repo("emisiones_anuales_co2_region.csv", subtopico = "CAMCLI")
+
+df_anterior <- df_anterior %>% 
+  filter(!is.na(iso3)) 
+
+
 comparacion <- argendataR::comparar_outputs(
   emis_anual_co2_region_long,
+  df_anterior = df_anterior,
   subtopico = "CAMCLI",
-  entrega_subtopico = "segunda_entrega",
-  nombre = "emisiones_anuales_co2_region.csv",
-  k_control_num = 3,
   pk = c("iso3","anio"),
   drop_joined_df = F
 )
 
 #-- Exportar Output ----
 
+check_iso3(df_output$iso3)
+
+df_output$iso3[df_output$iso3 == "OWID_KOS"] <- "XKX"
+
+df_output$iso3[df_output$iso3 == "OWID_WRL"] <- "WLD"
+
+check_iso3(df_output$iso3)
+
+ 
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
@@ -84,14 +108,18 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R119C0"),
     analista = "",
-    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    aclaraciones = "se agrega en la actualización anio 2022",
     etiquetas_indicadores = list("valor_en_ton" = "Valor emisiones co2 en troneladas"),
     unidades = list("valor_en_ton" = "toneladas")
   )
+
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
 

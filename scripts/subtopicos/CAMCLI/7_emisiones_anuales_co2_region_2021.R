@@ -15,7 +15,7 @@ output_name <- "emisiones_anuales_co2_region_2021"
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 
-emis_anua_co2_reg_2021<-readr::read_csv(argendataR::get_temp_path("R119C0"))
+emis_anua_co2_reg_2021<- readr::read_csv(get_raw_path("R119C0"))
 geonomenclador <- argendataR::get_nomenclador_geografico()
 
 #-- Parametros Generales ----
@@ -69,7 +69,6 @@ emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
 emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
   filter(!is.na(continente_fundar))
 
-#-- Controlar Output ----
 
 #-- Controlar Output ----
 
@@ -80,14 +79,17 @@ emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
 df_output <- emis_anua_co2_reg_2021_long
 
 df_anterior <- descargar_output(nombre=output_name,
-                                subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega", locale = locale(encoding = "Latin1"))
+                                subtopico = "CAMCLI")
 
 comparacion <- argendataR::comparar_outputs(df_output,
                                             df_anterior,
                                             pk = c("iso3"),
                                             drop_joined_df = F)
 
+
+check_iso3(df_output$iso3)
+
+df_output$iso3[df_output$iso3 == "OWID_KOS"] <- "XKX"
 
 #-- Exportar Output ----
 
@@ -97,7 +99,6 @@ comparacion <- argendataR::comparar_outputs(df_output,
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    control = comparacion,
     subtopico = "CAMCLI",
     fuentes = c("R119C0"),
     analista = "",
@@ -109,3 +110,7 @@ df_output %>%
     #    nivel_agregacion = "pais",
     etiquetas_indicadores = list("valor_en_porcent" = "Porcentaje emisiones anuales co2"),
     unidades = list("valor_en_porcent" = "porecentaje %"))
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
