@@ -1,3 +1,7 @@
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
@@ -55,10 +59,10 @@ df_clean <- df_clean %>%
 
 
 # Guardado de archivo
-nombre_archivo_raw <-  sub("\\.[^.]*$", "", fuentes_raw() %>% 
-                             filter(codigo == fuente_raw) %>% 
-                             select(path_raw) %>% 
-                             pull())
+nombre_archivo_raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(path_raw) %>% 
+  pull() %>% str_extract(., "^(.*)\\.", group = 1)
 
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
@@ -88,12 +92,16 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 
 comparacion <- comparar_fuente_clean(df_clean %>% 
-                                       arrange(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente) %>% 
-                                       slice_head(n = 1000) %>% 
+                                       arrange(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente) %>%
+                                       group_by(trimestre, ano4) %>% 
+                                       slice_head(n = 200) %>% 
+                                       ungroup() %>% 
                                        select(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente, pondera),
                                      df_clean_anterior %>% 
-                                       arrange(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente) %>% 
-                                       slice_head(n = 1000)%>% 
+                                       arrange(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente) %>%
+                                       group_by(trimestre, ano4) %>% 
+                                       slice_head(n = 200) %>% 
+                                       ungroup() %>% 
                                        select(codusu, trimestre, ano4, provincia, aglomerado, nro_hogar, componente, pondera),
                                      pk = c('codusu', 'trimestre', 'ano4', 'provincia', 'aglomerado', 'nro_hogar', 'componente')
 )

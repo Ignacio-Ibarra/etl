@@ -23,7 +23,7 @@ DNIC.listar_links_descarga <- function(patron){
     html_text(trim = TRUE)
   
   # Filtra los links que contienen la URL base y aplican el pattern
-  filtered_links <- links[grepl(patron, links)]
+  filtered_links <- links[grepl(patron, links)] %>% gsub("blank:#","",.)
   filtered_texts <- text_links[grepl(patron, links)]
   
   

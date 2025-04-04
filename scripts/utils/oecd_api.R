@@ -9,11 +9,43 @@
 
 library(httr)
 library(readr)
+library(httr)
+library(xml2)
 
 
-
-oecd_api.download_data_from_url <- function(url, output_path){
+#' Obtener la lista de datasets disponibles en la API de la OECD
+#' @return Un dataframe con los datasets disponibles
+oecd_api.get_datasets <- function() {
+  url <- "https://sdmx.oecd.org/public/rest/dataflow/all"
+  response <- GET(url)
   
+  if (status_code(response) == 200) {
+    content_xml <- content(response, as = "text", encoding = "UTF-8")
+    doc <- xml2::read_xml(content_xml)
+    
+    # Obtener namespaces
+    namespaces <- xml_ns(doc)
+    
+    # Extraer los identificadores, nombres y agencyID de los datasets
+    datasets <- xml_find_all(doc, "//structure:Dataflow", ns = namespaces)
+    
+    dataset_list <- lapply(datasets, function(ds) {
+      id <- xml_attr(ds, "id")
+      agencyID <- xml_attr(ds, "agencyID")
+      title <- xml_text(xml_find_first(ds, ".//common:Name[@xml:lang='en']", ns = namespaces))
+      structure_query <- glue::glue("https://sdmx.oecd.org/public/rest/dataflow/{agencyID}/{id}/?references=all")
+      list(id = id, agencyID = agencyID, title = title, structure_query = structure_query)
+    })
+    
+    return(bind_rows(dataset_list))
+  } else {
+    stop(paste("Error en la solicitud:", status_code(response)))
+  }
+}
+
+
+
+oecd_api.download_data_from_url <- function(url, delimitador) {
   
   # Realiza la petición HTTP solicitando los datos en formato SDMX-CSV v1
   response <- GET(
@@ -25,22 +57,19 @@ oecd_api.download_data_from_url <- function(url, output_path){
   
   # Verifica si la petición fue exitosa
   if (status_code(response) == 200) {
-    # Especifica el nombre del archivo CSV donde se guardarán los datos
+    # Convierte el contenido binario a texto
+    contenido_texto <- rawToChar(content(response, "raw"))
     
-    # Guarda el contenido de la respuesta en un archivo CSV
-    writeBin(content(response, "raw"), output_path)
+    # Lee el contenido directamente como un dataframe
+    datos <- read_delim(I(contenido_texto), delim = delimitador)
     
-    # Lee el archivo CSV en un dataframe
-    datos <- read_delim(output_path, delim = ";")
+    return(datos)
     
   } else {
-    # Si hubo un error, imprime el código de estado
-    print(paste("Error:", status_code(response)))
+    stop(paste("Error:", status_code(response)))
   }
-  
-  
-  
 }
+
 
 
 
