@@ -55,7 +55,7 @@ SCIMAGO.get_data <- function(ranking = "", sector = "all", area = "all", country
   responses <- purrr::map2(anios_filtro$year, anios_filtro$valor_filtro, function(year, anio_filtro) {
     
     url <-  glue::glue("https://www.scimagoir.com/getdata.php?rankingtype={ranking}&sector={sector}&area={area}&country={country}&year={anio_filtro}&top=0&format=csv&type=download")
-    
+    print(url)
     response <- httr::GET(url)
     
     if (httr::status_code(response) != 200) {
@@ -73,4 +73,40 @@ SCIMAGO.get_data <- function(ranking = "", sector = "all", area = "all", country
   return(final_df)
 }
 
-# ejemplo <- SCIMAGO.get_data(year = 2009:2024, sector = 'Government', ranking = "Reaserch", country = "Latin America")
+
+
+SCIMAGO.get_ranking_evolution <- function(sector = "all", area = "", country = "all", start_year){
+  
+  
+  filtros = SCIMAGO.get_filters()
+  
+  if (!is.numeric(start_year) || any(is.na(as.integer(start_year)))) {
+    stop("'year' debe ser un entero o un vector de enteros")
+  }
+  
+  country <- filtros %>% 
+    dplyr::filter(contenido_filtro %in% country) %>% 
+    dplyr::pull(valor_filtro) %>% 
+    stringr::str_replace_all("\\s+", "%20") %>% 
+    paste0(collapse = ",") 
+  
+  url <- glue::glue("https://www.scimagoir.com/getdatarankevolution_new.php?area={area}&sector={sector}&country={country}&startyear={start_year}")
+  
+  print(url)
+  response <- httr::GET(url)
+  
+  if (httr::status_code(response) != 200) {
+    stop(glue::glue("Error en la solicitud para {url}, código de estado: {httr::status_code(response)}"))
+  }
+  
+  content_text <- httr::content(response, as = "text", encoding = "UTF-8")
+  df <- read.csv(text = content_text, sep = ";")
+  
+  return(df)
+  
+}
+
+# ejemplo <- SCIMAGO.get_ranking_evolution(sector = "Government", country = "Latin America", start_year = 2009)
+# 
+# v <- ejemplo %>% 
+#   dplyr::filter(Year == 2009 | Year == 2024)
