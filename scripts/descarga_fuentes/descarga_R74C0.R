@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Solar energy capacity ----------------------------------
 
 url <- "https://ourworldindata.org/grapher/installed-solar-PV-capacity"
@@ -30,4 +32,4 @@ capacidad_energia_solar %>%
 
 # Actualizar la fuente (reemplazar 74 con el ID correcto si es necesario):
 actualizar_fuente_raw(74, script = "descarga_R74C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

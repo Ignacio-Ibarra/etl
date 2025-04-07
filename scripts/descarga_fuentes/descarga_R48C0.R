@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Energy consumption by source, Argentina ----------------
 
 url <- "https://ourworldindata.org/grapher/energy-consumption-by-source-and-country?country=~ARG"
@@ -29,4 +31,4 @@ consumo_energia_por_fuentes_arg %>%
 
 # Actualizar la fuente (reemplazar 48 con el ID correcto si es necesario):
 actualizar_fuente_raw(48, script = "descarga_R48C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

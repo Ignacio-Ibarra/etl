@@ -1,3 +1,5 @@
+rm(list = ls())
+
 #  Kaya identity: drivers of CO₂ emissions, World  -----------------------------------------------------------------------
 
 url <- "https://ourworldindata.org/grapher/kaya-identity-co2"
@@ -29,4 +31,4 @@ identidad_kaya_factores %>%
 
 # Actualizar la fuente (reemplazar 78 con el ID correcto si es necesario):
 actualizar_fuente_raw(78, script = "descarga_R78C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

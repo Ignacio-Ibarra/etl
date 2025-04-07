@@ -1,3 +1,6 @@
+
+rm(list = ls())
+
 # Greenhouse gas ----------------------------------------------------------
 
 url <- "https://ourworldindata.org/grapher/ghg-emissions-by-gas?facet=none"
@@ -29,4 +32,4 @@ emisiones_gases_invernadero %>%
 # )
 
 actualizar_fuente_raw(82, script = "descarga_R82C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

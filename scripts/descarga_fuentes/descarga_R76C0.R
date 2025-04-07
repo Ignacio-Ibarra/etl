@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Biofuels production -----------------------------------------------------
 
 url <- "https://ourworldindata.org/grapher/biofuel-production?country=~ARG"
@@ -29,4 +31,4 @@ produccion_biofuel %>%
 
 # Actualizar la fuente (reemplazar 76 con el ID correcto si es necesario):
 actualizar_fuente_raw(76, script = "descarga_R76C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

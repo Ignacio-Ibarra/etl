@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Global primary energy consumption by source ---------------
 url <- "https://ourworldindata.org/grapher/global-energy-consumption-source?facet=none"
 
@@ -25,4 +27,4 @@ consumo_energia_global %>%
 #                    )
 
 # Actualizar la fuente (reemplazar 47 con el ID correcto si es necesario):
-actualizar_fuente_raw(47, script = "descarga_R47C0.R", directorio = tempdir()) 
+actualizar_fuente_raw(47, script = "descarga_R47C0.R", directorio = tempdir(), fecha_actualizar = "Sin informacion") 

@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Electricity production by source -------------------------------------------------------------------------
 
 url <- "https://ourworldindata.org/grapher/electricity-prod-source-stacked"
@@ -29,4 +31,4 @@ produccion_energia_por_fuente %>%
 
 # Actualizar la fuente (reemplazar 77 con el ID correcto si es necesario):
 actualizar_fuente_raw(77, script = "descarga_R77C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

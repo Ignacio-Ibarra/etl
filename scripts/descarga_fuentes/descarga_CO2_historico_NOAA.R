@@ -8,16 +8,16 @@ download.file(url = co2_hist_url,
               destfile = glue::glue("{tempdir()}/co2_hist.xls"))
 
 
-agregar_fuente_raw(url = "https://", institucion = "NOAA-NCDC", actualizable = T,
-              fecha_descarga = Sys.Date(),
-              path_raw = "co2_hist.xls", 
-              dir = tempdir(),
-              script = "descarga_CO2_historico_NOAA.R",
-              nombre = "Evolución CO2 histórico"
-               )
+# agregar_fuente_raw(url = "https://", institucion = "NOAA-NCDC", actualizable = T,
+#               fecha_descarga = Sys.Date(),
+#               path_raw = "co2_hist.xls", 
+#               dir = tempdir(),
+#               script = "descarga_CO2_historico_NOAA.R",
+#               nombre = "Evolución CO2 histórico"
+#                )
 
 actualizar_fuente_raw(id_fuente=100,url = "https://nuevaurl",
-                      fecha_descarga = Sys.Date())
+                      fecha_actualizar = "Sin informacion")
 
 ## > list.files(tempdir())
 

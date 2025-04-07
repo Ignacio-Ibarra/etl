@@ -120,9 +120,9 @@ emis_global_co2_sector_2016_final <- emis_global_co2_sector_2016_final %>%
 
 # guardo csv
 
-write_csv_fundar(x = emis_global_co2_sector_2016_final,
-                 file = glue::glue("{tempdir()}/emis_global_co2_sector_2016.csv"))
-
+# write_csv_fundar(x = emis_global_co2_sector_2016_final,
+#                  file = glue::glue("{tempdir()}/emis_global_co2_sector_2016.csv"))
+# 
 # agrego fuente clean
 # agregar_fuente_clean(id_fuente_raw = 125, 
 #                      dir = tempdir(),
@@ -131,4 +131,5 @@ write_csv_fundar(x = emis_global_co2_sector_2016_final,
 #                      script = "limpieza_emisiones_globalesCO2_por_sector_2016.R")
 
 # actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 51, directorio = tempdir())
+actualizar_fuente_clean(id_fuente_clean = 51, df = emis_global_co2_sector_2016_final,
+                        comparacion = comparar_fuente_clean(df = emis_global_co2_sector_2016_final, id = 51, pk = c("sector", "subsector", "subsubsector")))

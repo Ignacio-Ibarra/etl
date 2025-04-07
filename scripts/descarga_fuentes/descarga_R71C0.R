@@ -1,3 +1,6 @@
+rm(list = ls())
+
+
 # Share of primary energy consumption that comes from low-carbon sources ------------
 
 url <- "https://ourworldindata.org/grapher/low-carbon-share-energy?country=ARG~OWID_WRL~BRA~CHL~SWE"
@@ -29,4 +32,4 @@ participacion_fuentes_bajo_carbono_consumo %>%
 
 # Actualizar la fuente (reemplazar 71 con el ID correcto si es necesario):
 actualizar_fuente_raw(71, script = "descarga_R71C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

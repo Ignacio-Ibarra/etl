@@ -1,3 +1,6 @@
+
+rm(list = ls())
+
 #  Primary energy consumption per GDP -----------------------------------------------------------------------
 
 url <- "https://ourworldindata.org/grapher/energy-intensity?country=CHE~DEU~IRN~ARG"
@@ -29,4 +32,4 @@ consumo_energia_pbipercapita %>%
 
 # Actualizar la fuente (reemplazar 79 con el ID correcto si es necesario):
 actualizar_fuente_raw(79, script = "descarga_R79C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

@@ -1,4 +1,4 @@
-
+rm(list = ls())
 ## hay traer dos fuentes, una para mundo y otro para argentina
 ## la data hay que filtrarla para 2016 en ambas fuentes
 
@@ -12,7 +12,7 @@ emis_global_co2_sector_2016 <- readxl::read_xlsx(get_temp_path("R125C0"),
 # limpio los nombres de las variables
 
 emis_global_co2_sector_2016 <- emis_global_co2_sector_2016 %>% 
-  clean_names()
+  janitor::clean_names()
 
 # transformo la data original para generar share por sector 
 emis_global_co2_sector_2016_final <- emis_global_co2_sector_2016 %>%
@@ -31,7 +31,7 @@ descargar_fuente_raw(id_fuente = 131, tempdir())
 
 # traigo la data 
 emis_sector_2016_arg <- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
-  clean_names()
+  janitor::clean_names()
 
 ## tranformo para generar share sector argentina para 2016 
 emis_sector_2016_arg_final <- emis_sector_2016_arg %>%
@@ -56,13 +56,15 @@ write_csv_fundar(x = base_mundo_argentina,
                  file = glue::glue("{tempdir()}/emisiones_sector_mundo_argentina_2016.csv"))
 
 # agrego fuente clean
-agregar_fuente_clean(id_fuente_raw = 125, 
-                     dir = tempdir(),
-                     path_clean = "emisiones_sector_mundo_argentina_2016.csv",
-                     nombre = "Emisiones globales por sector Argentina y Mundo. Año 2016.",
-                     script = "limpieza_emisiones_arg_mundo.R")
+# agregar_fuente_clean(id_fuente_raw = 125, 
+#                      dir = tempdir(),
+#                      path_clean = "emisiones_sector_mundo_argentina_2016.csv",
+#                      nombre = "Emisiones globales por sector Argentina y Mundo. Año 2016.",
+#                      script = "limpieza_emisiones_arg_mundo.R")
+
+lista_comparacion <- comparar_fuente_clean(df = base_mundo_argentina, id = 62, pk = c("region", "sector"))
 
 # actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 62)
+actualizar_fuente_clean(id_fuente_clean = 62, comparacion = lista_comparacion, df = base_mundo_argentina)
 
 

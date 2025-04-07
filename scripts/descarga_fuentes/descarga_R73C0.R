@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Electricity generation from nuclear ----------------------------------
 
 url <- "https://ourworldindata.org/grapher/nuclear-energy-generation"
@@ -30,4 +32,4 @@ generacion_nuclear %>%
 
 # Actualizar la fuente (reemplazar 73 con el ID correcto si es necesario):
 actualizar_fuente_raw(73, script = "descarga_R73C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

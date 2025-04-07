@@ -1,3 +1,5 @@
+rm(list = ls())
+
 # Wind energy capacity ----------------------------------------------------
 
 url <- "https://ourworldindata.org/grapher/cumulative-installed-wind-energy-capacity-gigawatts"
@@ -29,4 +31,4 @@ capacidad_energia_eolica %>%
 
 # Actualizar la fuente (reemplazar 75 con el ID correcto si es necesario):
 actualizar_fuente_raw(75, script = "descarga_R75C0.R",
-                      directorio = tempdir()) 
+                      directorio = tempdir(), fecha_actualizar = "Sin informacion") 

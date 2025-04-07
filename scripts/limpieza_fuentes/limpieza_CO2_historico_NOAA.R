@@ -14,15 +14,19 @@ co2_hist <- co2_hist %>%
   mutate(fecha_estimada = fecha_estimada * -1)
 
 # guardo csv
-write_csv_fundar(x = co2_hist,
-                 file = glue::glue("{tempdir()}/co2_hist.csv"))
+# write_csv_fundar(x = co2_hist,
+#                  file = glue::glue("{tempdir()}/co2_hist.csv"))
 
 # agrego fuente clean
-agregar_fuente_clean(id_fuente_raw = 100, 
-                     dir = tempdir(),
-                     path_clean = "co2_hist.csv",
-                     nombre = "Evolución CO2 histórico",
-                     script = "limpieza_CO2_historico_NOAA.R")
+# agregar_fuente_clean(id_fuente_raw = 100, 
+#                      dir = tempdir(),
+#                      path_clean = "co2_hist.csv",
+#                      nombre = "Evolución CO2 histórico",
+#                      script = "limpieza_CO2_historico_NOAA.R")
 
 # actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 26)
+actualizar_fuente_clean(
+  id_fuente_clean = 26,
+  df = co2_hist,
+  comparacion = comparar_fuente_clean(co2_hist, id = 26, pk = "fecha_estimada")
+)
