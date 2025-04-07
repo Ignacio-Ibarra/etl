@@ -5,40 +5,47 @@ gc()   #Garbage Collection
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-periodicidad <- months(3)
-fecha_ultima_actualizacion <- as.Date("2024-12-20")
-fecha_actualizar <- "Sin informacion"
+periodicidad <- months(12)
+fecha_ultima_actualizacion <- as.Date("2024-12-16")
+fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad  
 
 
-source("scripts/utils/scraper_dnic.R")
+source("scripts/utils/ricyt_api.R")
 
-result <- DNIC.listar_links_descarga(patron = ".*\\.csv$") %>% 
-  dplyr::filter(grepl("Inversión empresarial en I\\+D según sector de actividad\\..*", filtered_texts))
-  
+indicator_id <- "GASIDSEPER"
 
-nombre <- glue::glue("Sistema Integrado de Indicadores. {result$filtered_texts}")
+indicador_seleccionado <- RICYT.get_indicators() %>% 
+  dplyr::filter(id_indicator == indicator_id)
 
-url <- result$filtered_links
 
-institucion <- "Dirección Nacional de Información Científica. Subsecretaría de Ciencias y Tecnología"
+resultado <- RICYT.get_indicator_data(id_indicator = indicator_id) 
 
-download_filename <- basename(url)
+url <- resultado$url_consulta
+
+response <- resultado$response
+
+nombre <- indicador_seleccionado$indicator
+
+institucion <- "Red Iberoamericana de Indicadores de Ciencia y Tecnología (RICYT)"
+
+download_filename <- glue::glue("RICYT_{indicator_id}.json")
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
-download.file(url, destfile = destfile, mode = "wb")
+jsonlite::write_json(response, destfile)
 
+# 
 # agregar_fuente_raw(url = url,
 #                    institucion = institucion,
 #                    nombre = nombre,
-#                    actualizable = F,
+#                    actualizable = T,
 #                    path_raw = download_filename,
 #                    script = code_name,
 #                    fecha_actualizar = fecha_actualizar,
-#                    api = F
+#                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 342,
+actualizar_fuente_raw(id_fuente = 390,
                       url = url, 
                       nombre = nombre, 
                       institucion = institucion,
