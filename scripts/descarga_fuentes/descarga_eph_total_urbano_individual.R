@@ -23,6 +23,10 @@ version <- paste0("v", today)
 
 ext <- "csv"
 
+nombre = glue::glue("Encuesta Permanente de Hogares Total Urbano, {str_to_title(tipo_encuesta)} ({anio_start} - {anio_end})")
+
+institucion = "Instituto Nacional de Estadísticas y Censos"
+
 download_filename <- glue::glue("eph_total_urbano_{tipo_encuesta}_{anio_start}_{anio_end}_{version}.{ext}")
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
@@ -42,5 +46,8 @@ df_raw %>% write_csv_fundar(destfile)
 # )
 
 actualizar_fuente_raw(id_fuente = 49, 
+                      nombre = nombre,
+                      institucion = institucion,
                       path_raw = download_filename,
-                      fecha_actualizar = fecha_actualizar)
+                      fecha_actualizar = fecha_actualizar, 
+                      script = code_name)
