@@ -2,6 +2,8 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+rm(list = ls())
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -14,7 +16,8 @@ output_name <- "emisiones_per_cap"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-emis_per_cap_co2_toneladas<-readr::read_csv(argendataR::get_temp_path("R123C0"))
+emis_per_cap_co2_toneladas<-readr::read_csv(argendataR::get_raw_path("R123C0"))
+
 geonomenclador <- argendataR::get_nomenclador_geografico()
 
 
@@ -39,8 +42,8 @@ emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>%
   mutate(anio = as.numeric(anio))
 
 # traigo info geonomenclagor
-emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>% 
-  inner_join(geonomenclador, by = c("entities_code" = "codigo_fundar"))
+# emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>% 
+#   inner_join(geonomenclador, by = c("entities_code" = "codigo_fundar"))
 
 # dejo la variables que ncesitamos
 emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>% 
@@ -50,9 +53,21 @@ emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>%
 
 ## elimino NA en valor
 emis_per_cap_co2_toneladas_long <- emis_per_cap_co2_toneladas_long %>%
-  filter(!is.na(valor_en_ton))
+  filter(!is.na(valor_en_ton) &!is.na(iso3))
 
 df_output <- emis_per_cap_co2_toneladas_long
+
+check_iso3(df_output$iso3)
+
+df_output <- df_output %>% 
+  mutate(iso3  = case_when(
+    iso3 == "OWID_KOS" ~ "XKX",
+    iso3 == "OWID_WRL" ~ "WLD",
+    T ~ iso3
+    
+  ))
+
+check_iso3(df_output$iso3)
 
 #-- Controlar Output ----
 
@@ -82,14 +97,19 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R123C0"),
     analista = "",
-    control = comparacion,
     pk = c("anio", "iso3"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     columna_geo_referencia = "iso3",
     nivel_agregacion = "pais",
-    aclaraciones = "se agrega en la actualización anio 2022",
+    aclaraciones = "se agrega en la actualización anio 2023 con correcciones en años anteriores",
     etiquetas_indicadores = list("valor_en_ton" = "Valor en toneladas"),
     unidades = list("valor_en_ton" = "toneladas")
   )
+
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
 

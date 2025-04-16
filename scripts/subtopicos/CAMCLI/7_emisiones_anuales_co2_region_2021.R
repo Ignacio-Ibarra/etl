@@ -6,6 +6,8 @@
 #' Emisiones anuales de co2 por región pporcentaje de cada país sobre world de owid
 #'
 
+rm(list = ls())
+
 output_name <- "emisiones_anuales_co2_region_2021"
 
 #-- Librerias ----
@@ -44,6 +46,13 @@ valor_referencia <- emis_anua_co2_reg_2021_long %>%
   select(valor) %>%
   pull()
 
+
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>% 
+  mutate(entities_code = ifelse(entities_name %in% c("International shipping", "International aviation"), "TRANS", entities_code))
+
+emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>% 
+  summarise(valor = sum(valor, na.rm = T), .by = c(entities_code, anio))
+
 #  doy formato a porcent
 emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
   mutate(
@@ -66,8 +75,8 @@ emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
 emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
   filter(!is.na(valor_en_porcent))
 
-emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
-  filter(!is.na(continente_fundar))
+# emis_anua_co2_reg_2021_long <- emis_anua_co2_reg_2021_long %>%
+#   filter(!is.na(continente_fundar))
 
 
 #-- Controlar Output ----
@@ -90,6 +99,10 @@ comparacion <- argendataR::comparar_outputs(df_output,
 check_iso3(df_output$iso3)
 
 df_output$iso3[df_output$iso3 == "OWID_KOS"] <- "XKX"
+df_output$iso3[df_output$iso3 == "OWID_WRL"] <- "WLD"
+
+
+check_iso3(df_output$iso3)
 
 #-- Exportar Output ----
 

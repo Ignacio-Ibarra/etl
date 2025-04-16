@@ -2,6 +2,8 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+rm(list = ls())
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -15,7 +17,7 @@ output_name <- "emisiones_sector_global_2016"
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 
-emisiones_globales_2016_sector<-readr::read_csv(argendataR::get_temp_path("R125C51"))
+emisiones_globales_2016_sector<- read_fuente_clean("R125C51")
 
 #-- Parametros Generales ----
 
@@ -54,8 +56,13 @@ df_output %>%
     #columna_indice_tiempo = "",
     #columna_geo_referencia = "",
     nivel_agregacion = "global",
-    aclaraciones = "ver como definir sector, subsector, subsubsector. La comparacion la devuelve con muchos NA pero porque viene encodeado el df_anterior en algo que no es UTF-8",
+    aclaraciones = "Sin cambios. Datos a 2016",
     etiquetas_indicadores = list("valor_en_porcent"="valor en porcentaje de las emisiones por sector"),
     unidades = list("valor_en_porcent" = "porcentaje")
   )
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
 
