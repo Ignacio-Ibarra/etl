@@ -209,4 +209,52 @@ INDEC.intercambio_comercial_argentino.extraer_links = function(id, pattern){
 }
 
 
+INDEC.bases_microdatos <- function(id){
+  
+  url_base <- "https://www.indec.gob.ar" 
+  
+  page_url <- paste0(url_base,"/Institucional/Indec/BasesDeDatos")
+  
+  web_content <- read_html(page_url)
+  
+  tab_id <- paste0("#tab",id)
+  
+  search_str <- glue::glue("{tab_id} > p.fontsize20")
+  
+  bloques <- web_content %>% html_nodes(search_str)
+  
+  
+  extraer_info_encuesta <- function(encuesta_node) {
+    encuesta <- encuesta_node %>% html_text(trim = TRUE)
+    
+    # El siguiente nodo es el <ul> con los datos
+    ul_node <- encuesta_node %>% html_node(xpath = "following-sibling::ul[1]")
+    
+    # Cada categoría es un <li class='sub_enc_salud'>
+    categorias <- ul_node %>% html_nodes("li.sub_enc_salud")
+    
+    map_dfr(categorias, function(cat) {
+      categoria <- cat %>% html_node("div.sub_enc_salud_tit") %>% html_text(trim = TRUE)
+      
+      enlaces <- cat %>% html_nodes("ul.list-circulo a")
+      
+      map_dfr(enlaces, function(a) {
+        tibble(
+          encuesta = encuesta,
+          categoria = categoria,
+          titulo = a %>% html_text(trim = TRUE) %>% str_squish(),
+          url = a %>% html_attr("href") %>% paste0(url_base, .)
+        )
+      })
+    })
+  }
+  
+  # Aplicar a cada bloque de encuesta
+  resultados <- map_dfr(bloques, extraer_info_encuesta)
+  
+  return(resultados)
+}
+
+
+
 
