@@ -2,6 +2,8 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+rm(list = ls())
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -18,9 +20,9 @@ output_name <- "emisiones_vab_provincias"
 
 # traigo la data clean para este dataset (3 fuentes)
 
-emisiones_provincias_2010_2018<- readr::read_csv(argendataR::get_temp_path("R157C67"))
-vab_provincias_2004<- readr::read_csv(argendataR::get_temp_path("R159C68"))
-pbi_per_capita_1895_2022 <- readr::read_csv(argendataR::get_temp_path("R160C70"))
+emisiones_provincias_2010_2018<- read_fuente_clean("R157C67")
+vab_provincias_2004<- read_fuente_clean("R159C68")
+pbi_per_capita_1895_2022 <- read_fuente_clean("R160C70")
 
 #-- Parametros Generales ----
 
@@ -71,7 +73,8 @@ pbi_per_capita_2018 <- pbi_per_capita_1895_2022 %>%
   select (1,4)
 
 ## traigo la población por provincia de las proyecciones que están en el raw de daniel
-poblacion_prov_2018 <- readxl::read_excel(glue::glue("{tempdir()}/pbg por provincia_R160C0.xlsx"), sheet = "Población 2004-2022 long") %>% 
+poblacion_prov_2018 <- readxl::read_excel(get_raw_path("R160C0"),
+                                          sheet = "Población 2004-2022 long") %>% 
   janitor::clean_names() %>% 
   filter(ano==2018) %>% mutate(provincia = ifelse(provincia == "PBA", "Buenos Aires", provincia),
                                provincia = ifelse(provincia == "Cordoba", "Córdoba", provincia),
@@ -106,9 +109,8 @@ select (6,1,7,2)
 
 
 df_anterior <- descargar_output(nombre=output_name,
-                                subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega") %>% 
-  mutate(provincia = df$provincia)
+                                subtopico = "CAMCLI")
+
 
 #-- Controlar Output ----
 
@@ -128,21 +130,35 @@ comparacion <- argendataR::comparar_outputs(df_output,
 # Usar write_output con exportar = T para generar la salida
 # Cambiar los parametros de la siguiente funcion segun su caso
 
+
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
     control = comparacion,
     subtopico = "CAMCLI",
-    fuentes = c("R157C67","R159C68","R160C70"),
+    fuentes = c("R157C67", "R159C68", "R160C70"),
     analista = "",
-    control = comparacion,
-    pk = c("anio","provincia"),
-    es_serie_tiempo = F,
+    pk = c("anio", "provincia"),
+    es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     aclaraciones = "el dato de población por provincia para el año 2018 surge de la hoja Población 2004-2022 long del xlsx de Daniel St que es fuente raw R160C70" ,
     #columna_geo_referencia = "iso3",
     nivel_agregacion = "provincia",
-    etiquetas_indicadores = list("anio" = "Año","valor_en_mtco2e_per_cap"="Emisiones de dioxido de carbono en toneladas per capita","vab_precios_basicos_2004_per_cap"="VAB per cápita en millones de pesos a precios de 2004"),
-    unidades = list("valor_en_mtco2e_per_cap" = "Millones de toneladas de CO2 equivalente per capita","vab_precios_basicos_2004_per_cap"="VAB per cápita en millones de pesos a precios de 2004")
+    etiquetas_indicadores = list(
+      "anio" = "Año",
+      "valor_en_mtco2e_per_cap" = "Emisiones de dioxido de carbono en toneladas per capita",
+      "vab_precios_basicos_2004_per_cap" = "VAB per cápita en millones de pesos a precios de 2004"
+    ),
+    unidades = list(
+      "valor_en_mtco2e_per_cap" = "Millones de toneladas de CO2 equivalente per capita",
+      "vab_precios_basicos_2004_per_cap" = "VAB per cápita en millones de pesos a precios de 2004"
+    )
   )
+
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
+
 

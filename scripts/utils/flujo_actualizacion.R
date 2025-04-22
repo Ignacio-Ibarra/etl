@@ -49,4 +49,8 @@ f_clean_idx <- unique(grep("^(?!.*C0$).*", fuentes,perl = T , value = T))
 
 f_clean <- fuentes_clean() %>% filter(codigo %in% f_clean_idx)
 
+maps %>% 
+  mutate(f_raw = gsub("C\\d{1,2}", "C0", fuentes)) %>% 
+  left_join(., f_raw, by = c("f_raw" = "codigo")) %>% 
+  writexl::write_xlsx("tmp/fuentes_emisiones.xlsx")
 

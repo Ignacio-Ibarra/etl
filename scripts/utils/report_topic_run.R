@@ -39,6 +39,11 @@ report_topic <- function(subtopico){
   
   
   for (i in 1:length(controles)) {
+    if (is.null(names(controles[i]))) {
+      cat("##", "NO SE HALLARON CONTROLES", " \n\n", append = T, file = path_temp)
+      next
+    }
+
     cat("##", names(controles[i]), " \n\n", append = T, file = path_temp)
     cat(glue::glue("https://github.com/argendatafundar/data/blob/dev/{subtopico}/{gsub('.json$', '.csv', names(controles[i]))}")," \n", append = T, file = path_temp)
     cat("Nuevas filas: ",unlist(controles[[i]]$diferencia_nfilas), "\n", append = T, file = path_temp)

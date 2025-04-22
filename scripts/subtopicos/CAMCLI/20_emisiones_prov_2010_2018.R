@@ -2,6 +2,8 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+rm(list = ls())
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -20,7 +22,7 @@ descargar_fuente_raw(id_fuente = 157, tempdir())
 
 # traigo la data 
 
-emisiones_provincias_2010_2018<- readr::read_csv(argendataR::get_temp_path("R157C67")) %>% 
+emisiones_provincias_2010_2018<- read_fuente_clean("R157C67") %>% 
   mutate(provincia = ifelse(provincia == "PBA", "Buenos Aires", provincia)) # le cambio PBA que no lo hice en limpieza
 
 #-- Parametros Generales ----
@@ -34,24 +36,26 @@ emisiones_provincias_2010_2018<- readr::read_csv(argendataR::get_temp_path("R157
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-df <- emisiones_provincias_2010_2018
+df_output <- emisiones_provincias_2010_2018 %>% 
+  mutate(valor_en_mtco2e = round(valor_en_mtco2e, 2))
 
 df_anterior <- descargar_output(nombre=output_name,
-                                subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega")
+                                subtopico = "CAMCLI")
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
-df_output <- df
 
-comparacion <- argendataR::comparar_outputs(df,
+comparacion <- argendataR::comparar_outputs(df_output,
                                             df_anterior,
                                             k_control_num = 3,
-                                            pk = c("anio"),
+                                            pk = c("anio", "provincia", "sector"),
                                             drop_joined_df = F)
+
+
+
 
 
 #-- Exportar Output ----
@@ -66,13 +70,21 @@ df_output %>%
     fuentes = c("R157C67"),
     control = comparacion,
     analista = "",
-    control = comparacion,
     pk = c("anio","sector","provincia"),
-    es_serie_tiempo = F,
+    es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     #columna_geo_referencia = "iso3",
     nivel_agregacion = "sector",
     etiquetas_indicadores = list("anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
     unidades = list("valor_en_mtco2e" = "Millones de toneladas de CO2 equivalente")
   )
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
+
+
+
+
 

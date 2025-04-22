@@ -30,6 +30,7 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 emis_anual_co2_region <- emis_anual_co2_region %>% 
   mutate(entities_code = ifelse(entities_name %in% c("International shipping", "International aviation"), "TRANS", entities_code))
 
+
 # me quedo con las variables que necesitamos
 emis_anual_co2_region <- emis_anual_co2_region %>% 
   select(-name,-id,-unit,-shortUnit,-datasetId,-entities_id)
@@ -43,6 +44,11 @@ emis_anual_co2_region_long <- pivot_longer(emis_anual_co2_region,
 # paso anio a numeric
 emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
   mutate(anio = as.numeric(anio))
+
+emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
+  group_by(pick(entities_code, anio)) %>% 
+  summarise(valor = sum(valor, na.rm = T)) %>% 
+  ungroup()
 
 print(paste(rep("#", 80), collapse = ""))
 print("Entidades geograficas sin codigo y por tanto excluidas")
@@ -67,6 +73,8 @@ emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
   filter(!is.na(valor_en_ton))
 
 df_output <- emis_anual_co2_region_long
+
+head(df_output)
 
 #-- Controlar Output ----
 

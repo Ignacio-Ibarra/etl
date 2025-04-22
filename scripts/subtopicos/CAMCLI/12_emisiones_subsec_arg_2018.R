@@ -3,7 +3,7 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-subtopico <- "CACMLI"
+subtopico <- "CAMCLI"
 output_name <- "emisiones_subsec_arg_2018"
 analista = "Ana Julia Aneise y Elisabeth Möhle"
 fuente1 <- "R131C55"
@@ -61,8 +61,7 @@ df_output <- emisiones_sector %>%
             
 
 df_anterior <- descargar_output(nombre=output_name,
-                                subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega")
+                                subtopico = "CAMCLI")
 
 
 comparacion <- argendataR::comparar_outputs(df,
@@ -88,7 +87,7 @@ df_output %>%
     analista = analista,
     pk = c("sector","anio","subsector"),
     es_serie_tiempo = T,
-    aclaraciones = "Hay una diferencia de decimales en el dato agregado en subsector -Emisiones directas e indirectas de N2O y otros-. Está mal la base del analista",
+    aclaraciones = "Datos a 2018. Sin cambios",
     columna_indice_tiempo = "anio",
     nivel_agregacion = "pais",
     etiquetas_indicadores = list("valor_en_mtco2e" = "Emisiones de GEI en millones de toneladas de CO2 equivalente",
@@ -96,4 +95,9 @@ df_output %>%
     unidades = list("valor_en_mtco2e" = "Millones de toneladas de CO2 equivalente",
                     "valor_en_porcent" = "Porcentaje")
   )
+
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
 

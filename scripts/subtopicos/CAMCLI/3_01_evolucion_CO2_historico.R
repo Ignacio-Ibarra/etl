@@ -2,6 +2,8 @@
 ##                              Dataset: nombre                               ##
 ################################################################################
 
+rm(list = ls())
+
 #-- Descripcion ----
 #' Breve descripcion de output creado
 #'
@@ -16,8 +18,8 @@ output_name <- "01_evolucion_CO2_historico"
 
 # traigo data de años ára atrás al presente 137 al 800.000 aprox y le sumo data de 1958 a 2024
 
-co2_hist<-read_csv(argendataR::get_temp_path("R100C26"))
-co2_1958_2024<-read_csv(argendataR::get_temp_path("R161C71"))
+co2_hist<- read_fuente_clean("R100C26")
+co2_1958_2024<- read_fuente_clean("R161C71")
 
 #-- Procesamiento ----
 
@@ -39,8 +41,7 @@ co2_hist_y_1958_2024 <- co2_hist %>%
 df <- co2_hist_y_1958_2024
 
 df_anterior <- descargar_output(nombre=output_name,
-                                subtopico = "CAMCLI",
-                                entrega_subtopico = "datasets_segunda_entrega")
+                                subtopico = "CAMCLI")
 
 #-- Controlar Output ----
 
@@ -67,7 +68,6 @@ df_output %>%
     subtopico = "CAMCLI",
     fuentes = c("R100C26","R161C71"),
     analista = "",
-    control = comparacion,
     pk = c("fecha_estimada"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "fecha_estimada",
@@ -77,4 +77,9 @@ df_output %>%
     etiquetas_indicadores = list("fecha_estimada" = "Fecha estimada","co2_ppm"="Evolución histórica de CO2"),
     unidades = list("co2_ppm" = "Partes por millón")
   )
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+
 
