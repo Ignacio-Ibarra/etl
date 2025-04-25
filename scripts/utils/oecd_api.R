@@ -9,18 +9,19 @@
 
 library(httr)
 library(readr)
-library(httr)
 library(xml2)
+
 
 
 #' Obtener la lista de datasets disponibles en la API de la OECD
 #' @return Un dataframe con los datasets disponibles
 oecd_api.get_datasets <- function() {
   url <- "https://sdmx.oecd.org/public/rest/dataflow/all"
-  response <- GET(url)
+  response <- httr::GET(url)
   
   if (status_code(response) == 200) {
     content_xml <- content(response, as = "text", encoding = "UTF-8")
+    
     doc <- xml2::read_xml(content_xml)
     
     # Obtener namespaces
@@ -62,6 +63,7 @@ oecd_api.download_data_from_url <- function(url, delimitador) {
     
     # Lee el contenido directamente como un dataframe
     datos <- read_delim(I(contenido_texto), delim = delimitador)
+   
     
     return(datos)
     
@@ -71,7 +73,13 @@ oecd_api.download_data_from_url <- function(url, delimitador) {
 }
 
 
-
-
+# url <- "https://sdmx.oecd.org/public/rest/data/OECD.SDD.TPS,DSD_ALFS@DF_SUMTAB,1.0/all?dimensionAtObservation=AllDimensions&format=csvfilewithlabels"
+# delimiter <- ","  # Puede ser necesario ajustarlo según los datos reales
+# 
+# df <- oecd_api.download_data_from_url(url, delimiter)
+# 
+# if (!is.null(df)) {
+#   print(head(df))
+# }
 
 
