@@ -15,42 +15,13 @@ fuente2 <- "R84C0"
 
 
 
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
-get_clean_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
-  df_fuentes_clean <- fuentes_clean() 
-  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
-  return(paste0(prefix, path_clean))
-}
-
-
 # Cargo data desde server
-empalme_df <- read_csv(get_raw_path(fuente1)) 
-
-# daniel_df <- read_csv("pbg por provincia.xlsx - serie empalmada PIBpc.csv") %>%
-#   select(-region_pbg) %>%
-#   pivot_longer(-provincia, names_to ="anio", values_to = "vab_pc_dani", names_transform = as.numeric)
-# 
-# 
-# X <- empalme_df %>%
-#   left_join(daniel_df, join_by(provincia, anio)) %>%
-#   mutate(pob_implicita_dani = vab_pb / vab_pc_dani)
-#
-#
-# X %>% write_csv(., file="revisar.csv")
-
-# A <- X %>% group_by(anio) %>% summarise(vab_pb = sum(vab_pb, na.rm = T),
-#                                         pob_total = sum(pob_total, na.rm = T),
-#                                         pob_dani = sum(pob_implicita_dani, na.rm=T))
+empalme_df <- argendataR::get_raw_path(fuente1) %>% 
+  read_csv()
 
 
-dicc_provs <- read_csv(get_raw_path(fuente2)) %>% 
+dicc_provs <- argendataR::get_raw_path(fuente2) %>% 
+  read_csv() %>% 
   select(prov_cod, prov_desc, reg_desc_fundar) %>% 
   mutate(region = case_when(
     reg_desc_fundar %in% c("Partidos del GBA", "Pampeana", "CABA") ~ "Pampeana y AMBA",
@@ -65,6 +36,8 @@ dicc_provs <- read_csv(get_raw_path(fuente2)) %>%
 
 ultimo_anio <- max(empalme_df$anio)
 
+geo <- argendataR::get_nomenclador_geografico_front()
+
 df_output <- empalme_df %>% 
   dplyr::filter(provincia != "No distribuido") %>% 
   rename(provincia_nombre = provincia) %>% 
@@ -72,15 +45,19 @@ df_output <- empalme_df %>%
   pivot_wider(id_cols =provincia_nombre, names_from = anio, names_prefix = "pib_pc_", values_from = vab_pb_per_capita) %>% 
   mutate(var_pib_pc_1895_ultimo_anio = (get(paste0("pib_pc_",ultimo_anio))/pib_pc_1895) - 1) %>% 
   left_join(dicc_provs, by = join_by(provincia_nombre)) %>% 
-  select(provincia_id, provincia_nombre, region_pbg, pib_pc_1895, var_pib_pc_1895_ultimo_anio)
-  
-  
+  select(provincia_id, provincia_nombre, region_pbg, pib_pc_1895, var_pib_pc_1895_ultimo_anio) %>%
+  mutate(provincia_nombre = textclean::replace_non_ascii(tolower(provincia_nombre))) %>% 
+  left_join(geo %>% 
+              mutate(name_short = textclean::replace_non_ascii(tolower(name_short))),
+            by = c("provincia_nombre" = "name_short")
+  ) %>% 
+  select(-c(provincia_nombre, iso_2, provincia_id)) %>% 
+  rename(provincia_id = geocodigo, provincia = name_long) %>% 
+  select(provincia_id, provincia, region_pbg, pib_pc_1895, var_pib_pc_1895_ultimo_anio)
 
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
-  mutate(provincia_nombre = ifelse(provincia_nombre=="Ciudad Autónoma de Buenos Aires", "CABA", provincia_nombre)) %>% 
-  mutate(var_pib_pc_1895_ultimo_anio = var_pib_pc_1895_2022 - 1) %>% 
-  select(-var_pib_pc_1895_2022)
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+ 
 
 
 comparacion <- argendataR::comparar_outputs(
@@ -93,23 +70,6 @@ comparacion <- argendataR::comparar_outputs(
 
 
 check_iso3(df_output$provincia_id)
-
-geo <- get_nomenclador_geografico()
-
-df_output <- df_output %>%
-  mutate(provincia_nombre = textclean::replace_non_ascii(tolower(provincia_nombre))) %>% 
-  left_join(geo %>% 
-              mutate(name_short = textclean::replace_non_ascii(tolower(name_short))),
-            by = c("provincia_nombre" = "name_short")
-  )
-
-df_output <- df_output %>% 
-  select(-c(provincia_nombre, iso_2, name_long, provincia_id)) %>% 
-  rename(provincia_id = geocodigo)
-
-check_iso3(df_output$provincia_id)
-
-
 
 
 
@@ -130,7 +90,7 @@ df_output %>%
     columna_geo_referencia = "provincia_id",
     nivel_agregacion = "provincia",
     etiquetas_indicadores = list("pib_pc_1895" = "VAB a precios básicos per cápita a pesos constantes de 2004 de 1895",
-                                 "var_pib_pc_1895_ultimo_anio" = "Variación entre el VABpb per capita de 1895 y 2022"),
+                                 "var_pib_pc_1895_ultimo_anio" = "Variación entre el VABpb per capita de 1895 y ultimo año disponible"),
     unidades = list("pib_pc_1895" = "en pesos constantes de 2004",
                     "var_pib_pc_1895_ultimo_anio" = "unidades")
   )
