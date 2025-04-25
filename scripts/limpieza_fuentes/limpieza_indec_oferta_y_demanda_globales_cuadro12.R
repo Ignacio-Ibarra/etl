@@ -1,3 +1,7 @@
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
@@ -5,11 +9,22 @@ code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 id_fuente <- 38
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
-# Guardado de archivo
-nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw) %>% 
+
+pattern <- fuentes_raw() %>% 
+  pull(path_raw) %>% 
+  tools::file_ext(.) %>%
+  unique() %>% 
+  keep(., ~all(.x != '')) %>% 
+  paste0(., collapse = "|") %>% 
+  paste0("(.*)\\.(",.,")$")
+
+
+nombre_archivo_raw <- str_extract(fuentes_raw() %>% 
+                                    dplyr::filter(codigo == fuente_raw) %>% 
                                     select(path_raw) %>% 
-                                    pull(), pattern = "\\.")[1]
+                                    pull(), 
+                                  pattern = pattern, 
+                                  group = 1)
 
 titulo.raw <- fuentes_raw() %>% 
   filter(codigo == fuente_raw) %>% 

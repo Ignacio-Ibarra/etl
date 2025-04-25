@@ -1,58 +1,8 @@
 ##############################
-# Para usar este codigo es necesario utilizar primero el explorador de datos de Atlas. 
-# Navegando hasta donde sea necesario para visualizar los datos. 
-# Una vez que se llegó a la visualización deseada, ahí en la inspección del código de la web
-# se pueden visualizar las request que se hacen a la api mediante payloads de GraphQL. 
-# Viendo los payloads se puede observar como son las variables y cual es la query que hay que realizar. 
-# 
-
-# ejemplo: https://atlas.hks.harvard.edu/explore/overtime?productClass=SITC&product=product-SITC-656&endYear=2021&view=markets&exporter=group-1&locationLevel=country&layout=share&ordering=totals
-
-# query <- "query GCPY2($productClass: ProductClass!, $productLevel: Int, $groupId: Int!, $productId: Int, $yearMin: Int, $yearMax: Int) {
-#     data: groupCountryProductYear(
-#       productClass: $productClass
-#       productLevel: $productLevel
-#       groupId: $groupId
-#       productId: $productId
-#       yearMin: $yearMin
-#       yearMax: $yearMax
-#     ) {
-#       groupId
-#       locationLevel
-#       partnerCountryId
-#       partnerLevel
-#       productId
-#       productLevel
-#       year
-#       exportValue
-#       importValue
-#       __typename
-#     }
-#   }"
-
-# operation_name <- "GCPY2"
-# variables <- list(
-#   productClass = "SITC",
-#   yearMin = 1962,
-#   yearMax = 2022,
-#   productId = 656,
-#   groupId = 1
-# )
-
-# data_df <- ATLAS_OF_ECONOMIC_COMPLEXITY.get_data_df(variable_list = variables,
-#                                                     operation_name = operation_name, query = query)
-
-
-# countries_df <- ATLAS_OF_ECONOMIC_COMPLEXITY.get_countries_df()
-
-
-
-# sitc2_products_4d_df <- ATLAS_OF_ECONOMIC_COMPLEXITY.get_stic2_4d_df()
-
-
+# ATLAS_OF_ECONOMIC_COMPLEXITY.list_datasets() se obtiene la lista de todos los datasets disponibles. 
+# ATLAS_OF_ECONOMIC_COMPLEXITY.download_by_id() permite descargar un archivo desde dataverse con el id correspondiente,
+# el mismo se obtiene utilizando la función anterior. 
 ###############################
-
-
 
 library(httr)
 library(jsonlite)
@@ -112,6 +62,58 @@ make_request <- function(payload){
 
 
 
+ATLAS_OF_ECONOMIC_COMPLEXITY.list_datasets <- function(){
+  
+  
+  # Payload del request
+  payload <- list(
+    operationName = "GetDownloadsData",
+    variables = list(),
+    query = "query GetDownloadsData {
+  downloadsTable {
+    tableId
+    tableName
+    tableDataType
+    repo
+    complexityData
+    productLevel
+    facet
+    yearMin
+    yearMax
+    displayName
+    productClassificationHs92
+    productClassificationHs12
+    productClassificationSitc
+    productClassificationServicesUnilateral
+    dvFileId
+    dvFileName
+    dvFileSize
+    dvPublicationDate
+    doi
+    columns {
+      columnId
+      columnName
+      complexity
+      description
+      decimalPlaces
+      dataType
+      notes
+      __typename
+    }
+    __typename
+  }
+}"
+  )
+  
+  
+  return(make_request(payload = payload)$data$downloadsTable %>% 
+           purrr::map_dfr(., ~within(.x, rm(columns))))
+  
+}
+
+
+
+
 ATLAS_OF_ECONOMIC_COMPLEXITY.get_countries_df <- function(){
   
   # Payload del request
@@ -129,74 +131,16 @@ ATLAS_OF_ECONOMIC_COMPLEXITY.get_countries_df <- function(){
 
 
 
-ATLAS_OF_ECONOMIC_COMPLEXITY.get_stic2_4d_df <- function(){
+ATLAS_OF_ECONOMIC_COMPLEXITY.download_by_id <- function(dvFieldId, destfile, timeout=NULL){
   
-  payload <- list(
-    operationName = "GetSITCProducts",
-    variables = list(
-      servicesClass = "unilateral"
-    ),
-    query = "fragment ProductMetadata on Product {\n  productId\n  productLevel\n  code\n  nameEn\n  nameShortEn\n  showFeasibility\n  parent {\n    productId\n    productLevel\n    __typename\n  }\n  topParent {\n    productId\n    productLevel\n    __typename\n  }\n  __typename\n}\n\nquery GetSITCProducts($servicesClass: ServicesClass) {\n  section: productSitc(productLevel: 1, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n  twoDigit: productSitc(productLevel: 2, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n  fourDigit: productSitc(productLevel: 4, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n}"
-  )
+  url <- glue::glue("https://dataverse.harvard.edu/api/access/datafile/{dvFieldId}")
   
+  if(is.null(timeout)){timeout = 60}
+  h <- curl::new_handle(timeout = timeout)
+  curl::curl_download(url, destfile, handle = h, quiet = FALSE)
   
-  return(make_request(payload = payload)$data$fourDigit %>% bind_rows())
-  
+  return(list(url = url, destfile = destfile))
   
 }
-
-
-
-ATLAS_OF_ECONOMIC_COMPLEXITY.get_stic2_2d_df <- function(){
-  
-  payload <- list(
-    operationName = "GetSITCProducts",
-    variables = list(
-      servicesClass = "unilateral"
-    ),
-    query = "fragment ProductMetadata on Product {\n  productId\n  productLevel\n  code\n  nameEn\n  nameShortEn\n  showFeasibility\n  parent {\n    productId\n    productLevel\n    __typename\n  }\n  topParent {\n    productId\n    productLevel\n    __typename\n  }\n  __typename\n}\n\nquery GetSITCProducts($servicesClass: ServicesClass) {\n  section: productSitc(productLevel: 1, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n  twoDigit: productSitc(productLevel: 2, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n  fourDigit: productSitc(productLevel: 4, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n}"
-  )
   
   
-  return(make_request(payload = payload)$data$twoDigit %>% bind_rows())
-  
-  
-}
-
-
-
-ATLAS_OF_ECONOMIC_COMPLEXITY.get_stic2_section_df <- function(){
-  
-  payload <- list(
-    operationName = "GetSITCProducts",
-    variables = list(
-      servicesClass = "unilateral"
-    ),
-    query = "fragment ProductMetadata on Product {\n  productId\n  productLevel\n  code\n  nameEn\n  nameShortEn\n  showFeasibility\n  parent {\n    productId\n    productLevel\n    __typename\n  }\n  topParent {\n    productId\n    productLevel\n    __typename\n  }\n  __typename\n}\n\nquery GetSITCProducts($servicesClass: ServicesClass) {\n  section: productSitc(productLevel: 1, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n  twoDigit: productSitc(productLevel: 2, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n  fourDigit: productSitc(productLevel: 4, servicesClass: $servicesClass) {\n    ...ProductMetadata\n    __typename\n  }\n}"
-  )
-  
-  
-  return(make_request(payload = payload)$data$section %>% bind_rows())
-  
-  
-}
-
-
-
-ATLAS_OF_ECONOMIC_COMPLEXITY.get_data_df <- function(variable_list, operation_name, query){
-  
-  
-  # Crear el payload
-  payload <- crear_payload(operation_name, variable_list, query)
-  
-  # Hacer la petición
-  return(make_request(payload = payload)$data$data %>% bind_rows())
-}
-
-
-
-
-
-
-
-

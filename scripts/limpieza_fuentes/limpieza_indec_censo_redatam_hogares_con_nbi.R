@@ -66,7 +66,19 @@ clean_title <- glue::glue("{titulo.raw}")
 #                      script = code_name,
 #                      descripcion = "El dataset contiene la cantidad de hogares y porcentaje sobre el total de hogares que poseen al menos un indicador NBI, por departamento, obtenido de REDATAM 2024-10-28")
 
-actualizar_fuente_clean(id_fuente_clean = 118,
+id_fuente_clean <- 118
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk =c('id_depto'))
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         path_clean = clean_filename,
                         nombre = clean_title, 
-                        script = code_name)
+                        script = code_name,
+                        comparacion = comparacion)
