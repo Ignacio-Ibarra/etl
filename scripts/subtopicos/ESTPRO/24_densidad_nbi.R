@@ -65,8 +65,7 @@ df_nbi <- arrow::read_parquet(get_clean_path(fuente5)) %>%
 
 df_output <- df_densidad %>% left_join(df_nbi, join_by(id_depto))
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico)%>% 
-  rename(porcentaje_hogares_con_nbi = share_pb_nbi)
+df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico)
 
 codigos <- df_anterior %>% distinct(provincia_id, region)
 
