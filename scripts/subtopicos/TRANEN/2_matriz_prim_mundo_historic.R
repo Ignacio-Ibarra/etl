@@ -22,10 +22,10 @@ data <- df_raw %>%
     name == "Other renewables (including geothermal and biomass) - TWh" ~ "Otras renovables",
     name == "Biofuels consumption - TWh" ~ "Biocombustibles",
     name == "Solar consumption - TWh" ~ "Solar",
-    name == "Coal consumption - TWh" ~ "Carbon",
+    name == "Coal consumption - TWh" ~ "Carbón",
     name == "Gas consumption - TWh" ~ "Gas natural",
-    name == "Oil consumption - TWh" ~ "Petroleo",
-    name == "Wind consumption - TWh" ~ "Eolica",
+    name == "Oil consumption - TWh" ~ "Petróleo",
+    name == "Wind consumption - TWh" ~ "Eólica",
     name == "Nuclear consumption - TWh" ~ "Nuclear",
     name == "Hydro consumption - TWh" ~ "Hidro",
     TRUE ~ NA_character_
@@ -130,7 +130,9 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-aclaracion <- paste0("Se corrigió el calculo del porcentaje")
+aclaracion <- paste0("Se corrigió el calculo del porcentaje. ",
+                     "Se corrigen las string Carbon, Petroleo y Eloica porque no tienen acento. ",
+                     "Para dichos casos no se hace comparación. ")
                      
 
 df_output %>%
