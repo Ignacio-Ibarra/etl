@@ -46,30 +46,60 @@ oecd_api.get_datasets <- function() {
 
 
 
-oecd_api.download_data_from_url <- function(url, delimitador) {
+oecd_api.download_data_from_url <- function(url, delimitador, verbose=FALSE) {
   
-  # Realiza la petición HTTP solicitando los datos en formato SDMX-CSV v1
+  progress = FALSE
+  show_col_types = FALSE
+  if (verbose){
+    progress = TRUE
+    show_col_types = TRUE
+  }
+  
   response <- GET(
     url,
     add_headers(
-      Accept = "application/vnd.sdmx.data+csv; charset=utf-8; labels=both"
+      `Accept` = "application/vnd.sdmx.data+csv; charset=utf-8; labels=both",
+      `Accept-Encoding`= "gzip, deflate, br"
     )
   )
   
-  # Verifica si la petición fue exitosa
+  print(headers(response)$`retry-after`)
+  
   if (status_code(response) == 200) {
-    # Convierte el contenido binario a texto
-    contenido_texto <- rawToChar(content(response, "raw"))
+    contenido_texto <- content(response, "text", encoding = "UTF-8")
     
-    # Lee el contenido directamente como un dataframe
-    datos <- read_delim(I(contenido_texto), delim = delimitador)
-   
+    datos <- tryCatch({
+      read_delim(I(contenido_texto), delim = delimitador, progress = progress, show_col_types = show_col_types)
+    }, error = function(e) {
+      stop("Error al leer los datos: ", e$message)
+    })
     
     return(datos)
-    
   } else {
     stop(paste("Error:", status_code(response)))
   }
+}
+
+
+oecd_api.download_data_with_params = function(agencyID=NULL, indicatorID=NULL, start_year=NULL, end_year=NULL, data_selection_str='all', verbose = FALSE){
+  
+  if (any(sapply(list(agencyID, indicatorID, start_year, end_year), function(x) is.null(x) || is.na(x)))){
+    stop("Ninguno de los parámetros: agencyID, indicatorID, start_year y end_year deben ser nulos")
+  }
+  
+  years <- start_year:end_year
+  
+  downloads <- purrr::map(
+    years, function(q_year){
+      url <- glue::glue("https://sdmx.oecd.org/public/rest/data/{agencyID},{indicatorID},1.0/{data_selection_str}?startPeriod={q_year}&endPeriod={q_year}&dimensionAtObservation=AllDimensions&format=csvfilewithlabels")
+      str_msg = glue::glue("Se ha descargado el año {q_year}")
+      message(str_msg)
+      oecd_api.download_data_from_url(url, delimitador = ",", verbose = verbose)}
+  )
+  
+  url_general <- glue::glue("https://sdmx.oecd.org/public/rest/data/{agencyID},{indicatorID},1.0/{data_selection_str}?dimensionAtObservation=AllDimensions&format=csvfilewithlabels")
+  return(list(url = url_general, descargas = downloads))
+  
 }
 
 
