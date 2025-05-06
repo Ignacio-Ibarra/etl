@@ -1,8 +1,34 @@
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 id_fuente <- 221
 fuente_raw <- sprintf("R%sC0",id_fuente)
+
+
+pattern <- fuentes_raw() %>% 
+  pull(path_raw) %>% 
+  tools::file_ext(.) %>%
+  unique() %>% 
+  keep(., ~all(.x != '')) %>% 
+  paste0(., collapse = "|") %>% 
+  paste0("(.*)\\.(",.,")$")
+
+
+nombre_archivo_raw <- str_extract(fuentes_raw() %>% 
+                                    dplyr::filter(codigo == fuente_raw) %>% 
+                                    select(path_raw) %>% 
+                                    pull(), 
+                                  pattern = pattern, 
+                                  group = 1)
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
 
 # Función para verificar si el número de NAs en cada fila es mayor o igual a un umbral
 check_na_threshold <- function(df, threshold) {
@@ -107,17 +133,15 @@ df_clean <- df_clean %>%
 
 
 
-# Guardado de archivo
-nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw) %>% 
-                                    select(path_raw) %>% 
-                                    pull(), pattern = "\\.")[1]
+
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_por_sector_CLEAN.parquet")
 
+clean_title <- glue::glue("{titulo.raw}")
+
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
-df_clean %>% arrow::write_parquet(., sink = path_clean)
+df_clean %>% arrow::write_parquet(., sink = path_clean) 
 
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
