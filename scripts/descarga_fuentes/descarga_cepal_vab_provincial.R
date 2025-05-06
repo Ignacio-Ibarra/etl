@@ -5,7 +5,7 @@ periodicidad <- months(0)
 fecha_ultima_actualizacion <- as.Date("2022-12-31")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
-url <- "https://repositorio.cepal.org/server/api/core/bitstreams/7399c6c9-0827-42da-b433-d176cb4107c7/content"
+url <- "https://repositorio.cepal.org/server/api/core/bitstreams/42cdb69b-33be-439c-8bfd-c444dc644ed1/content"
 
 # Desactivo la verificacion de SSL
 
