@@ -104,7 +104,9 @@ df_raw <- map_dfr(sheets, clean_sheet)
 
 df_clean <- df_raw %>% 
   separate(sheet_name, into = c("provincia_id", "provincia"), sep = "-", extra = "merge") %>% 
-  mutate(provincia_id = as.integer(provincia_id)) 
+  mutate(provincia_id = as.integer(provincia_id),
+         provincia = ifelse(provincia == "SANTE FE", "SANTA FE", provincia)) %>% 
+  rename(anio = ano)
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -127,7 +129,8 @@ id_fuente_clean <- 242
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
-df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) %>% 
+  rename(anio = ano)
 
 
 comparacion <- comparar_fuente_clean(df_clean,
