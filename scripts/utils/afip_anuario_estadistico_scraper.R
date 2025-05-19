@@ -4,7 +4,98 @@ library(xml2)
 library(openxlsx)
 
 
-afip_anuario_estadistico.extraer_links_afip = function(url_base, page_url){
+parse_cabextract_list <- function(output_lines) {
+  # Buscar el comienzo de la tabla (línea con guiones)
+  line_start <- grep("^-{3,}\\+-{3,}\\+-{3,}", output_lines)
+  if (length(line_start) == 0) stop("No se pudo identificar la tabla de archivos en la salida.")
+  
+  data_lines <- output_lines[(line_start + 1):length(output_lines)]
+  
+  df <- do.call(rbind, lapply(data_lines, function(line) {
+    matches <- regmatches(line, regexec("^\\s*(\\d+) \\| ([0-9.]+) ([0-9:]+) \\| (.+)$", line))[[1]]
+    if (length(matches) == 5) {
+      data.frame(
+        size = as.numeric(matches[2]),
+        date = matches[3],
+        time = matches[4],
+        name = matches[5],
+        stringsAsFactors = FALSE
+      )
+    } else {
+      NULL
+    }
+  }))
+  
+  df
+}
+
+
+cabextract_wrapper <- function(
+    file,
+    directory = NULL,
+    list_files = FALSE,
+    test_archive = FALSE,
+    lowercase = FALSE,
+    filter = NULL,
+    single = FALSE,
+    fix = FALSE,
+    verbose = TRUE
+) {
+  if (!file.exists(file)) stop("El archivo CAB no existe: ", file)
+  
+  cmd <- "cabextract"
+  args <- c()
+  
+  # Preparar directorio destino
+  if (!is.null(directory)) {
+    dir.create(directory, showWarnings = FALSE, recursive = TRUE)
+    args <- c(args, "--directory", shQuote(directory))
+  }
+  
+  if (list_files)   args <- c(args, "--list")
+  if (test_archive) args <- c(args, "--test")
+  if (lowercase)    args <- c(args, "--lowercase")
+  if (!is.null(filter)) args <- c(args, "--filter", shQuote(filter))
+  if (single)       args <- c(args, "--single")
+  if (fix)          args <- c(args, "--fix")
+  
+  args <- c(args, shQuote(file))
+  
+  result <- system2(cmd, args = args, stdout = TRUE, stderr = TRUE)
+  
+  if (list_files) {
+    df <- parse_cabextract_list(result)
+    if (verbose && !is.null(df)) print(df)
+    return(df)
+  }
+  
+  # Si hay filtro, devolver ruta absoluta de archivos extraídos
+  if (!is.null(filter)) {
+    file_list <- list.files(
+      path = directory,
+      pattern = glob2rx(filter),
+      full.names = TRUE
+    )
+    return(normalizePath(file_list))
+  }
+  
+  invisible(result)
+}
+
+
+
+
+
+
+
+
+
+afip_anuario_estadistico.extraer_links_afip = function(){
+  
+  
+  # Define la URL base y la URL de la página a consultar
+  url_base <- "https://contenidos.afip.gob.ar/institucional/estudios/archivos/estadisticasTributarias/"
+  page_url <- "https://www.afip.gob.ar/estudios/anuario-estadisticas-tributarias/"
   
   # Obtiene el contenido de la página web
   web_content <- read_html(page_url)
@@ -22,7 +113,7 @@ afip_anuario_estadistico.extraer_links_afip = function(url_base, page_url){
   
   
   # Me quedo con 2014 nomás. 
-  datos <- data.frame(anio = anios, url_name = urls)
+  datos <- data.frame(anio = anios, url = urls)
   
   return(datos)
 }
@@ -58,7 +149,6 @@ afip_anuario_estadistico.descargar_zip = function(anio, url){
 afip_anuario_estadistico.unzip_to_folder = function(anio, destfile){
   
   carpeta_unzip <- glue::glue("estadisticasTributarias{anio}")
-  archivo_zip <- glue::glue("{carpeta_unzip}.zip")
   exdir <- glue::glue("{tempdir()}/{carpeta_unzip}")
   
   tryCatch(
@@ -99,44 +189,40 @@ afip_anuario_estadistico.search_file = function(anio, unzipped_folder, formatos_
 }
 
 
-afip_anuario_estadistico.buscar_sheet_htm <- function(anio, unz_folder, data_path){
+afip_anuario_estadistico.buscar_sheet_htm = function(zip_path, ruta_archivo){
   
-  # unz_folder <- datos[datos$anio == anio, c("unzipped_folder")]
-  # 
-  # data_path <- datos[datos$anio == anio, c("archivo_path")]
-  
-  nombre_sin_extension <- tools::file_path_sans_ext(basename(data_path))
+  nombre_sin_extension <- tools::file_path_sans_ext(basename(ruta_archivo))
   
   # Escapar los puntos y generar la string final
   nombre_escapado <- gsub("\\.", "\\\\.", nombre_sin_extension)
   
   # Priorizo sheet002 ante sheet001, porque tiene más desagregacion. 
-  patron1 <- sprintf(".*%s.*\\/sheet002\\.htm$", nombre_escapado)
+  patron2 <- sprintf(".*%s.*\\/sheet002\\.htm$", nombre_escapado)
   
-  patron2 <- sprintf(".*%s.*\\/sheet001\\.htm$", nombre_escapado)
+  patron1 <- sprintf(".*%s.*\\/sheet001\\.htm$", nombre_escapado)
   
-  f_list <- list.files(unz_folder, recursive = T, full.names = T)
+  resultado2 <- unzip(zip_path, list = TRUE) %>% 
+    dplyr::filter(Length>0, grepl(patron2, Name)) %>% 
+    pull(Name)
   
-  resultado1 <- f_list[grepl(patron1, f_list)]
+  resultado1 <- unzip(zip_path, list = TRUE) %>% 
+    dplyr::filter(Length>0, grepl(patron1, Name)) %>% 
+    pull(Name)
   
-  resultado2 <- f_list[grepl(patron2, f_list)]
-  
-  resultados <- c(resultado1, resultado2)
+  resultados <- c(resultado2, resultado1)
   
   resultado <- resultados[!is.na(resultados)]
- 
-  # Si no encuentra nada, devolvemos NA
-  if (length(resultado) == 0) {
-      return(NA_character_)
-  } else {
+  
+  coincidencia <- NA_character_
+  
+  if (length(resultado) > 0) {
     
-    orig <- resultado[1]
-    dest <- glue::glue("{tempdir()}/{tools::file_path_sans_ext(basename(orig))}_{anio}.htm")
+    coincidencia <- resultado[1]
     
-    file.copy(orig, dest, overwrite = T)
-    
-    return(dest)  # Devolvemos el primer match si hay varios
   }
+  
+  return(coincidencia)
+  
 }
 
 

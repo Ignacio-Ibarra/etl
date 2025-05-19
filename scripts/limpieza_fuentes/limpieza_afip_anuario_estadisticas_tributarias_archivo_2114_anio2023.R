@@ -6,7 +6,7 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 259
+id_fuente <- 419
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 pattern <- fuentes_raw() %>% 
@@ -24,7 +24,6 @@ nombre_archivo_raw <- str_extract(fuentes_raw() %>%
                                     pull(), 
                                   pattern = pattern, 
                                   group = 1)
-
 titulo.raw <- fuentes_raw() %>% 
   filter(codigo == fuente_raw) %>% 
   select(nombre) %>% pull()
@@ -34,7 +33,7 @@ source("scripts/utils/afip_anuario_estadistico_scraper.R")
 
 zip_path <- argendataR::get_raw_path(fuente_raw)
 
-search_file <- "2.1.1.4.htm"
+search_file <- "2.1.1.4.xls"
 
 
 coincidencia<- unzip(zip_path, list = TRUE) %>% 
@@ -47,28 +46,18 @@ coincidencia<- unzip(zip_path, list = TRUE) %>%
 
 ruta_archivo <- unzip(zip_path, files = coincidencia, exdir = tempdir(), junkpaths = TRUE)
 
-
-coincidencia_sheet <- afip_anuario_estadistico.buscar_sheet_htm(zip_path = zip_path, 
-                                                                ruta_archivo = ruta_archivo)
-
-ruta_archivo_sheet_htm <- unzip(zip_path, files = coincidencia_sheet, exdir = tempdir(), junkpaths = TRUE)
-
-ruta_xlsx <- afip_anuario_estadistico.htm_to_xlsx(anio = 2013, 
-                                                  sheet001_path = ruta_archivo_sheet_htm,
-                                                  htm_data_file = ruta_archivo)
-
 cleaning_func <- function(ruta, name_cols, sheet_name, cell_range){
   
   str_title <- readxl::read_excel(ruta, sheet = sheet_name, col_names = F) %>% 
     slice(1:3) %>% 
-    select(2) %>% 
+    select(1) %>% 
     pull() %>%
     stats::na.omit() %>%
     paste0(., collapse = ". ")
   
   unidad_medida_str <- readxl::read_excel(ruta, sheet = sheet_name, col_names = F) %>% 
     slice(5) %>% 
-    select(2) %>% 
+    select(1) %>% 
     pull() %>% 
     str_remove_all(., "\\(|\\)|\\\r|\\\n") %>% 
     str_replace_all(., "  ", " ")
@@ -112,19 +101,12 @@ name_cols <- c("actividad_economica",
                "Mercado interno#No gravadas y exentas",
                "Exportaciones#Ventas totales")
 
-sheet_name <- readxl::excel_sheets(ruta_xlsx)
-cell_range <- "C13:I190"
+sheet_name <- "2.1.1.4_2"
+cell_range <- "C12:I254"
 
-result <- cleaning_func(ruta = ruta_xlsx, 
-                        name_cols = name_cols, 
-                        sheet_name = sheet_name, 
-                        cell_range = cell_range)
+result <- cleaning_func(ruta = ruta_archivo, name_cols = name_cols, sheet_name = sheet_name, cell_range = cell_range)
 
-df_clean <- result$data %>% 
-  mutate(
-    valor = gsub("\\.|\\\r\\\n", "", valor) %>% 
-      str_extract(., "\\d+") %>% 
-      as.numeric())
+df_clean <- result$data
 
 title <- result$title
 
@@ -143,11 +125,13 @@ clean_title <- glue::glue("{titulo.raw} - {title}")
 #                      script = code_name,
 #                      descripcion = "El dataset contiene por letra y a tres dígitos de desagregacion datos sobre las presentaciones, ventas y exportaciones por actividad económica")
 
-id_fuente_clean <- 128
+
+id_fuente_clean <- 265
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
-df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) 
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,

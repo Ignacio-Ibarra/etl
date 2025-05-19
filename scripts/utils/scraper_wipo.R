@@ -117,7 +117,36 @@ WIPO.get_data <- function(selected_tab, indicator, report_type, from_year, to_ye
   return(result)
 }
 
-
+WIPO.get_data_ipsOriSelValues <- function(selected_tab, indicator, report_type, from_year, to_year, offices = NULL, tech_values = NULL) {
+  params <- list(
+    selectedTab = selected_tab,
+    indicator = indicator,
+    reportType = report_type,
+    fromYear = from_year,
+    toYear = to_year
+  )
+  
+  
+  if (!is.null(tech_values) & !is.null(offices)) {
+    params$ipsOriSelValues <-  paste(offices, collapse = ",")
+    params$ipsTechSelValues <- paste(tech_values, collapse = ",")
+  }
+  
+  
+  if (!is.null(offices) & is.null(tech_values)) {
+    params$ipsOriSelValues <-  paste(offices, collapse = ",")
+  }
+  
+  print(params)
+  url <- build_url("/table-result", params)
+  print(url)  # Debugging
+  response <- safe_get(url)
+  if (is.null(response)) return(NULL)
+  content <- content(response, as = "text", encoding = "UTF-8")
+  
+  result <- list(url = url, output = fromJSON(content, flatten = TRUE))
+  return(result)
+}
 # 
 # 
 # indicators <- WIPO.get_indicators(selected_tab = 'patent')
