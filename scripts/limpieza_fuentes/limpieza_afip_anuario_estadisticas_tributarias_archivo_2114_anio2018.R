@@ -51,17 +51,24 @@ ruta_archivo <- unzip(zip_path, files = coincidencia, exdir = tempdir(), junkpat
 
 cleaning_func <- function(ruta, name_cols, sheet_name, cell_range){
   
-  str_title <- readxl::read_excel(ruta, sheet = sheet_name) %>% 
+  str_title <- readxl::read_excel(ruta, sheet = sheet_name, col_names = F) %>% 
     slice(1:3) %>% 
     select(1) %>% 
     pull() %>%
     stats::na.omit() %>%
     paste0(., collapse = ". ")
   
+  unidad_medida_str <- readxl::read_excel(ruta, sheet = sheet_name, col_names = F) %>% 
+    slice(5) %>% 
+    select(1) %>% 
+    pull() %>% 
+    str_remove_all(., "\\(|\\)|\\\r|\\\n") %>% 
+    str_replace_all(., "  ", " ")
+  
   df_raw <- readxl::read_excel(ruta, 
                                range = cell_range,
                                col_names = F,
-                               sheet = sheet_name)
+                               sheet = sheet_name) 
   
   names(df_raw) <- name_cols
   
@@ -80,7 +87,8 @@ cleaning_func <- function(ruta, name_cols, sheet_name, cell_range){
         cod_act %in% LETTERS[1:19] ~ "letra",
         is.na(cod_act) ~ NA_character_,
         TRUE ~ "3 dígitos"
-      )
+      ),
+      unidad_medida = unidad_medida_str
     )
   
   return(list(title =str_title, data = clean_df))
