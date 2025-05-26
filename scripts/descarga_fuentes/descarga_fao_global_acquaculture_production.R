@@ -19,11 +19,13 @@ token_manual <- "O72UKMYbVIXpclxailuagjgH-NplKbkUZhqfYXqmSk0MQJNh0yAKmkTG0G3uYXx
 
 result <- FAO_FISHSTATS.get_download_link(topic = "aquaculture", token_manual = token_manual)
 
-url <- result$link
+url <- "https://www.fao.org/fishery/static/Data/Aquaculture_2025.1.0.zip" # Agrego manual porque en la pagina no esta
 
 institucion <- result$institution
 
-nombre <- glue::glue("{result$serie}. {result$title}")
+title <- "Global aquaculture production Quantity (1950 - 2023)"
+
+nombre <- glue::glue("{result$serie}. {title}")
 
 download_filename <- basename(url)
   
