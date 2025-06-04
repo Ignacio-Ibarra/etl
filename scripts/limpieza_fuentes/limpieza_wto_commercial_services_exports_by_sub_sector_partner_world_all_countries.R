@@ -26,34 +26,79 @@ df_raw <- argendataR::get_raw_path(fuente_raw) %>%
   readr::read_csv(.) 
 
 
-source("scripts/utils/wto_timeseries_api.R")
+df_stage <- df_raw %>% 
+  mutate(ReportingEconomyCode = case_when(
+    ReportingEconomyCode == "892" ~ "688", # Serbia le pongo el nro correcto de m49 code
+    ReportingEconomyCode == "893" ~ "499", # Montenegro le pongo el nro correcto de m49 code
+    TRUE ~ ReportingEconomyCode
+  ))
 
-paises_wto <- wto_timeseries_api.get_reporting_economies() %>% 
-  dplyr::filter(!is.na(iso3A)) %>% 
-  distinct(ccode = code, iso3 = iso3A)
-  
+source("scripts/utils/wto_country_codes.R")
+
+paises_wto <- get_wto_codes() %>% 
+  select(m49_code, name_es, wto_code)
+
 
 geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-  dplyr::filter(nivel_agregacion == 'pais') %>% 
-  select(iso3 = codigo_fundar, country_name_es = desc_fundar)
+  dplyr::filter(!is.na(m49_code_unsd))%>% 
+  mutate(m49_code = str_pad(m49_code_unsd, width = 3, side = "left", pad = "0")) %>% 
+  select(iso3 = codigo_fundar, m49_code, desc_fundar) %>% 
+  mutate(es_iso = TRUE)
 
+
+geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(iso3 = geocodigo, pais_nombre = name_long)
 
 diccionario_paises <- paises_wto %>% 
-  inner_join(geonomenclador, join_by(iso3)) # filtro codigos que no son de países. 
+  full_join(geonomenclador, join_by(m49_code)) %>% 
+  mutate(es_iso = replace_na(es_iso, FALSE)) %>% 
+  mutate(
+    iso3_completo = case_when(
+      iso3 == "KOS" ~ "XKX",
+      is.na(iso3) ~ wto_code,
+      TRUE ~ iso3
+      ),
+    nombre_provisorio =  case_when(
+      iso3 == "XKX" ~ "Kosovo",
+      is.na(desc_fundar) ~ name_es, 
+      TRUE ~ desc_fundar
+    ),
+    fuente = ifelse(is.na(iso3), "WTO", "UNSD")
+  ) %>% 
+  left_join(geo_front, join_by(iso3_completo == iso3)) %>% 
+  mutate(
+    pais_nombre = ifelse(is.na(pais_nombre), name_es, pais_nombre)
+  ) %>% 
+  select(m49_code, iso3_completo, pais_nombre, fuente, es_iso) %>% 
+  bind_rows(.,
+            data.frame(
+              m49_code = "964",
+              iso3_completo = "CEM",
+              pais_nombre = "Comunidad Económica y Monetaria de Africa Central (CEMAC)",
+              fuente = "WTO",
+              es_iso = FALSE
+            )) %>% 
+  rename(
+    iso3 = iso3_completo,
+    fuente_iso3 = fuente
+  )
 
 
-df_clean <- df_raw %>% 
-  right_join(., diccionario_paises, join_by( ReportingEconomyCode == ccode)) %>% # filtro codigos que no son de países.
+df_clean <- df_stage  %>% 
+  right_join(., diccionario_paises, join_by( ReportingEconomyCode == m49_code)) %>% 
   select(year = Year,
          m49_code = ReportingEconomyCode, 
          iso3,
-         country_name_es,
+         pais_nombre,
          product_code = ProductOrSectorCode, 
          product_desc = ProductOrSector, 
          unit = Unit,
          value_flag = ValueFlag,
-         value = Value) 
-  
+         value = Value,
+         fuente_iso3,
+         es_iso) 
+
+
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 

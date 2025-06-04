@@ -66,39 +66,69 @@ df_output <- df_prod_acuicola %>%
   select(anio, iso3, pais_nombre, produccion_captura, produccion_acuicola, produccion_total, participacion) 
 
 
+df_output %>%
+  argendataR::write_csv_fundar(output_name)
 
-# df_output %>%
-#   argendataR::write_csv_fundar(.,
-#                                glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+
+#### CUENTAS
+
+
+# regiones <- argendataR::get_clean_path(fuente3) %>% 
+#   arrow::read_parquet(.) %>% 
+#   select(iso3 = iso3_code, region = geo_region_group_es, continente = continent_group_es) %>% 
+#   mutate(region2 = case_when(
+#     region %in% c("América del Sur", "América central", "Caribe") ~ "Latinoamérica y el Caribe",
+#     region == "América del Norte" ~ region, 
+#     TRUE ~ continente
+#   ))
+#            
+# 
+# por_region <- df_output %>% 
+#   inner_join(regiones, join_by(iso3)) %>% 
+#   group_by(region2) %>% 
+#   summarise(
+#     produccion_captura = sum(produccion_captura),
+#     produccion_acuicola = sum(produccion_acuicola),
+#     produccion_total = sum(produccion_total)
 #   )
 # 
+# produccion_global <- df_output %>%
+# summarise(
+#   produccion_captura_global= sum(produccion_captura),
+#   produccion_acuicola_global = sum(produccion_acuicola),
+#   produccion_total_global = sum(produccion_total)
+# )
 # 
-# plot_data <- df_output %>% 
-#   arrange(desc(participacion)) %>% 
-#   slice_head(n = 20) %>% 
-#   bind_rows(df_output %>% filter(pais_nombre == "Argentina")) %>%
-#   distinct() %>%  # Por si Argentina ya estaba en el top 20
-#   mutate(pais_nombre = factor(pais_nombre, levels = rev(unique(pais_nombre))))
-# 
-# regular_texto <- 0.001
-# 
-# ggplot(plot_data, aes(x = participacion, y = pais_nombre, 
-#                       fill = case_when(
-#                         pais_nombre == "Argentina" ~ "Argentina",
-#                         TRUE ~ "Otros"
-#                       ))) + 
-#   geom_col(color = "black", linewidth = 0.15, position = position_nudge(y = 0.2), width = 0.8) +  
-#   scale_fill_manual(values = c("Argentina" = "#45bcc5", "Otros" = "#fc5a0a")) +  # Colores condicionales
-#   geom_text(
-#     aes(label = scales::percent(participacion, accuracy = 0.1),x = participacion + regular_texto),  
-#     vjust = 0, hjust = 0, color = "black", size = 3) +  # Color de las etiquetas en blanco
-#   labs(y = "", x = "Participación en la producción global (%)") +
-#   theme_minimal() +
-#   theme(
-#     legend.position = "none",  # Oculta la leyenda
-#     axis.text = element_text(color = "black"),  
-#     axis.title = element_text(color = "black")  
-#   )
+
+
+
+
+plot_data <- df_output %>%
+  arrange(desc(participacion)) %>%
+  slice_head(n = 20) %>%
+  bind_rows(df_output %>% filter(pais_nombre == "Argentina")) %>%
+  distinct() %>%  # Por si Argentina ya estaba en el top 20
+  mutate(pais_nombre = factor(pais_nombre, levels = rev(unique(pais_nombre))))
+
+regular_texto <- 0.001
+
+ggplot(plot_data, aes(x = participacion, y = pais_nombre,
+                      fill = case_when(
+                        pais_nombre == "Argentina" ~ "Argentina",
+                        TRUE ~ "Otros"
+                      ))) +
+  geom_col(color = "black", linewidth = 0.15, position = position_nudge(y = 0.2), width = 0.8) +
+  scale_fill_manual(values = c("Argentina" = "#45bcc5", "Otros" = "#fc5a0a")) +  # Colores condicionales
+  geom_text(
+    aes(label = scales::percent(participacion, accuracy = 0.1),x = participacion + regular_texto),
+    vjust = 0, hjust = 0, color = "black", size = 3) +  # Color de las etiquetas en blanco
+  labs(y = "", x = "Participación en la producción global (%)") +
+  theme_minimal() +
+  theme(
+    legend.position = "none",  # Oculta la leyenda
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black")
+  )
 
 df_anterior <- df_output # No hay output contra qué comparar
 
