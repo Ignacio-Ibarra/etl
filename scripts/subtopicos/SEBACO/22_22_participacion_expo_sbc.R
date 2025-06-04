@@ -18,7 +18,8 @@ df_sbc <- df_wto %>%
   dplyr::filter(product_code %in% codigos_sbc_bp06) 
 
 df_output <- df_sbc %>% 
-  group_by( anio = year, iso3, pais_nombre = country_name_es) %>% 
+  dplyr::filter(es_iso) %>% 
+  group_by( anio = year, iso3, pais_nombre) %>% 
   summarise(
     value = sum(value, na.rm = T)
   ) %>% 
