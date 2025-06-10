@@ -149,6 +149,26 @@ BACI.get_db_from_zip <- function(zip_file) {
   return(con)
 }
 
+extract_to_dir <- function(zip_file, filename, exdir = tempdir()){
+  unzip(zip_file, file = filename, exdir = exdir)
+  return(file.path(exdir, filename))
+}
+
+BACI.extract_and_create_table <- function(zip_file, csv_file, con, table_name) {
+  
+  path = extract_to_dir(zip_file, filename = csv_file)
+  
+  data <- fread(path)
+  dbWriteTable(con, table_name, data, overwrite = TRUE)
+      
+}
+
+
+
+
+
+
+
 
 BACI.get_db <- function(db_path){
   
