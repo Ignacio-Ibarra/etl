@@ -1,28 +1,36 @@
 ################################################################################
 ##                              Dataset: nombre                               ##
 ################################################################################
-
-#-- Descripcion ----
-#' Breve descripcion de output creado
-#'
-
-#-- Descripcion ----
-#' Breve descripcion de output creado
-
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
 
 
-output_name <- stringr::str_sub(string = code_name, start = 4, end = -3)
+subtopico <- "AGROPE"
+output_name <- "12_composicion_exportaciones_bienes_sectores_Brambilla_Porto.csv"
+analista = "Leonardo Park"
+fuente1 <- "R422C0" # BACI HS96
 
 
-#-- Lectura de Datos ----
+geonomenclador <- argendataR::get_nomenclador_geografico()
+
+source("scripts/utils/baci_data.R")
+
+con <- argendataR::get_raw_path(fuente1) %>% 
+  BACI.get_db_from_zip(.)
+
+query_output <- glue::glue(
+  "SELECT c.i as m49_code, p.country_iso3 as iso3, c.k as ncm6, SUM(c.v) as expo
+   FROM comercio as c
+   WHERE t == 2020
+   AND c.t = (SELECT MAX(t) FROM comercio)
+   GROUP BY c.i, p.country_iso3, c.k"
+)
 
 
+df_query <- dbGetQuery(con, query_output)
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-
-comex_sectores_brambilla_porto <- readr::read_csv(argendataR::get_temp_path("R113C57"))
+comex_sectores_brambilla_porto <-arrow::read_parquet(argendataR::get_clean_path("R113C57"))
 
 
 
@@ -71,4 +79,3 @@ df_output %>%
     etiquetas_indicadores = list("export_value_pc" = "Exportaciones de bienes (% del total exportado en bienes)"),
     unidades = list("export_value_pc" = "porcentaje")
   )
-
