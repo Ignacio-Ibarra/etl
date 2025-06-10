@@ -12,7 +12,7 @@ periodicidad <- months(24)
 fecha_ultima_actualizacion <- as.Date("2022-12-31")
 fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
-url <- "https://raw.githubusercontent.com/datos-Fundar/valor-agregado-bruto-largo-plazo-argentina/refs/heads/main/tablas/empalme_series_pbg_pob_vab_pc.csv"
+url <- "https://raw.githubusercontent.com/datos-Fundar/valor_agregado_bruto_largo_plazo_argentina/refs/heads/main/tablas/empalme_series_pbg_pob_vab_pc.csv"
 
 # Desactivo la verificacion de SSL
 options(download.file.method="libcurl"
