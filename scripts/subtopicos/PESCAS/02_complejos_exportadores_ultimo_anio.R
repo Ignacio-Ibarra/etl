@@ -18,39 +18,51 @@ df_output <- df_indec %>%
   
 
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("complejos"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
-  )
-
-
-
-
-plot_data <- df_output %>% 
-  slice_head(n = 15) %>%  
-  arrange(expo) %>% 
-  mutate(complejos = factor(complejos, levels = unique(complejos))) 
-
-
-
-regular_texto <- -5
-
-ggplot(plot_data, aes(x = expo, y = complejos, 
-                      fill = case_when(
-                        complejos == "Pesquero" ~ "Pesquero",
-                        TRUE ~ "Otros"
-                      ))) + 
-  geom_col(color = "black", linewidth = 0.2, position = position_nudge(y = 0.2), width = 0.8) +  
-  scale_fill_manual(values = c("Pesquero" = "#45bcc5", "Otros" = "#fc5a0a")) +  # Colores condicionales
-  geom_text(aes(
-    label = format(round(expo, 0), big.mark = ".", decimal.mark = ",", scientific = FALSE),
-    x = expo - regular_texto), 
-    size = 3,
-    vjust = 0, hjust = 0, color = "black", fontface = "bold") +  # Color de las etiquetas en blanco
-  labs(y = "", x = "Exportaciones (en millones de dólares)") +
-  theme_minimal() +
-  theme(
-    legend.position = "none",  # Oculta la leyenda
-    axis.text = element_text(color = "black"),  
-    axis.title = element_text(color = "black")  
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("complejos"),
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
   )

@@ -33,44 +33,53 @@ df_output <- df_sitc %>%
 
 
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+pk <- c('anio','iso3')
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = pk, # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
-  )
-
-
-paises_seleccionados <- c("ARG", "CHL", "VNM")
-
-plot_data <- df_output %>%
-  filter(iso3 %in% paises_seleccionados) %>%
-  select(anio, pais_nombre, share_global) 
-
-
-plot_data_labels <- plot_data %>% 
-  group_by(pais_nombre) %>% 
-  filter(anio == max(anio)) %>% 
-  ungroup()
-
-require(ggrepel)
-
-ggplot(plot_data, aes(x = anio, y = share_global, color = pais_nombre)) + 
-  geom_line() + 
-  geom_text_repel(
-    data = plot_data_labels,
-    aes(label = pais_nombre),
-    color = "black",
-    nudge_x = 6,  # Mueve las etiquetas hacia la derecha
-    direction = "y",  # Evita solapamientos verticales
-    hjust = -1,  # Alinea a la izquierda
-    segment.color = "#BEBEBF",  # Color de las líneas de conexión
-    segment.angle = 90,  # Línea vertical entre la etiqueta y la línea
-    size = 2  # Un poco más grande para mejorar visibilidad
-  )+
-  labs(y = "% participación global", x = "") +
-  theme_minimal() +
-  theme(
-    legend.position = "None",
-    legend.title = element_blank(),
-    axis.text = element_text(color = "black", size = 8),  # Color negro para los números de los ejes
-    axis.title = element_text(color = "black", size = 8)  # Color negro para los títulos de los ejes
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  pk,
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = 'iso3',
+    nivel_agregacion = NULL
   )

@@ -67,27 +67,53 @@ df_output <- df_magyp_especie %>%
   ungroup()
 
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+pk <- c("anio", "grupo")
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = pk, # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  pk,
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
   )
-
-total_df <- df_output %>%
-  group_by(anio, grupo = "Total") %>%
-  summarise(total_desembarque = sum(desembarque_toneladas))
-
-ggplot(df_output, aes(x = anio, y = share, fill = grupo)) + 
-  geom_area(alpha = 0.6) +  # Alpha para suavizar colores
-  # geom_line(data = total_df, aes(x = anio, y = total_desembarque), 
-  #           color = "black", linewidth = 0.8) + 
-  scale_fill_brewer(palette = "Set1") +  # Paleta de colores suaves
-  # scale_y_continuous(labels = scales::comma_format(scale = 1e-3, suffix = " mil")) +
-  theme_minimal() +  
-  theme(
-    legend.position = "bottom",
-    legend.title = element_blank(),
-    axis.text = element_text(color = "black"),  
-    axis.title = element_text(color = "black")  
-  ) +
-  labs(y = "Capturas marinas (en porcentaje)", x = "")
-

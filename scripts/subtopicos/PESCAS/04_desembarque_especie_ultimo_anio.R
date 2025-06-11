@@ -33,27 +33,52 @@ df_output <- df_magyp %>%
     share = desembarque_toneladas / sum(desembarque_toneladas)
   )
 
-df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
-  )
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
 
 
-df_plot <- df_output %>% 
-  mutate(valor_waffle = round(share * 100))
-
-library(waffle)
-
-# Definir colores para cada sector
-colores <- c("Merluza Hubbsi" = "#E41A1C", 
-             "Langostino" = "#377EB8", 
-             "Calamar Illex" = "#4DAF4A", 
-             "Otras especies" = "#FF7F00")
-
-
-waffle(
-  parts = setNames(df_plot$valor_waffle, df_plot$especie),  # Asignar valores con nombres de sectores
-  rows = 10, 
-  colors = colores,
-  legend_pos = "bottom"
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("especie"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("especie"),
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
+  )

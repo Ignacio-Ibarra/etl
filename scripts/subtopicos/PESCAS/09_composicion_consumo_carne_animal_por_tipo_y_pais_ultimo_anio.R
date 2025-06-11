@@ -45,10 +45,11 @@ df_paises <- df_fao_fbs_filtered %>%
   group_by(anio = year, iso3, pais, tipo_carne) %>% 
   summarise( valor = sum(value, na.rm = T)) %>% 
   ungroup() %>% 
-  complete(anio, iso3, tipo_carne, fill = list(valor = 0)) %>%  
   dplyr::filter(anio == max(anio)) %>% 
+  complete(anio, iso3, tipo_carne, fill = list(valor = 0)) %>%  
   group_by(iso3) %>% 
-  mutate(share = 100*valor / sum(valor)) %>% 
+  mutate(share = 100*valor / sum(valor)) %>%
+  fill(pais, .direction = 'down') %>% 
   ungroup()
 
 
@@ -65,75 +66,51 @@ df_mundo <- df_paises %>%
 
 df_output <- df_paises %>% bind_rows(df_mundo)
 
-df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
-  )
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
 
 
-nselect <- 5
-
-paises_fijos <- c("Francia", "Canadá", "Estados Unidos", "China", "Japón",
-                   "España", "Argentina", "Uruguay", "Brasil", 
-                   "México", "Chile", "Perú", "Reino Unido", 
-                  "Colombia", "Ecuador", "Mundo")
-
-
-paises_topn_pescado <- df_output %>% 
-  dplyr::filter(!(pais %in% paises_fijos), tipo_carne == "Pescados y mariscos") %>% 
-  arrange(-share) %>% 
-  slice_head(n = nselect) %>% 
-  pull(pais)
-  
-
-paises_seleccionados <- c(paises_fijos, paises_topn_pescado)
-
-
-orden_cat <- c("Otras carnes", "Caprina y ovina", "Porcina", "Vacuna", "Aviar", "Pescados y mariscos")
-
-plot_data <- df_output %>%
-  dplyr::filter(pais %in% paises_seleccionados) %>% 
-  group_by(iso3) %>% 
-  mutate(
-    share_pescado = sum(ifelse(tipo_carne == "Pescados y mariscos", share, 0))
-  ) %>% 
-  ungroup()%>% 
-  mutate(pais = factor(pais, levels = unique(pais)),
-         tipo_carne = factor(tipo_carne, 
-                             levels = orden_cat
-                             )
-           )
-
-
-
-colores_carne <- c(
-  "Vacuna" = "#91BD17",
-  "Pescados y mariscos" = "#52436E",
-  "Otras carnes" = "#B6244F",
-  "Caprina y ovina" = "#A47133",
-  "Porcina" = "#9B9725",
-  "Aviar" = "#728043"
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("iso3", "tipo_carne"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
 )
-  
 
+colectar_fuentes <- function(pattern = "^fuente.*"){
   
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
 
-# Gráfico de barras apiladas
-ggplot(plot_data, aes(x = share, y = forcats::fct_reorder(pais, share_pescado), fill = tipo_carne)) +
-  geom_col() +
-  geom_text(aes(label = ifelse(share >= 15, sprintf("%.1f%%", share), "")), 
-            position = position_stack(vjust = 0.5), 
-            size = 3.5, color = "white") + 
-  scale_fill_manual(values = colores_carne) +
-  labs(
-    x = "Porcentaje del consumo total (%)",
-    y = "País",
-    fill = "Tipo de carne"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text = element_text(color = "black"),  
-    axis.title = element_text(color = "black")  
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("iso3", "tipo_carne"),
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = 'iso3',
+    nivel_agregacion = NULL,
   )
-
-
