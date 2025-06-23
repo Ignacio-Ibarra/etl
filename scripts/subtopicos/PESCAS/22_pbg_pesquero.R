@@ -30,58 +30,54 @@ df_output <- df_cepal %>%
   select(-sector_de_actividad_economica, -provincia_id, -region) %>% 
   left_join(geo_info, join_by(provincia))
 
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+pk <- c("anio", "geocodigo")
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = pk, # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  pk,
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = 'geocodigo',
+    nivel_agregacion = 'provincia',
   )
-
-
-provincias_seleccionadas <- df_output %>% 
-  dplyr::filter(anio == max(anio)) %>% 
-  arrange(-share) %>% 
-  slice_head(n=5) %>% 
-  pull(provincia)
-
-
-df_plot1 <- df_output %>% 
-  dplyr::filter(provincia %in% provincias_seleccionadas)
-
-ggplot(df_plot1, aes(x = anio, y = share, color = provincia)) +
-  geom_line(linewidth = 1) +
-  theme_minimal()+
-  theme(
-    axis.text = element_text(color = "black"),
-    axis.title = element_text(color = "black"),
-    legend.position = "bottom",
-    legend.text = element_text(size = 8)
-  ) +
-  labs(y = "Participación en el PIB pesquero", x = "", color = "") 
-
-
-
-df_plot2 <- df_output %>% 
-  mutate(provincia = ifelse(provincia %in% provincias_seleccionadas, provincia, "Otras provincias")) %>% 
-  group_by(anio, provincia) %>% 
-  summarise(share = sum(share)) %>% 
-  ungroup() %>% 
-  arrange(anio, -share) %>% 
-  mutate(provincia = factor(provincia, levels = c(provincias_seleccionadas, "Otras provincias")))
-
-ggplot(df_plot2, aes(x = anio, y = share, fill = provincia)) +
-  geom_area() + 
-  scale_fill_manual(values =  c("Buenos Aires" = "#2e75bc", "Chubut" = "#71b6c6", 
-                                "Santa Cruz" = "#5f896e", "Tierra del Fuego" = "#bd0b36", "Río Negro" = "#ddc252", 
-                                "Otras provincias" = "#ffa8a6"))+
-  theme_minimal()+
-  theme(
-    axis.text = element_text(color = "black"),
-    axis.title = element_text(color = "black"),
-    legend.position = "bottom",
-    legend.title = element_blank(),
-    legend.text = element_text(size = 8),
-    legend.
-  ) +
-  labs(y = "Participación en el PIB pesquero", x = "", color = "") 
-
-
-

@@ -34,29 +34,57 @@ df_output <- df_indec %>%
   ) %>% 
   select(-toneladas, -precio, -fob)
 
+
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+
+pk <- c("anio")
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = pk, # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  pk,
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
   )
-
-
-plot_data <- df_output %>%
-  select(anio, Valor = fob_index, Toneladas = toneladas_index, Precio = precio_index) %>% 
-  pivot_longer(
-    !anio, 
-    names_to = "variable",
-    values_to = "indice"
-  )
-
-ggplot(plot_data, aes(x = anio, y = indice, color = variable)) + 
-  geom_line(linewidth = 1.2) +  # Grosor de línea para mejor visualización
-  geom_point(size = 2) +   # Puntos para destacar cada año
-  labs(
-    # title = "Evolución de las Exportaciones Pesqueras (Base 100)",
-    x = "Año",
-    y = "Índice (Base 100)",
-    color = "Variable"
-  ) + 
-  theme_minimal() + # Tema limpio y profesional
-  theme(legend.position = "bottom") # Ubicar la leyenda abajo
   

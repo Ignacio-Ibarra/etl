@@ -107,18 +107,51 @@ df_output <- df_dos_fuentes %>%
     TRUE ~ as.numeric(stats::predict(model, newdata = tibble(desembarque_toneladas_fao = desembarque_toneladas_fao)))
   ))
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("anio"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("anio"),
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
   )
-
-
-ggplot(df_output, aes(x = anio, y = valor_empalme)) + 
-  geom_line(color = "#7ab5c5") +
-  scale_y_continuous(labels = scales::comma_format(scale = 1e-3, suffix = " mil")) +
-  theme_minimal() +
-  theme(
-    axis.text = element_text(color = "black"),  # Color negro para los números de los ejes
-    axis.title = element_text(color = "black")  # Color negro para los títulos de los ejes
-  )+
-  labs(y = "Capturas marinas (en miles de toneladas)", x = "") 

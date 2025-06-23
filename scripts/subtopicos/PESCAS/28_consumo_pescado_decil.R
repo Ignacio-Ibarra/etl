@@ -60,23 +60,53 @@ df_output <- df_gasto_deciles %>%
 
 
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+pk <- c('dinth_t', 'subclase_desc')
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = pk, # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  pk,
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
   )
-
-
-
-
-ggplot(df_output, aes(x = as.factor(dinth_t), y = share_gasto, fill = subclase_desc)) + 
-  geom_col()  + 
-  labs(y = "Porcentaje del gasto en alimentos", x = "Decil") +
-  theme_minimal() +
-  theme(
-    legend.position = "bottom",                          # Mueve la leyenda abajo
-    legend.direction = "horizontal",                    # Dirección horizontal
-    legend.box = "vertical",                            # Pone la leyenda debajo del gráfico
-    legend.text = element_text(size = 8),               # Tamaño del texto
-    legend.title = element_blank(),              # Tamaño del título
-    legend.spacing.x = unit(0.5, 'cm')                  # Espacio entre elementos
-  ) 

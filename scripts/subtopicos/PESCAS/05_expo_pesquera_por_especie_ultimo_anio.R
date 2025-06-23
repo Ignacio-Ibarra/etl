@@ -147,57 +147,51 @@ df_output <- df_stage %>%
   select(-total_complejo) %>% 
   mutate(share_fob = fob_mill_usd / sum(fob_mill_usd))
   
-df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
-  )
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
 
 
-escalar_a_100 <- function(vec) {
-  if (abs(sum(vec) - 1) > 1e-8) {
-    stop("El vector debe sumar 1.")
-  }
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("especie"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
   
-  valores_raw <- vec * 100
-  valores_redondeados <- floor(valores_raw)
-  diferencia <- 100 - sum(valores_redondeados)
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
   
-  residuos <- valores_raw - valores_redondeados
-  indices_ordenados <- order(residuos, decreasing = TRUE)
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
   
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
   
-  if (diferencia > 0) {
-    valores_redondeados[indices_ordenados[1:diferencia]] <- 
-      valores_redondeados[indices_ordenados[1:diferencia]] + 1
-  }
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
   
-  return(valores_redondeados)
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
 }
 
 
 
-
-
-
-df_plot <- copy(df_output) 
-
-df_plot$valor_waffle <- escalar_a_100(df_plot$share_fob)
-
-library(waffle)
-
-# Definir colores para cada sector
-colores <- c("Merluza Hubbsi" = "#E41A1C", 
-             "Langostino" = "#377EB8", 
-             "Calamar Illex" = "#4DAF4A", 
-             "Otras especies" = "#FF7F00")
-
-
-waffle(
-  parts = setNames(df_plot$valor_waffle, df_plot$especie),  # Asignar valores con nombres de sectores
-  rows = 10, 
-  colors = colores,
-  legend_pos = "bottom"
-)
-
-
-
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("especie"),
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
+  )

@@ -42,35 +42,52 @@ df_output <- df_quantity %>%
   ungroup()
 
 
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("iso3"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(output_name)
-
-
-
-paises_seleccionados <- c("ARG", "BRA", "BOL", "CHL", "COL", "ECU", "PER", "PRY", "VEN")
-
-plot_data <- df_output %>%
-  filter(iso3 %in% paises_seleccionados) %>%
-  arrange(produccion_acuicola_miles) %>%
-  mutate(pais_nombre = factor(pais_nombre, levels = unique(pais_nombre)))
-
-
-offset_texto <- 5
-
-ggplot(plot_data, aes(x = produccion_acuicola_miles, y = pais_nombre, fill = case_when(
-  pais_nombre == "Argentina" ~ "Argentina",
-  TRUE ~ "Otros"
-  ))) + 
-  geom_col(color = "black", linewidth = 0.15, position = position_nudge(y = 0.2), width = 0.8) +   
-  scale_fill_manual(values = c("Argentina" = "#45bcc5", "Otros" = "#fc5a0a")) +
-  geom_text(aes(
-    label = format(round(produccion_acuicola_miles, 2), big.mark = ".", decimal.mark = ",", scientific = FALSE),
-    x = produccion_acuicola_miles + offset_texto), 
-    vjust = 0.5, hjust = 0) +  # Etiqueta con formato
-  labs(x = "Miles de toneladas de peso vivo", y = "") +
-  theme_minimal() +
-  theme(
-    axis.text = element_text(color = "black"), 
-    axis.title = element_text(color = "black"),
-    legend.position = "None"
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("iso3"),
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = 'iso3',
+    nivel_agregacion = NULL,
   )

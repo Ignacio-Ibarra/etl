@@ -30,6 +30,10 @@ df_countries <- argendataR::get_clean_path(fuente3) %>%
 geonomenclador <- argendataR::get_nomenclador_geografico_front() %>% 
   select(iso3 = geocodigo, pais_nombre = name_long)
 
+es_pais <- read.csv("https://docs.google.com/spreadsheets/d/1UyfAnRCes0OAOUR0aARfkfegTsUl4Puw/export?format=csv") %>% 
+  dplyr::filter(es_iso == 1, nivel_agregacion == 'pais') %>% pull(codigo_fundar)
+
+
 df_areas <- argendataR::get_clean_path(fuente4) %>% 
   arrow::read_parquet(.)
 
@@ -56,6 +60,7 @@ df_prod_pesquera <- df_captura %>%
 df_output <- df_prod_acuicola %>% 
   full_join(df_prod_pesquera, join_by(anio, iso3, pais_nombre)) %>% 
   dplyr::filter(anio == max(anio)) %>% 
+  dplyr::filter(iso3 %in% es_pais) %>% 
   dplyr::filter(!(is.na(produccion_acuicola) & is.na(produccion_captura))) %>% 
   mutate(
     produccion_acuicola = replace_na(produccion_acuicola, 0),
@@ -63,74 +68,15 @@ df_output <- df_prod_acuicola %>%
     produccion_total = produccion_acuicola + produccion_captura,
     participacion = produccion_total /sum(produccion_total)
   ) %>% 
-  select(anio, iso3, pais_nombre, produccion_captura, produccion_acuicola, produccion_total, participacion) 
-
-
-df_output %>%
-  argendataR::write_csv_fundar(output_name)
-
-
-#### CUENTAS
-
-
-# regiones <- argendataR::get_clean_path(fuente3) %>% 
-#   arrow::read_parquet(.) %>% 
-#   select(iso3 = iso3_code, region = geo_region_group_es, continente = continent_group_es) %>% 
-#   mutate(region2 = case_when(
-#     region %in% c("América del Sur", "América central", "Caribe") ~ "Latinoamérica y el Caribe",
-#     region == "América del Norte" ~ region, 
-#     TRUE ~ continente
-#   ))
-#            
-# 
-# por_region <- df_output %>% 
-#   inner_join(regiones, join_by(iso3)) %>% 
-#   group_by(region2) %>% 
-#   summarise(
-#     produccion_captura = sum(produccion_captura),
-#     produccion_acuicola = sum(produccion_acuicola),
-#     produccion_total = sum(produccion_total)
-#   )
-# 
-# produccion_global <- df_output %>%
-# summarise(
-#   produccion_captura_global= sum(produccion_captura),
-#   produccion_acuicola_global = sum(produccion_acuicola),
-#   produccion_total_global = sum(produccion_total)
-# )
-# 
+  select(anio, iso3, pais_nombre, produccion_captura, produccion_acuicola, produccion_total, participacion) %>% 
+  arrange(-participacion)
 
 
 
-
-plot_data <- df_output %>%
-  arrange(desc(participacion)) %>%
-  slice_head(n = 20) %>%
-  bind_rows(df_output %>% filter(pais_nombre == "Argentina")) %>%
-  distinct() %>%  # Por si Argentina ya estaba en el top 20
-  mutate(pais_nombre = factor(pais_nombre, levels = rev(unique(pais_nombre))))
-
-regular_texto <- 0.001
-
-ggplot(plot_data, aes(x = participacion, y = pais_nombre,
-                      fill = case_when(
-                        pais_nombre == "Argentina" ~ "Argentina",
-                        TRUE ~ "Otros"
-                      ))) +
-  geom_col(color = "black", linewidth = 0.15, position = position_nudge(y = 0.2), width = 0.8) +
-  scale_fill_manual(values = c("Argentina" = "#45bcc5", "Otros" = "#fc5a0a")) +  # Colores condicionales
-  geom_text(
-    aes(label = scales::percent(participacion, accuracy = 0.1),x = participacion + regular_texto),
-    vjust = 0, hjust = 0, color = "black", size = 3) +  # Color de las etiquetas en blanco
-  labs(y = "", x = "Participación en la producción global (%)") +
-  theme_minimal() +
-  theme(
-    legend.position = "none",  # Oculta la leyenda
-    axis.text = element_text(color = "black"),
-    axis.title = element_text(color = "black")
-  )
-
-df_anterior <- df_output # No hay output contra qué comparar
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
 
 
 comparacion <- argendataR::comparar_outputs(
@@ -141,33 +87,26 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df =  F
 )
 
-
-
-
 colectar_fuentes <- function(pattern = "^fuente.*"){
-  
+
   # Genero un vector de codigos posibles
   posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
-  
+
   # Usar ls() para buscar variables en el entorno global
   variable_names <- ls(pattern = pattern, envir = globalenv())
-  
+
   # Obtener los valores de esas variables
   valores <- unlist(mget(variable_names, envir = globalenv()))
-  
+
   # Filtrar aquellas variables que sean de tipo character (string)
   # Esto es para que la comparacion sea posible en la linea de abajo
   strings <- valores[sapply(valores, is.character)]
-  
+
   # solo devuelvo las fuentes que existen
   return(valores[valores %in% posibles_codigos])
 }
 
 
-source("scripts/utils/metadata_output.R")
-
-
-metadata <- metadata("PESCAS")
 
 df_output %>%
   argendataR::write_output(
@@ -177,14 +116,12 @@ df_output %>%
     analista = analista,
     pk =  c("iso3"),
     es_serie_tiempo = F,
-    control = comparacion 
-    # unidades = list("expo" = "miles de dólares",
-    #                 "share" = "porcentaje")
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = 'iso3',
+    nivel_agregacion = 'pais',
   )
 
 
-nombre_archivo <- tools::file_path_sans_ext(output_name)
-mandar_data(paste0(nombre_archivo, ".csv"), subtopico = subtopico, branch = "dev")
-mandar_data(paste0(nombre_archivo, ".json"), subtopico = subtopico,  branch = "dev")
 
 

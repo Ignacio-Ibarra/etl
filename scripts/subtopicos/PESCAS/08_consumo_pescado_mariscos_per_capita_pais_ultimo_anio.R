@@ -8,25 +8,6 @@ output_name <- "08_consumo_pescado_mariscos_per_capita_pais_ultimo_anio.csv"
 fuente1 <- 'R299C167' # FAO FBS
 fuente2 <- 'R300C168' # FAO FBSH
 
-
-# nombres_fao <- c("Meat, beef | 00002731 || Food available for consumption | 0645pc || kilograms per year per capita" = "Vacuna",
-#                  "Fish and seafood | 00002960 || Food available for consumption | 0645pc || kilograms per year per capita" = "Pescados y mariscos",
-#                  "Meat, Other | 00002735 || Food available for consumption | 0645pc || kilograms per year per capita" = "Otras carnes",
-#                  "Meat, sheep and goat | 00002732 || Food available for consumption | 0645pc || kilograms per year per capita" = "Caprina y ovina",
-#                  "Meat, pig | 00002733 || Food available for consumption | 0645pc || kilograms per year per capita" = "Porcina",
-#                  "Meat, poultry | 00002734 || Food available for consumption | 0645pc || kilograms per year per capita" = "Aviar")
-# 
-# 
-# df_owid_arg <- read_csv("per-capita-meat-type.csv") %>%
-#   select(-Entity) %>%
-#   rename(anio = Year, iso3 = Code) %>%
-#   pivot_longer(!matches("anio|iso3"),
-#                names_to = 'grupo_carne',
-#                values_to = 'value_owid') %>%
-#   mutate(
-#     grupo_carne = recode(grupo_carne, !!!nombres_fao)
-#   )
-
 df_fao_fbs <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
 
 df_fao_fbsh <- arrow::read_parquet(argendataR::get_clean_path(fuente2))
@@ -110,51 +91,51 @@ df_output <- df_paises %>%
   bind_rows(df_mundial) %>% 
   arrange(-consumo_per_capita)
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = c("iso3"), # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  c("iso3"),
+    es_serie_tiempo = F,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = 'iso3',
+    nivel_agregacion = NULL,
   )
-
-
-
-
-nselect <- 10
-
-paises_seleccionados <- c("Francia", "Canadá", "Estados Unidos", 
-                          "Japón", "España", "Argentina", "Uruguay", 
-                          "Brasil", "México", "Chile", "Perú", 
-                          "Reino Unido", "Colombia", "Ecuador", "Mundo")
-
-plot_data <- df_output %>%
-  arrange(desc(consumo_per_capita)) %>%  # Ordenar de mayor a menor consumo
-  slice_head(n = nselect) %>%  # Tomar los 10 primeros (más consumo)
-  bind_rows(
-    df_output %>% filter(pais %in% paises_seleccionados)  # Agregar Argentina si no está en los extremos
-  ) %>%
-  distinct() %>% 
-  arrange(consumo_per_capita)%>% 
-  mutate(pais = factor(pais, levels = unique(pais)))
-
-regular_texto <- 5
-
-ggplot(plot_data, aes(x = consumo_per_capita, y = pais, 
-                      fill = case_when(
-                        pais == "Argentina" ~ "Argentina",
-                        pais == "Mundo" ~ "Mundo",
-                        TRUE ~ "Otros"
-                      ))) + 
-  geom_col(color = "black", linewidth = 0.3, position = position_nudge(y = 0.2), width = 0.8) +  
-  scale_fill_manual(values = c("Argentina" = "#45bcc5", "Mundo" = "#383636", "Otros" = "#4285f4")) +  # Colores condicionales
-  geom_text(aes(
-    label = format(round(consumo_per_capita, 2), decimal.mark = ".", scientific = FALSE),
-    x = consumo_per_capita - regular_texto),  
-    vjust = 0, hjust = 0, color = "white", fontface = "bold") +  # Color de las etiquetas en blanco
-  labs(y = "", x = "Consumo per cápita (kg por año)") +
-  theme_minimal() +
-  theme(
-    legend.position = "none",  # Oculta la leyenda
-    axis.text = element_text(color = "black"),  
-    axis.title = element_text(color = "black")  
-  )
-
-

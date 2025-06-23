@@ -64,27 +64,53 @@ df_expo_pesca <- df_complejos %>%
 df_output <- bind_rows(df_vabpb_pesca, df_expo_pesca)
   
 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico,
+                                            entrega_subtopico = "primera_entrega") %>% 
+  mutate(anio = as.integer(anio))
+
+
+pk <- c("indicador")
+
+comparacion <- argendataR::comparar_outputs(
+  df_anterior = df_anterior,
+  df = df_output,
+  nombre = output_name,
+  pk = pk, # variables pk del dataset para hacer el join entre bases
+  drop_joined_df =  F
+)
+
+colectar_fuentes <- function(pattern = "^fuente.*"){
+  
+  # Genero un vector de codigos posibles
+  posibles_codigos <- c(fuentes_raw()$codigo,fuentes_clean()$codigo)
+  
+  # Usar ls() para buscar variables en el entorno global
+  variable_names <- ls(pattern = pattern, envir = globalenv())
+  
+  # Obtener los valores de esas variables
+  valores <- unlist(mget(variable_names, envir = globalenv()))
+  
+  # Filtrar aquellas variables que sean de tipo character (string)
+  # Esto es para que la comparacion sea posible en la linea de abajo
+  strings <- valores[sapply(valores, is.character)]
+  
+  # solo devuelvo las fuentes que existen
+  return(valores[valores %in% posibles_codigos])
+}
+
+
+
 df_output %>%
-  argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
-  )
-
-
-offset_texto <- 0.0001
-
-ggplot(df_output, aes(x = indicador, y = participacion)) + 
-  geom_col(fill = "#7ab5c5") + 
-  geom_text(aes(label = scales::percent(participacion, accuracy = 0.1), 
-                y = participacion + offset_texto), 
-            fontface = "bold", 
-            vjust = 0) +  # Ajusta la posición vertical de las etiquetas
-  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-  labs(
-    x = "",
-    y = "Porcentaje"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text = element_text(color = "black"),  # Color negro para los números de los ejes
-    axis.title = element_text(color = "black")  # Color negro para los títulos de los ejes
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    fuentes = colectar_fuentes(),
+    analista = analista,
+    pk =  pk,
+    es_serie_tiempo = T,
+    control = comparacion,
+    columna_indice_tiempo = NULL,
+    columna_geo_referencia = NULL,
+    nivel_agregacion = NULL,
   )
