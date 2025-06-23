@@ -59,9 +59,6 @@ df_output <- df_puertos %>%
   drop_na(latitud) %>% 
   mutate(provincia = str_remove(provincia, "Pcia. "))
 
-
-
-
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             entrega_subtopico = "primera_entrega") %>% 
@@ -112,3 +109,80 @@ df_output %>%
   )
 
 
+
+
+
+# library(rnaturalearth)
+# library(rnaturalearthdata)
+# library(sf)
+# library(ggrepel)
+# 
+# 
+# 
+# arg_mapa <- ne_states(country = "Argentina", returnclass = "sf") %>%
+#   filter(name != "Antártida Argentina")
+# 
+# 
+# malvinas <- ne_countries(country = "Falkland Islands", scale = "large", returnclass = "sf")
+# 
+# 
+# malvinas$admin <- "Argentina"
+# malvinas$name <- "Islas Malvinas"
+# 
+# 
+# malvinas <- st_cast(malvinas, "MULTIPOLYGON")
+# 
+# 
+# malvinas_clean <- malvinas %>%
+#   transmute(
+#     name = "Islas Malvinas",
+#     geometry = geometry
+#   )
+# 
+# 
+# arg_mapa_clean <- arg_mapa %>%
+#   select(name, geometry)
+# 
+# 
+# argentina_completa <- rbind(arg_mapa_clean, malvinas_clean)
+# 
+# 
+# 
+# 
+# plot_data <- df_output %>%
+#   mutate(
+#     puerto = case_when(
+#       puerto == "Caleta Olivia/ Paula" ~ "Caleta Olivia", 
+#       puerto == "Mar Del Plata" ~ "Mar del Plata",
+#       TRUE ~ puerto
+#     ),
+#     label = paste0(puerto, " ", round(100*share, 1), "%") ) %>%
+#   filter(share >= 0.01)
+# 
+# puntos_sf <- st_as_sf(plot_data, coords = c("longitud", "latitud"), crs = 4326)
+# 
+# 
+# 
+# 
+# ggplot() +
+#   geom_sf(data = argentina_completa, fill = "#d5e3f2", color = "#000000") +
+#   geom_sf(data = puntos_sf, aes(size = share), alpha = 0.9, color = "#2e75bc") +
+#   geom_text_repel(
+#     data = plot_data,
+#     aes(x = longitud, y = latitud, label = label),
+#     size = 4,
+#     segment.size = 0.3,
+#     hjust = -1,                 # Alineado a izquierda del texto
+#     nudge_x = 1,
+#     direction = "both",
+#     box.padding = 0.1,
+#     point.padding = 0.4,
+#     force = 2
+#   ) +
+#   scale_color_viridis_c(option = "C") +
+#   scale_size_continuous(range = c(2, 10)) +
+#   coord_sf(xlim = c(-75, -52), ylim = c(-56, -21)) +
+#   theme_void() + 
+#   theme(
+#     legend.position = "none"
+#   )

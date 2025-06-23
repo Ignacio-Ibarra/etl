@@ -30,6 +30,10 @@ df_countries <- argendataR::get_clean_path(fuente3) %>%
 geonomenclador <- argendataR::get_nomenclador_geografico_front() %>% 
   select(iso3 = geocodigo, pais_nombre = name_long)
 
+es_pais <- read.csv("https://docs.google.com/spreadsheets/d/1UyfAnRCes0OAOUR0aARfkfegTsUl4Puw/export?format=csv") %>% 
+  dplyr::filter(es_iso == 1, nivel_agregacion == 'pais') %>% pull(codigo_fundar)
+
+
 df_areas <- argendataR::get_clean_path(fuente4) %>% 
   arrow::read_parquet(.)
 
@@ -56,6 +60,7 @@ df_prod_pesquera <- df_captura %>%
 df_output <- df_prod_acuicola %>% 
   full_join(df_prod_pesquera, join_by(anio, iso3, pais_nombre)) %>% 
   dplyr::filter(anio == max(anio)) %>% 
+  dplyr::filter(iso3 %in% es_pais) %>% 
   dplyr::filter(!(is.na(produccion_acuicola) & is.na(produccion_captura))) %>% 
   mutate(
     produccion_acuicola = replace_na(produccion_acuicola, 0),
@@ -63,7 +68,8 @@ df_output <- df_prod_acuicola %>%
     produccion_total = produccion_acuicola + produccion_captura,
     participacion = produccion_total /sum(produccion_total)
   ) %>% 
-  select(anio, iso3, pais_nombre, produccion_captura, produccion_acuicola, produccion_total, participacion) 
+  select(anio, iso3, pais_nombre, produccion_captura, produccion_acuicola, produccion_total, participacion) %>% 
+  arrange(-participacion)
 
 
 
