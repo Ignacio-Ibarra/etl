@@ -2,18 +2,23 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-limpiar_temps()
 
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 id_fuente <- 115
-fuente_raw1 <- sprintf("R%sC0",id_fuente)
+fuente_raw <- sprintf("R%sC0",id_fuente)
 
-nombre_archivo_raw <- str_split_1(fuentes_raw() %>% 
-                                    filter(codigo == fuente_raw1) %>% 
-                                    select(path_raw) %>% 
-                                    pull(), pattern = "\\.")[1]
+# Guardado de archivo
+nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
+                            filter(codigo == fuente_raw) %>% 
+                            select(path_raw) %>% 
+                            pull())
 
-descargar_fuente_raw(id_fuente = id_fuente, tempdir())
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
 
 # Cargo funciones para hacer limpieza
 source("./scripts/limpieza_fuentes/funciones_limpieza_cedlas_sedlac.R")
@@ -22,7 +27,7 @@ TOPIC_PARAM <- "Employment"
 SHEET_PARAM <- "informal_2"
 
 
-cedlas_df <- readxl::read_excel(argendataR::get_temp_path(fuente_raw1), sheet = SHEET_PARAM, col_names = F) 
+cedlas_df <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), sheet = SHEET_PARAM, col_names = F) 
 
 cedlas_df <- quitar_string_source(df = cedlas_df)
 
@@ -79,17 +84,20 @@ df_empalme <- armar_serie_empalme(df_anual = df_anual)
 df_clean <- armar_tabla(df_anual = df_anual, 
                         df_empalme = df_empalme) 
 
+df_clean$pais <- df_clean$pais %>% unname()
+df_clean$apertura <- df_clean$apertura %>% unlist() %>% unname()
+df_clean$anio <- as.integer(df_clean$anio)
 
 
 norm_sheet <- str_to_lower(SHEET_PARAM) %>% str_replace(., " ", "_")
 
-clean_filename <- glue::glue("{norm_sheet}_{nombre_archivo_raw}_CLEAN.csv")
+clean_filename <- glue::glue("{norm_sheet}_{nombre_archivo_raw}_CLEAN.parquet")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
-df_clean %>% write_csv_fundar(., file = path_clean)
+df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+clean_title <- glue::glue("{titulo.raw} - Dataset limpio")
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
 #                      path_clean = clean_filename,
@@ -98,5 +106,22 @@ code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/
 #                      descripcion = "La limpieza consiste en llevar los datos de formato en Excel a formato tabular plano listo para poder consumir, se anualizaron los valores que poseían una frecuencia semestral y se calculó una serie empalmada",
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 32,
-                        dir = tempdir())
+id_fuente_clean <- 32
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) %>% 
+  mutate(anio = as.integer(anio))
+
+
+comparacion <- comparar_fuente_clean(df_clean %>% dplyr::filter(serie == "Serie original"),
+                                     df_clean_anterior %>% dplyr::filter(serie == "Serie original"),
+                                     pk = c('iso3','anio','fuente', 'fuente_orden','apertura')
+)
+
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
