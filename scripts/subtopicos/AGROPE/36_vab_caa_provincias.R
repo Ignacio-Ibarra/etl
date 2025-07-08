@@ -16,6 +16,11 @@ total_vab <- df_sprys %>%
   filter(alcance_nombre == "Argentina", categoria_desc == "Agroindustriales") %>% 
   select(cadena_id = cadenas_id, total_cadena = valor)
 
+geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long) %>% 
+  dplyr::filter(grepl("AR-\\w$", geocodigoFundar)) %>% 
+  mutate(provincia_join = toupper(stringi::stri_trans_general(geonombreFundar, "Latin-ASCII")))
+
 df_output <- df_sprys %>%
   dplyr::filter(alcance_nombre != "Argentina", categoria_desc == "Agroindustriales") %>% 
   select(provincia_id = alcance_id, provincia = alcance_nombre, cadena_id =  cadenas_id, cadena = cadenas_desc, vab = valor) %>% 
@@ -23,27 +28,16 @@ df_output <- df_sprys %>%
   mutate(
     share = round(100 * vab / total_cadena,2)
   ) %>% 
-  select(provincia_id, provincia, cadena, share)
+  mutate(provincia = case_when(
+    provincia == "CAPITAL FEDERAL" ~ "CABA",
+    TRUE ~ provincia
+  )
+  ) %>% 
+  left_join(geo_front, join_by(provincia == provincia_join)) %>% 
+  select(geocodigoFundar, geonombreFundar, cadena, share) 
 
 
-subtopico_outputs_df <- argendataR::subtopico_outputs(subtopico_nombre = subtopico, 
-                                                      entrega_subtopico =  "primera_entrega")
-id_output <- subtopico_outputs_df$id[grepl(output_name_old, 
-                                           subtopico_outputs_df$name)]
 
-nombre_anterior <- tools::file_path_sans_ext(output_name_old)
-
-filetemp <- tempfile(pattern = sprintf("%s_%s_%s_argdt", 
-                                       nombre_anterior, "primera_entrega", subtopico), fileext = ".geojson")
-
-if(!file.exists(filetemp)){
-  googledrive::drive_download(file = googledrive::as_id(id_output), 
-                              path = filetemp)
-}
-
-library(sf)
-
-df_geo <- st_read(filetemp, quiet = TRUE) %>% st_drop_geometry()
 
 df_anterior <- df_geo %>% 
   mutate(provincia = toupper(nombres_provincia),
@@ -163,3 +157,5 @@ df_output %>%
     unidades = list("share" = "porcentaje"),
     aclaraciones = paste0(aclaracion, collapse = ". ")
   )
+
+
