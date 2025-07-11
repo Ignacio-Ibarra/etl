@@ -14,7 +14,7 @@ fuente2 <- "R339C212" # Diccionario HS17 a Grandes Rubros
 fuente3 <- "R340C213" # Codigos HS con descripciones en portugués, inglés y español
  
 
-geonomenclador <- argendataR::get_nomenclador_geografico()
+geonomenclador <- argendataR::get_nomenclador_geografico_front()
 
 diccionario_ncm8 <- argendataR::get_clean_path(fuente2) %>% 
   arrow::read_parquet(.) 
