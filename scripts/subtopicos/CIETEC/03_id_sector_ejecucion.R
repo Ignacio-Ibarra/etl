@@ -31,7 +31,7 @@ df_oecd_sector_ejecucion_ult_anio <- df_oecd %>%
   dplyr::filter(measure %in% selected_measures, 
                 unit_of_measure == "Percentage of gross domestic expenditure on R&D") %>% 
   select(iso3 = ref_area, anio = time_period, sector_id = measure, sector = measure_2, valor = obs_value) %>% 
-  group_by(iso3, sector_id) %>% 
+  group_by(iso3) %>% 
   dplyr::filter(anio == max(anio)) %>% 
   ungroup() %>% 
   mutate(
@@ -44,7 +44,10 @@ df_oecd_sector_ejecucion_ult_anio <- df_oecd %>%
   ) %>% 
   select(-sector_id) %>% 
   left_join(geo_front, join_by(iso3)) %>% 
-  mutate(fuente = "OECD")
+  mutate(fuente = "OECD") %>% 
+  group_by(iso3) %>% 
+  mutate(valor = 100*valor/sum(valor, na.rm = T)) %>% 
+  ungroup()
   
 
 america_no <- c("F5205", "LAC", "TLA", "DESHUM_ZZH.LAC", "DESHUM_AHDI.LAC")
@@ -58,7 +61,9 @@ df_ricyt_ult_anio <- df_ricyt %>%
   left_join(geo_front %>% dplyr::filter(!(iso3 %in% america_no)), join_by(pais)) %>% 
   mutate(iso3 = ifelse(pais == "Iberoamérica", "RICYT_IBE", iso3),
          fuente = "RICYT") %>% 
-  mutate(valor = valor * 100)
+  group_by(iso3) %>% 
+  mutate(valor = 100 * valor/sum(valor, na.rm = T)) %>% 
+  ungroup()
 
 
 df_output <- bind_rows(df_oecd_sector_ejecucion_ult_anio, df_ricyt_ult_anio) %>% 
@@ -69,14 +74,14 @@ df_output <- bind_rows(df_oecd_sector_ejecucion_ult_anio, df_ricyt_ult_anio) %>%
   dplyr::filter(anio == max(anio), 
                 (n_fuentes == 2 & fuente == "OECD") | n_fuentes == 1) %>% 
   ungroup() %>% 
-  select(iso3, pais_nombre = pais, ultimo_anio_disponible = anio, sector, valor, fuente)
+  select(geocodigoFundar = iso3, geonombreFundar = pais, ultimo_anio_disponible = anio, sector, valor, fuente)
   
 
 
 
 df_output %>%
   argendataR::write_csv_fundar(.,
-                               glue::glue("scripts/subtopicos/{subtopico}_DEV/outputs/{output_name}")
+                               glue::glue("~/data/CIETEC/{output_name}")
   )
 
 
