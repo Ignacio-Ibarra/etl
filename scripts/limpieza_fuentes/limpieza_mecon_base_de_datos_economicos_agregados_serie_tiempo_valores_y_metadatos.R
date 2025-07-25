@@ -48,11 +48,17 @@ codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
 
+A <- df_clean %>% 
+  select(serie_id, indice_tiempo, indice_tiempo_frecuencia, valor) %>% 
+  arrange(serie_id, indice_tiempo, indice_tiempo_frecuencia) %>% 
+  slice_head(n = 1000)
 
-comparacion <- comparar_fuente_clean(df_clean,
-                                     df_clean_anterior,
-                                     pk = c("serie_id", "indice_tiempo", "indice_tiempo_frecuencia")
-)
+B <- df_clean_anterior %>% 
+  select(serie_id, indice_tiempo, indice_tiempo_frecuencia, valor) %>% 
+  arrange(serie_id, indice_tiempo, indice_tiempo_frecuencia) %>% 
+  slice_head(n = 1000)
+
+comparacion <- comparar_fuente_clean(A, B, pk = c("serie_id", "indice_tiempo", "indice_tiempo_frecuencia"))
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         path_clean = clean_filename,
