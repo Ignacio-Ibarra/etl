@@ -10,22 +10,8 @@ gc()   #Garbage Collection
 subtopico <- "CRECIM"
 output_name <- "pib_vs_ingreso"
 analista = "Pablo Sonzogni"
-fuente1 <- "R126C0"
-fuente2 <- "R217C89"
-
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-get_clean_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
-  df_fuentes_clean <- fuentes_clean() 
-  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
-  return(paste0(prefix, path_clean))
-}
+fuente1 <- "R126C0" # GDP per capita, PPP (current international $)
+fuente2 <- "R217C89" # Poverty and Inequality Platform
 
 
 # Cargo data desde server
@@ -34,35 +20,28 @@ data_pibpc_ppp <- read_csv(get_raw_path(fuente1)) %>%
   dplyr::filter(iso3!="") %>% 
   dplyr::filter(!is.na(pib_pc)) %>% 
   dplyr::filter(!is.na(iso3)) %>% 
-  sjlabelled::zap_labels() %>% 
-  mutate(iso3 = ifelse(iso3 == "XKX", "KOS", iso3))
-
+  sjlabelled::zap_labels() 
 
 # Dado que Argentina no tiene "nacional" elijo las filas donde tengo Argentina (urbana) o las filas del resto
 # de los países donde el reporting level es "nacional"
 data_ing <- arrow::read_parquet(get_clean_path(fuente2)) %>% 
-  dplyr::filter((iso3 == "ARG"  & reporting_level == "urban") | (reporting_level == "national" & iso3 != "ARG"))
+  dplyr::filter((iso3 == "ARG"  & reporting_level == "urban") | (reporting_level == "national" & iso3 != "ARG")) %>% 
+  select(iso3, anio, medida_bienestar = welfare_type, reporting_level, poverty_line, promedio = mean) %>% 
+  dplyr::filter(!is.na(promedio)) %>% 
+  mutate(medida_bienestar = ifelse(medida_bienestar == "consumption", "consumo", "ingreso"))
 
-data_ing <- data_ing %>% 
-  select(iso3, anio, welfare_type, mean, reporting_level, reporting_gdp)
-
-# geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
-#   select(iso3 = codigo_fundar, pais_nombre = desc_fundar, continente_fundar, nivel_agregacion) 
+geonomenclador <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
   
 
 df_output <- data_ing %>% 
-  dplyr::filter(!is.na(mean)) %>% 
-  # dplyr::filter(!is.na(pib_pc)) %>% 
-  # left_join(geonomenclador, join_by(iso3)) %>% 
-  rename(medida_bienestar = welfare_type,
-         promedio = mean,
-         pib_pc = reporting_gdp)
+  rename(geocodigoFundar = iso3) %>% 
+  left_join(data_pibpc_ppp %>% rename(geocodigoFundar = iso3), join_by(geocodigoFundar, anio)) %>% 
+  drop_na(pib_pc) %>% 
+  left_join(geonomenclador, join_by(geocodigoFundar)) %>% 
+  select(geocodigoFundar, geonombreFundar, anio, medida_bienestar, reporting_level, poverty_line, promedio, pib_pc)
 
-df_output <-  df_output %>% 
-  select(-c(reporting_level)) %>% 
-  mutate(medida_bienestar = ifelse(medida_bienestar == "consumption", "consumo", "ingreso"))
-
-check_iso3(df_output$iso3)
+check_iso3(df_output$geocodigoFundar)
 
 
 #-- Controlar Output ----
@@ -71,22 +50,20 @@ check_iso3(df_output$iso3)
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df_anterior <- argendataR::descargar_output(nombre = "pib_vs_ingreso.csv", subtopico = subtopico, branch = "main") %>% 
-  rename(pib_pc = pib_percapita_ppp_2017)
+df_anterior <- argendataR::descargar_output(nombre = "pib_vs_ingreso.csv", subtopico = subtopico, branch = "main")
 
 
 
 comparacion <- argendataR::comparar_outputs(
-  df_output,
-  df_anterior = df_anterior %>% 
-    select(-c(pais_nombre, continente_fundar, nivel_agregacion)),
+  df_output %>% select(-c(reporting_level, poverty_line)),
+  df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("iso3", "anio", "medida_bienestar"), 
+  pk = c("geocodigoFundar", "anio", "medida_bienestar"), 
   drop_joined_df = F
 )
 
 df_output %>%
-  distinct(iso3, anio) %>% 
+  distinct(geocodigoFundar, anio) %>% 
   count(anio) %>% 
   arrange(-anio)
 
@@ -101,10 +78,10 @@ df_output %>%
     subtopico = subtopico,
     fuentes = c(fuente1, fuente2),
     analista = analista,
-    pk = c("anio", "iso3"),
+    pk = c("anio", "geocodigoFundar"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
+    columna_geo_referencia = "geocodigoFundar",
     nivel_agregacion = "pais",
     control = comparacion,
     aclaraciones = "La version anterior usaba PBI per cápita PPA en u$s a precios constantes internacionales de 2017. Se actualizo usando u$s a precios constantes internacionales de 2021.",
@@ -116,5 +93,4 @@ df_output %>%
 
 mandar_data(paste0(output_name, ".csv"), subtopico = "CRECIM", branch = "dev")
 mandar_data(paste0(output_name, ".json"), subtopico = "CRECIM",  branch = "dev")
-
 
