@@ -8,7 +8,7 @@ gc()   #Garbage Collection
 
 
 subtopico <- "CRECIM"
-output_name <- "pib_vs_ingreso"
+output_name <- "pib_vs_ingreso.csv"
 analista = "Pablo Sonzogni"
 fuente1 <- "R126C0" # GDP per capita, PPP (current international $)
 fuente2 <- "R217C89" # Poverty and Inequality Platform
@@ -30,16 +30,19 @@ data_ing <- arrow::read_parquet(get_clean_path(fuente2)) %>%
   dplyr::filter(!is.na(promedio)) %>% 
   mutate(medida_bienestar = ifelse(medida_bienestar == "consumption", "consumo", "ingreso"))
 
-geonomenclador <- argendataR::get_nomenclador_geografico_front() %>% 
-  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
+geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+  select(geocodigoFundar = codigo_fundar, geonombreFundar = desc_fundar, continente_fundar)
   
 
 df_output <- data_ing %>% 
   rename(geocodigoFundar = iso3) %>% 
-  left_join(data_pibpc_ppp %>% rename(geocodigoFundar = iso3), join_by(geocodigoFundar, anio)) %>% 
+  left_join(data_pibpc_ppp %>% 
+              rename(geocodigoFundar = iso3), 
+            join_by(geocodigoFundar, anio)) %>% 
   drop_na(pib_pc) %>% 
   left_join(geonomenclador, join_by(geocodigoFundar)) %>% 
-  select(geocodigoFundar, geonombreFundar, anio, medida_bienestar, reporting_level, poverty_line, promedio, pib_pc)
+  select(geocodigoFundar, geonombreFundar, continente_fundar, anio, 
+         medida_bienestar, reporting_level, poverty_line, promedio, pib_pc)
 
 check_iso3(df_output$geocodigoFundar)
 
@@ -50,7 +53,8 @@ check_iso3(df_output$geocodigoFundar)
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df_anterior <- argendataR::descargar_output(nombre = "pib_vs_ingreso.csv", subtopico = subtopico, branch = "main")
+df_anterior <- argendataR::descargar_output(nombre = "pib_vs_ingreso.csv", subtopico = subtopico, branch = "main") %>% select(-geonombreFundar) %>% 
+  left_join(geonomenclador, join_by(geocodigoFundar))
 
 
 
@@ -62,10 +66,7 @@ comparacion <- argendataR::comparar_outputs(
   drop_joined_df = F
 )
 
-df_output %>%
-  distinct(geocodigoFundar, anio) %>% 
-  count(anio) %>% 
-  arrange(-anio)
+
 
 #-- Exportar Output ----
 
