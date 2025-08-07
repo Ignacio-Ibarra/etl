@@ -4,7 +4,7 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "base_ceq_long"
+output_name <- "base_ceq_long.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
 fuente1 <- 'R425C273'
