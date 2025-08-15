@@ -4,55 +4,49 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_promedio_paises.csv"
+output_name <- "gasto_publico_funciones_y_niveles_gobierno.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
+
+fuente1 <- 'R326C201' # Nacional
+fuente2 <- 'R327C202' # Provincial
+fuente3 <- 'R328C203' # Municipal
+
+labels <- c("Nacional", "Provincial", "Municipal")
+sources <- c(fuente1, fuente2, fuente3)
+
+# Read, label, and combine
+df_mecon <- purrr::map2_dfr(sources, labels, ~ {
+  argendataR::get_clean_path(.x) %>% 
+    arrow::read_parquet(.) %>%
+    mutate(nivel_gobierno = .y)  # Add distinguishing column
+}) 
 
 
-df_imf <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet(.)
-
-df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
-
-
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL", anio>=2014) %>% 
-  summarise(gasto_pub_gdp = mean(valores, na.rm=T)) %>% 
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina', 
-         fuente = "MECON") %>% 
-  select(iso3, pais_nombre, gasto_pub_gdp, fuente)
-
-
-df_output <- df_imf %>% 
-  dplyr::filter(anio>=2014) %>% 
-  group_by(iso3, pais_nombre) %>% 
-  summarise(
-    gasto_pub_gdp = mean(exp, na.rm = T)
-  ) %>% 
+df_output <- df_mecon %>% 
+  dplyr::filter(anio == max(anio)) %>% 
+  dplyr::filter(nchar(codigo) == 5 & !(codigo %in% c("1.2.1", "1.4.1")) | grepl("1\\.2\\.1\\..*", codigo) | codigo == "1.4" | codigo == "1.0") %>% 
+  group_by(anio, codigo, nombre_apertura) %>% 
+  mutate(participacion_en_el_gasto_publico_consolidado = valores / sum(valores)) %>% 
   ungroup() %>% 
-  dplyr::filter(iso3 != "ARG") %>% 
-  mutate(fuente = "FMI") %>% 
-  bind_rows(df_arg) %>% 
-  arrange(-gasto_pub_gdp) %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_promedio = gasto_pub_gdp, fuente)
+  rename(nivel_de_gobierno = nivel_gobierno, gasto_publico_porcenataje_del_pib = valores, finalidad_funcion = nombre_apertura) %>% 
+  mutate(finalidad_funcion = str_remove(finalidad_funcion, "^[IVX\\.0-9]+\\s+")) %>% 
+  select(anio, nivel_de_gobierno, codigo, finalidad_funcion, gasto_publico_porcenataje_del_pib, participacion_en_el_gasto_publico_consolidado)
 
-
+comparable_df <- df_output %>% 
+  mutate(finalidad_funcion = janitor::make_clean_names(finalidad_funcion, allow_dupes = T),
+         nivel_de_gobierno = tolower(nivel_de_gobierno)) %>% 
+  select(-c(anio, codigo))
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
-                                            drive = T) %>% 
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
-
+                                            drive = T) 
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_output,
+  df = comparable_df,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geocodigoFundar")
+  pk = c("nivel_de_gobierno", "finalidad_funcion")
 )
 
 
@@ -100,12 +94,10 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("geocodigoFundar", 
-                      "geonombreFundar",
-                      "fuente"),
-  descripcion = c("Códigos de país ISO 3166 - alfa 3",
-                  "Nombre de país",
-                  "Fuente de información utilizada")
+  variable_nombre = c("anio", 
+                      "codigo"),
+  descripcion = c("Año de referencia",
+                  "Código identificador de la finalidad/función")
 )
 
 
@@ -122,12 +114,8 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar"),
+    pk = c("nivel_de_gobierno", "codigo"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_promedio" = "Gasto público consolidado promedio del periodo 2014 a la fecha (en porcentaje del PIB)")
+    unidades = list("gasto_publico_porcenataje_del_pib" = "proporcion",
+                    "participacion_en_el_gasto_publico_consolidado" = "proporcion")
   )
-
-
-output_name <- gsub("\\.csv", "", output_name)
-mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")

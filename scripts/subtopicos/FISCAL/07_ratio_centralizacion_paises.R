@@ -4,49 +4,59 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_promedio_paises.csv"
+output_name <- "ratio_centralizacion_paises.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
+fuente1 <- 'R420C270' # OECD Fiscal Decentralisation Database. Consolidated government expenditure as percentage of total general government expenditure (consolidated) [Table 5: 1970 - 2023] - Consolidated government expenditure, National currency in millions at current prices
+fuente2 <- 'R325C200' # Base de datos 1980-2023. Gasto público consolidado - Febrero 2025 - Países
+fuente3 <- 'R326C201' # Base de datos 1980-2023. Gasto público nacional - Febrero 2025 - Países
 
+df_oecd <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
 
-df_imf <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet(.)
+df_gpc <- argendataR::get_clean_path(fuente2) %>% 
+  arrow::read_parquet()
 
-df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
+df_gpn <- argendataR::get_clean_path(fuente3) %>% 
+  arrow::read_parquet()
 
-
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL", anio>=2014) %>% 
-  summarise(gasto_pub_gdp = mean(valores, na.rm=T)) %>% 
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina', 
-         fuente = "MECON") %>% 
-  select(iso3, pais_nombre, gasto_pub_gdp, fuente)
-
-
-df_output <- df_imf %>% 
-  dplyr::filter(anio>=2014) %>% 
-  group_by(iso3, pais_nombre) %>% 
-  summarise(
-    gasto_pub_gdp = mean(exp, na.rm = T)
-  ) %>% 
+df_oecd_centralization <- df_oecd %>% 
+  drop_na(valor) %>% 
+  group_by(anio, iso3) %>%
+  dplyr::filter(n()>1) %>% 
   ungroup() %>% 
-  dplyr::filter(iso3 != "ARG") %>% 
-  mutate(fuente = "FMI") %>% 
-  bind_rows(df_arg) %>% 
-  arrange(-gasto_pub_gdp) %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_promedio = gasto_pub_gdp, fuente)
+  group_by(anio, iso3) %>%
+  mutate(share_gasto = 100 * valor /sum(valor, na.rm=T)) %>% 
+  ungroup() %>% 
+  dplyr::filter(nivel_gobierno == "Central") %>% 
+  drop_na(share_gasto) %>% 
+  group_by(iso3) %>% 
+  dplyr::filter(anio == max(anio)) %>% 
+  ungroup() %>% 
+  select(iso3, pais_nombre, anio, share_gasto)
 
 
+df_arg_centralization <- df_gpn %>% 
+  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL") %>% 
+  select(anio, gpn = valores) %>% 
+  left_join(df_gpc %>% 
+              dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL") %>% 
+              select(anio, gpc = valores), join_by(anio)) %>% 
+  mutate(share_gasto = 100 * gpn / gpc,
+         iso3 = "ARG",
+         pais_nombre = "Argentina") %>% 
+  dplyr::filter(anio == max(anio)) %>% 
+  select(iso3, pais_nombre, anio, share_gasto)
+
+
+df_output <- bind_rows(df_oecd_centralization, df_arg_centralization) %>% 
+  arrange(-share_gasto) %>% 
+  rename(geocodigoFundar = iso3, geonombreFundar = pais_nombre, ratio_centralizacion = share_gasto)
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
-
+  rename(geocodigoFundar = cod_pais, geonombreFundar = pais)
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
@@ -100,12 +110,14 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("geocodigoFundar", 
+  variable_nombre = c("anio", 
+                      "geocodigoFundar",
                       "geonombreFundar",
-                      "fuente"),
-  descripcion = c("Códigos de país ISO 3166 - alfa 3",
+                      "ratio_centralizacion"),
+  descripcion = c("Año de referencia",
+                  "Códigos de país ISO 3166 - alfa 3",
                   "Nombre de país",
-                  "Fuente de información utilizada")
+                  "Participación del gobierno central en el gasto público consolidado")
 )
 
 
@@ -124,10 +136,6 @@ df_output %>%
     analista = analista,
     pk = c("geocodigoFundar"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_promedio" = "Gasto público consolidado promedio del periodo 2014 a la fecha (en porcentaje del PIB)")
+    unidades = list("ratio_centralizacion" = "porcentaje")
   )
-
-
-output_name <- gsub("\\.csv", "", output_name)
-mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")
+ 

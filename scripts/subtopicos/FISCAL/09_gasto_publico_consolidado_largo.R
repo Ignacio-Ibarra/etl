@@ -4,55 +4,64 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_promedio_paises.csv"
+output_name <- "gasto_publico_consolidado_largo.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
+
+fuente1 <- 'R325C200' # Consolidado
+fuente2 <- 'R428C0' # Porto
 
 
-df_imf <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet(.)
-
-df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
-
-
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL", anio>=2014) %>% 
-  summarise(gasto_pub_gdp = mean(valores, na.rm=T)) %>% 
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina', 
-         fuente = "MECON") %>% 
-  select(iso3, pais_nombre, gasto_pub_gdp, fuente)
-
-
-df_output <- df_imf %>% 
-  dplyr::filter(anio>=2014) %>% 
-  group_by(iso3, pais_nombre) %>% 
-  summarise(
-    gasto_pub_gdp = mean(exp, na.rm = T)
-  ) %>% 
-  ungroup() %>% 
-  dplyr::filter(iso3 != "ARG") %>% 
-  mutate(fuente = "FMI") %>% 
-  bind_rows(df_arg) %>% 
-  arrange(-gasto_pub_gdp) %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_promedio = gasto_pub_gdp, fuente)
+impute_backward <- function(A, B) {
+  # Calcular las variaciones relativas de B
+  result <- rep(NA_real_, length(A))
+  
+  VarB <- B / dplyr::lag(B)
+  
+  # Encontrar el primer índice con un valor no nulo en A
+  t0 <- min(which(!is.na(A)))
+  
+  result[t0] = A[t0]
+  
+  # Imputar hacia atrás
+  for (t in (t0 - 1):1) {
+    if (!is.na(VarB[t + 1]) & is.na(A[t])) {
+      result[t] <- result[t + 1] / VarB[t + 1]
+    }
+  }
+  
+  return(result)
+}
 
 
+df_mecon <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
+
+df_porto <- argendataR::get_raw_path(fuente2) %>% 
+  read_csv()
+
+
+df_output <- df_mecon %>% 
+  dplyr::filter(codigo == "1.0") %>% 
+  select(anio, gasto_consolidado_pib_mecon = valores) %>% 
+  full_join(df_porto %>% 
+              select(anio, gasto_consolidado_pib_porto = gasto_consolidado_pib ), 
+            join_by(anio)) %>% 
+  arrange(anio) %>% 
+  mutate(gasto_consolidado_pib_back = impute_backward(gasto_consolidado_pib_mecon, gasto_consolidado_pib_porto),
+         gasto_publico_consolidado_pib_empalme = ifelse(is.na(gasto_consolidado_pib_back), gasto_consolidado_pib_mecon, gasto_consolidado_pib_back)) %>% 
+  select(anio, gasto_publico_consolidado_pib_empalme)
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
-
+  rename(gasto_publico_consolidado_pib_empalme = gasto_publico_consolidado)
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geocodigoFundar")
+  pk = c("anio")
 )
 
 
@@ -100,12 +109,8 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("geocodigoFundar", 
-                      "geonombreFundar",
-                      "fuente"),
-  descripcion = c("Códigos de país ISO 3166 - alfa 3",
-                  "Nombre de país",
-                  "Fuente de información utilizada")
+  variable_nombre = c("gasto_publico_consolidado_pib_empalme"),
+  descripcion = c("Gasto público consolidado como porcentaje del PIB (empalme entre las series de Porto y MECON")
 )
 
 
@@ -122,12 +127,10 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar"),
+    pk = c("nivel_de_gobierno", "codigo"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_promedio" = "Gasto público consolidado promedio del periodo 2014 a la fecha (en porcentaje del PIB)")
+    unidades = list("gasto_publico_consolidado_pib_empalme" = "porcentaje")
   )
 
-
-output_name <- gsub("\\.csv", "", output_name)
-mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")
+# 
+# ggplot(comparacion$joined_df %>% pivot_longer(!anio), aes(x = anio, y = value, color = name)) + geom_line() + theme_minimal()
