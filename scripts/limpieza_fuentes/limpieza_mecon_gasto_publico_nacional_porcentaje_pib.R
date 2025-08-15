@@ -1,5 +1,3 @@
-# Codigo de limpieza de datos de cuadro de Jacques Charmes
-
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
@@ -67,7 +65,7 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   num_cols <- length(sheet_data)
   
   # saco las filas que tienen (num_cols - 1) nulos
-  filter_bool <- check_na_threshold(sheet_data, num_cols-1)
+  filter_bool <- check_na_threshold(sheet_data, num_cols -1)
   
   # pivoteo datos y genero columna con nombre de provincia
   df <- sheet_data %>% 
@@ -91,23 +89,7 @@ filas_columnas = 4
 names_to = 'anio' 
 values_to = 'valores'
 
-
-
-df_raw <- clean_sheet(sheet_name, skip, filas_columnas, names_to, values_to)
-
-
-diccionario_finalidad <- df_raw %>% 
-  mutate(filtrar = str_remove_all(codigo, "\\.") %>% nchar(.) == 2) %>% 
-  dplyr::filter(filtrar) %>%
-  distinct(codigo_finalidad = codigo, nombre_finalidad = nombre_apertura)
-
-
-df_clean <- df_raw %>% 
-  mutate(filtrar = str_remove_all(codigo, "\\.") %>% nchar(.) == 2) %>% 
-  dplyr::filter(!filtrar) %>% 
-  mutate(codigo_finalidad = str_extract(codigo, "(^[0-9]\\.[0-9])\\..*", group = 1)) %>%
-  left_join(diccionario_finalidad, join_by(codigo_finalidad)) %>% 
-  select(codigo_finalidad, nombre_finalidad, codigo_funcion = codigo, nombre_funcion = nombre_apertura, anio, porcentaje_pib = valores)
+df_clean <- clean_sheet(sheet_name, skip, filas_columnas, names_to, values_to)
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -134,7 +116,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c('codigo_finalidad', 'codigo_funcion', 'anio')
+                                     pk = c('codigo', 'anio')
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,

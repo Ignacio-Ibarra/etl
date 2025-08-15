@@ -1,5 +1,3 @@
-# Codigo de limpieza de datos de cuadro de Jacques Charmes
-
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
