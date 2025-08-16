@@ -1,39 +1,58 @@
-#Limpio la memoria
+# Limpio la memoria
 rm(list = ls())  # Borro todos los objetos
 gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_consolidado_social_funciones.csv"
+output_name <- "base_socx_odce_cepal.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
+fuente1 <- 'R403C254' # OECD Social Expenditure Database
+fuente2 <- 'R404C255' # Gasto social público y privado (metodología SOCX), en porcentajes del PIB
 
-fuente1 <- 'R325C200' # Gasto Público consolidado % PIB
+df_oecd <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet(.)
 
-
-df_mecon <- argendataR::get_clean_path(fuente1) %>% 
+df_cepal <- argendataR::get_clean_path(fuente2) %>% 
   arrow::read_parquet()
 
-df_output <- df_mecon %>% 
-  dplyr::filter(grepl("^1\\.2\\..*", codigo), nchar(codigo) == 5) %>% 
-  mutate(funciones = str_remove(nombre_apertura, "^[IVX\\.0-9]+\\s+")) %>% 
-  select(anio, codigo, funciones, gasto_publico_social_consolidado = valores)
+tabla_ocde <- df_oecd %>% 
+  dplyr::filter(grepl("TP\\d{2}$|_T", programme_type),# Filtro los programas a dos dígitos
+                unit_measure == "PT_B1GQ", # Porcentaje de PIB
+                expend_source == "ES10", # Público 
+                programme_type == "_T", #Total
+                spending_type == "_T") %>% 
+  select(geocodigoFundar = ref_area, anio = time_period, valor = obs_value) %>% 
+  mutate(anio = as.integer(anio),
+         fuente = "OECD")
 
 
-comparable_df <- df_output %>% 
-  mutate(funciones = funciones %>% janitor::make_clean_names(., allow_dupes = T)) 
+tabla_cepal <- df_cepal %>% 
+  dplyr::filter(fuente_id == 79339, programa == "Total") %>% 
+  select(geocodigoFundar = iso3, anio, valor) %>% 
+  mutate(anio = as.integer(anio), 
+         fuente = "CEPAL")
+
+geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
+
+df_output<- bind_rows(tabla_cepal, tabla_ocde) %>% 
+  left_join(geo_front, join_by(geocodigoFundar)) %>% 
+  drop_na(valor)
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
+  select(anio, geocodigoFundar = iso3, geonombreFundar = pais_nombre, valor) %>% 
   mutate(anio = as.integer(anio))
 
+
 comparacion <- argendataR::comparar_outputs(
-  df = comparable_df,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("anio", "funciones")
+  pk = c("geocodigoFundar", "anio")
 )
 
 
@@ -81,10 +100,12 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("anio", 
-                      "codigo"),
-  descripcion = c("Año de referencia",
-                  "Código identificador de función")
+  variable_nombre = c("geocodigoFundar", 
+                      "geonombreFundar",
+                      "fuente"),
+  descripcion = c("Códigos de país ISO 3166 - alfa 3",
+                  "Nombre de país",
+                  "Fuente de información utilizada")
 )
 
 
@@ -101,9 +122,13 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "funciones"),
+    pk = c("geocodigoFundar", "anio"),
+    es_serie_tiempo = T,
+    nivel_agregacion = 'pais',
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = 'geocodigoFundar',
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_social_consolidado" = "porcentaje")
+    unidades = list("valor" = "porcentaje")
   )
 
 

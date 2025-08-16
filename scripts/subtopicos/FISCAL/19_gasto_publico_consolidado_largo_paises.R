@@ -1,39 +1,87 @@
-#Limpio la memoria
+# Limpio la memoria
 rm(list = ls())  # Borro todos los objetos
 gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_consolidado_social_funciones.csv"
+output_name <- "gasto_publico_consolidado_largo_paises.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
+fuente1 <- 'R424C272' # FMI
+fuente2 <- 'R325C200' # Consolidado
+fuente3 <- 'R428C0' # Porto
 
-fuente1 <- 'R325C200' # Gasto Público consolidado % PIB
+
+impute_backward <- function(A, B) {
+  # Calcular las variaciones relativas de B
+  result <- rep(NA_real_, length(A))
+  
+  VarB <- B / dplyr::lag(B)
+  
+  # Encontrar el primer índice con un valor no nulo en A
+  t0 <- min(which(!is.na(A)))
+  
+  result[t0] = A[t0]
+  
+  # Imputar hacia atrás
+  for (t in (t0 - 1):1) {
+    if (!is.na(VarB[t + 1]) & is.na(A[t])) {
+      result[t] <- result[t + 1] / VarB[t + 1]
+    }
+  }
+  
+  return(result)
+}
 
 
-df_mecon <- argendataR::get_clean_path(fuente1) %>% 
+df_imf <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet(.)
+
+df_mecon <- argendataR::get_clean_path(fuente2) %>% 
   arrow::read_parquet()
 
-df_output <- df_mecon %>% 
-  dplyr::filter(grepl("^1\\.2\\..*", codigo), nchar(codigo) == 5) %>% 
-  mutate(funciones = str_remove(nombre_apertura, "^[IVX\\.0-9]+\\s+")) %>% 
-  select(anio, codigo, funciones, gasto_publico_social_consolidado = valores)
+df_porto <- argendataR::get_raw_path(fuente3) %>% 
+  read_csv()
 
 
-comparable_df <- df_output %>% 
-  mutate(funciones = funciones %>% janitor::make_clean_names(., allow_dupes = T)) 
+df_arg_empalme <- df_mecon %>% 
+  dplyr::filter(codigo == "1.0") %>% 
+  select(anio, gasto_consolidado_pib_mecon = valores) %>% 
+  full_join(df_porto %>% 
+              select(anio, gasto_consolidado_pib_porto = gasto_consolidado_pib ), 
+            join_by(anio)) %>% 
+  arrange(anio) %>% 
+  mutate(gasto_consolidado_pib_back = impute_backward(gasto_consolidado_pib_mecon, gasto_consolidado_pib_porto),
+         gasto_publico_consolidado_pib_empalme = ifelse(is.na(gasto_consolidado_pib_back), gasto_consolidado_pib_mecon, gasto_consolidado_pib_back),
+         geocodigoFundar = "ARG",
+         geonombreFundar = "Argentina",
+         fuente = "Porto + MECON") %>% 
+  select(anio, geocodigoFundar, geonombreFundar, gasto_publico_consolidado = gasto_publico_consolidado_pib_empalme, fuente)
+
+df_output <- df_imf %>% 
+  dplyr::filter(iso3 != "ARG") %>% 
+  mutate(fuente = "FMI") %>% 
+  select(anio, geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_consolidado = exp, fuente) %>% 
+  bind_rows(df_arg_empalme) %>% 
+  drop_na(gasto_publico_consolidado) %>% 
+  dplyr::filter(anio >= 1900) %>% 
+  mutate(anio = as.integer(anio))
+  
+
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
+  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais) %>% 
   mutate(anio = as.integer(anio))
 
+
 comparacion <- argendataR::comparar_outputs(
-  df = comparable_df,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("anio", "funciones")
+  pk = c("geocodigoFundar", "anio")
 )
 
 
@@ -81,10 +129,12 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("anio", 
-                      "codigo"),
-  descripcion = c("Año de referencia",
-                  "Código identificador de función")
+  variable_nombre = c("geocodigoFundar", 
+                      "geonombreFundar",
+                      "fuente"),
+  descripcion = c("Códigos de país ISO 3166 - alfa 3",
+                  "Nombre de país",
+                  "Fuente de información utilizada")
 )
 
 
@@ -101,9 +151,9 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "funciones"),
+    pk = c("geocodigoFundar", "anio"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_social_consolidado" = "porcentaje")
+    unidades = list("gasto_publico_consolidado" = "porcentaje")
   )
 
 

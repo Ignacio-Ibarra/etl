@@ -139,3 +139,8 @@ df_output %>%
     unidades = list("ratio_centralizacion" = "porcentaje")
   )
  
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")

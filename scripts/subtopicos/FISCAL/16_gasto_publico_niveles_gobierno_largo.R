@@ -4,36 +4,47 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_consolidado_social_funciones.csv"
+output_name <- "gasto_publico_niveles_gobierno_largo.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
 
-fuente1 <- 'R325C200' # Gasto Público consolidado % PIB
+fuente1 <- 'R326C201' # Nacional
+fuente2 <- 'R327C202' # Provincial
+fuente3 <- 'R328C203' # Municipal
 
+labels <- c("Nacional", "Provincial", "Municipal")
+sources <- c(fuente1, fuente2, fuente3)
 
-df_mecon <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet()
+# Read, label, and combine
+df_mecon <- purrr::map2_dfr(sources, labels, ~ {
+  argendataR::get_clean_path(.x) %>% 
+    arrow::read_parquet(.) %>%
+    mutate(nivel_gobierno = .y)  # Add distinguishing column
+}) 
 
 df_output <- df_mecon %>% 
-  dplyr::filter(grepl("^1\\.2\\..*", codigo), nchar(codigo) == 5) %>% 
-  mutate(funciones = str_remove(nombre_apertura, "^[IVX\\.0-9]+\\s+")) %>% 
-  select(anio, codigo, funciones, gasto_publico_social_consolidado = valores)
+  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL") %>% 
+  select(anio, nivel_gobierno, gasto_publico_porcentaje_pib = valores) %>% 
+  group_by(anio) %>% 
+  mutate(participacion_gasto_publico_consolidado  =gasto_publico_porcentaje_pib / sum(gasto_publico_porcentaje_pib)) %>% 
+  ungroup() %>% 
+  select(anio, nivel_de_gobierno = nivel_gobierno, participacion_gasto_publico_consolidado)
 
 
 comparable_df <- df_output %>% 
-  mutate(funciones = funciones %>% janitor::make_clean_names(., allow_dupes = T)) 
-
+  mutate(nivel_de_gobierno = janitor::make_clean_names(nivel_de_gobierno, allow_dupes = T))
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
   mutate(anio = as.integer(anio))
 
+
 comparacion <- argendataR::comparar_outputs(
   df = comparable_df,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("anio", "funciones")
+  pk = c("anio", "nivel_de_gobierno")
 )
 
 
@@ -80,16 +91,9 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 # Guardo en una variable las columnas del output que queremos escribir
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
-etiquetas_nuevas <- data.frame(
-  variable_nombre = c("anio", 
-                      "codigo"),
-  descripcion = c("Año de referencia",
-                  "Código identificador de función")
-)
-
 
 descripcion <- armador_descripcion(metadatos = metadatos,
-                                   etiquetas_nuevas = etiquetas_nuevas,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
                                    output_cols = output_cols)
 
 
@@ -101,9 +105,9 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "funciones"),
+    pk = c("anio", "nivel_de_gobierno"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_social_consolidado" = "porcentaje")
+    unidades = list("participacion_gasto_publico_consolidado" = "porcentaje")
   )
 
 

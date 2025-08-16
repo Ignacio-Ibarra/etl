@@ -110,5 +110,9 @@ df_output %>%
     pk = c("nivel_gobierno"),
     descripcion_columnas = descripcion,
     unidades = list("gasto_publico_porcentaje_pib" = "porcentaje",
-                    "gasto_publico_porcentaje_consolidado")
+                    "gasto_publico_porcentaje_consolidado" = "porcentaje")
   )
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")

@@ -127,10 +127,11 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("nivel_de_gobierno", "codigo"),
+    pk = c("anio"),
     descripcion_columnas = descripcion,
     unidades = list("gasto_publico_consolidado_pib_empalme" = "porcentaje")
   )
 
-# 
-# ggplot(comparacion$joined_df %>% pivot_longer(!anio), aes(x = anio, y = value, color = name)) + geom_line() + theme_minimal()
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")
