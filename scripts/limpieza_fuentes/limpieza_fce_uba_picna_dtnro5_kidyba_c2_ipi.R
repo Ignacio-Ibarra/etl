@@ -1,3 +1,5 @@
+# Codigo de limpieza de datos de cuadro de Jacques Charmes
+
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
@@ -6,7 +8,7 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 325
+id_fuente <- 429
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -45,7 +47,7 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
   cols$concatenado <- apply(cols, 1, function(x) {
     paste(stats::na.omit(x), collapse = "#")
-  })
+  }) %>% janitor::make_clean_names()
   
   
   
@@ -57,7 +59,7 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
   sheet_data <- sheet_data[!white_cols(sheet_data)]
   
-  cols <- c('codigo', 'nombre_apertura', cols$concatenado[-1])
+  cols <- c('anio', cols$concatenado[-1])
   
   names(sheet_data) <- cols
   
@@ -70,12 +72,10 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   # pivoteo datos y genero columna con nombre de provincia
   df <- sheet_data %>% 
     dplyr::filter(!filter_bool) %>%
-    pivot_longer(cols = !c(codigo, nombre_apertura), 
+    pivot_longer(cols = !anio, 
                  names_to = names_to,
                  values_to = values_to, 
-                 values_transform = as.numeric) %>% 
-    mutate(anio = as.integer(str_extract(anio, "\\d{4}"))
-           )
+                 values_transform = as.numeric) 
   
   
   return(df)
@@ -83,26 +83,23 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
 
 
 
-sheet_name <- "% del PIB"
-skip = 5
-filas_columnas = 4
-names_to = 'anio' 
+sheet_name <- "c2"
+skip = 6
+filas_columnas = 5
+names_to = 'variables' 
 values_to = 'valores'
-
-
 
 df_clean <- clean_sheet(sheet_name, skip, filas_columnas, names_to, values_to)
 
-
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
-clean_title <- glue::glue("{titulo.raw} - Países")
+clean_title <- glue::glue("{titulo.raw} - {sheet_name}")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-# 
+
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
 #                      path_clean = clean_filename,
 #                      nombre = clean_title,
@@ -110,7 +107,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 
-id_fuente_clean <- 200
+id_fuente_clean <- 275
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -119,7 +116,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c('codigo', 'anio')
+                                     pk = c('anio', 'variables')
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,

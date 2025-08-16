@@ -4,40 +4,32 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "base_ceq_long.csv"
+output_name <- "ciclicidad_paises.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R425C273'
+fuente1 <- 'R426C274'
 
-df_ceq <- argendataR::get_clean_path(fuente1) %>% 
+df_wb <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet()
 
-df_output <- df_ceq %>% 
-  dplyr::filter(name %in% c("Market income plus pensions", "Final income"), 
-                concept == "PDI") %>% 
-  select(iso3, pais_nombre, 
-         anio = start_year, 
-         ingreso = name, 
-         gini = indicator_value) %>% 
-  drop_na(gini) %>% 
-  rename(pais = pais_nombre) %>% 
-  mutate(ingreso  = ifelse(ingreso == 'Final income', "Ingreso final", "Ingresos de mercado más pensiones"),
-         gini = gini/100) %>% 
-  rename(geocodigoFundar = iso3, geonombreFundar = pais)
+df_output <- df_wb %>% 
+  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, tipo_pais = desarrollo_economia, correlacion_ciclicidad_fiscal = corr_gasto_ciclico_gdp) %>% 
+  mutate(correlacion_ciclicidad_fiscal = as.numeric(correlacion_ciclicidad_fiscal)) %>% 
+  mutate(tipo_pais = ifelse(tipo_pais == "Emerging Markets", "Economía en desarrollo", "Economía avanzada"))
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
-                                            drive = T)   %>%
-  mutate(ingreso = ifelse(ingreso == 'mercado', "Ingresos de mercado más pensiones", "Ingreso final")) %>% 
-  rename(geonombreFundar = pais)
+                                            drive = T)  %>% 
+  mutate(tipo_pais = ifelse(tipo_pais == "economia_en_desarrollo", "Economía en desarrollo", "Economía avanzada")) %>% 
+  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
 
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geonombreFundar", "anio", "ingreso")
+  pk = c("geocodigoFundar")
 )
 
 
@@ -69,18 +61,18 @@ descripcion <- armador_descripcion(metadatos = metadatos,
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
-    control = comparacion,
     subtopico = subtopico,
+    control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar", "anio", "ingreso"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = "anio",
+    pk = c("geocodigoFundar"),
     columna_geo_referencia = "geocodigoFundar",
     nivel_agregacion = "pais",
     descripcion_columnas = descripcion,
-    unidades = list("gini" = "indice")
+    etiquetas_indicadores = list("correlacion_ciclicidad_fiscal" = "Correlación entre el componente cíclico del gasto público real y el PBI real (2000-2022)"),
+    unidades = list("correlacion_ciclicidad_fiscal" = "unidades")
   )
+
 
 
 output_name <- gsub("\\.csv", "", output_name)

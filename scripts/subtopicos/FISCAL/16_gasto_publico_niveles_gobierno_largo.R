@@ -1,58 +1,50 @@
-# Limpio la memoria
+#Limpio la memoria
 rm(list = ls())  # Borro todos los objetos
 gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_promedio_paises.csv"
+output_name <- "gasto_publico_niveles_gobierno_largo.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
 
+fuente1 <- 'R326C201' # Nacional
+fuente2 <- 'R327C202' # Provincial
+fuente3 <- 'R328C203' # Municipal
 
-df_imf <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet(.)
+labels <- c("Nacional", "Provincial", "Municipal")
+sources <- c(fuente1, fuente2, fuente3)
 
-df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
+# Read, label, and combine
+df_mecon <- purrr::map2_dfr(sources, labels, ~ {
+  argendataR::get_clean_path(.x) %>% 
+    arrow::read_parquet(.) %>%
+    mutate(nivel_gobierno = .y)  # Add distinguishing column
+}) 
 
-
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL", anio>=2014) %>% 
-  summarise(gasto_pub_gdp = mean(valores, na.rm=T)) %>% 
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina', 
-         fuente = "MECON") %>% 
-  select(iso3, pais_nombre, gasto_pub_gdp, fuente)
-
-
-df_output <- df_imf %>% 
-  dplyr::filter(anio>=2014) %>% 
-  group_by(iso3, pais_nombre) %>% 
-  summarise(
-    gasto_pub_gdp = mean(exp, na.rm = T)
-  ) %>% 
+df_output <- df_mecon %>% 
+  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL") %>% 
+  select(anio, nivel_gobierno, gasto_publico_porcentaje_pib = valores) %>% 
+  group_by(anio) %>% 
+  mutate(participacion_gasto_publico_consolidado  =gasto_publico_porcentaje_pib / sum(gasto_publico_porcentaje_pib)) %>% 
   ungroup() %>% 
-  dplyr::filter(iso3 != "ARG") %>% 
-  mutate(fuente = "FMI") %>% 
-  bind_rows(df_arg) %>% 
-  arrange(-gasto_pub_gdp) %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_promedio = gasto_pub_gdp, fuente)
+  select(anio, nivel_de_gobierno = nivel_gobierno, participacion_gasto_publico_consolidado)
 
 
+comparable_df <- df_output %>% 
+  mutate(nivel_de_gobierno = janitor::make_clean_names(nivel_de_gobierno, allow_dupes = T))
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
+  mutate(anio = as.integer(anio))
 
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_output,
+  df = comparable_df,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geocodigoFundar")
+  pk = c("anio", "nivel_de_gobierno")
 )
 
 
@@ -99,18 +91,9 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 # Guardo en una variable las columnas del output que queremos escribir
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
-etiquetas_nuevas <- data.frame(
-  variable_nombre = c("geocodigoFundar", 
-                      "geonombreFundar",
-                      "fuente"),
-  descripcion = c("Códigos de país ISO 3166 - alfa 3",
-                  "Nombre de país",
-                  "Fuente de información utilizada")
-)
-
 
 descripcion <- armador_descripcion(metadatos = metadatos,
-                                   etiquetas_nuevas = etiquetas_nuevas,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
                                    output_cols = output_cols)
 
 
@@ -122,9 +105,9 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar"),
+    pk = c("anio", "nivel_de_gobierno"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_promedio" = "Gasto público consolidado promedio del periodo 2014 a la fecha (en porcentaje del PIB)")
+    unidades = list("participacion_gasto_publico_consolidado" = "porcentaje")
   )
 
 

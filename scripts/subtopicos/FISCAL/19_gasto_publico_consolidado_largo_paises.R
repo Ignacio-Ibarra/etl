@@ -4,81 +4,84 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_consolidado_pib_per_capita_paises.csv"
+output_name <- "gasto_publico_consolidado_largo_paises.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
-fuente3 <- 'R126C0'
+fuente1 <- 'R424C272' # FMI
+fuente2 <- 'R325C200' # Consolidado
+fuente3 <- 'R428C0' # Porto
+
+
+impute_backward <- function(A, B) {
+  # Calcular las variaciones relativas de B
+  result <- rep(NA_real_, length(A))
+  
+  VarB <- B / dplyr::lag(B)
+  
+  # Encontrar el primer índice con un valor no nulo en A
+  t0 <- min(which(!is.na(A)))
+  
+  result[t0] = A[t0]
+  
+  # Imputar hacia atrás
+  for (t in (t0 - 1):1) {
+    if (!is.na(VarB[t + 1]) & is.na(A[t])) {
+      result[t] <- result[t + 1] / VarB[t + 1]
+    }
+  }
+  
+  return(result)
+}
 
 
 df_imf <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet(.)
 
 df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
+  arrow::read_parquet()
 
-df_wb <- argendataR::get_raw_path(fuente3) %>% 
-  readr::read_csv(.) %>% 
-  select(iso3 = iso3c, anio = year, gdp_pc_ppp_kd = `NY.GDP.PCAP.PP.KD`)
-
-
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL") %>%
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina') %>% 
-  select(iso3, pais_nombre, anio, gasto_pub_gdp = valores)
+df_porto <- argendataR::get_raw_path(fuente3) %>% 
+  read_csv()
 
 
-df_gasto <- df_imf %>% 
+df_arg_empalme <- df_mecon %>% 
+  dplyr::filter(codigo == "1.0") %>% 
+  select(anio, gasto_consolidado_pib_mecon = valores) %>% 
+  full_join(df_porto %>% 
+              select(anio, gasto_consolidado_pib_porto = gasto_consolidado_pib ), 
+            join_by(anio)) %>% 
+  arrange(anio) %>% 
+  mutate(gasto_consolidado_pib_back = impute_backward(gasto_consolidado_pib_mecon, gasto_consolidado_pib_porto),
+         gasto_publico_consolidado_pib_empalme = ifelse(is.na(gasto_consolidado_pib_back), gasto_consolidado_pib_mecon, gasto_consolidado_pib_back),
+         geocodigoFundar = "ARG",
+         geonombreFundar = "Argentina",
+         fuente = "Porto + MECON") %>% 
+  select(anio, geocodigoFundar, geonombreFundar, gasto_publico_consolidado = gasto_publico_consolidado_pib_empalme, fuente)
+
+df_output <- df_imf %>% 
   dplyr::filter(iso3 != "ARG") %>% 
-  select(iso3, pais_nombre, anio, gasto_pub_gdp = exp) %>% 
-  bind_rows(df_arg) 
+  mutate(fuente = "FMI") %>% 
+  select(anio, geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_consolidado = exp, fuente) %>% 
+  bind_rows(df_arg_empalme) %>% 
+  drop_na(gasto_publico_consolidado) %>% 
+  dplyr::filter(anio >= 1900) %>% 
+  mutate(anio = as.integer(anio))
+  
 
-
-geonomenclador <- argendataR::get_nomenclador_geografico() %>%
-  dplyr::filter(nivel_agregacion == 'pais') %>% 
-  mutate(region = case_when(
-    continente_fundar == "América del Norte, Central y el Caribe" ~ intermediate_region_unsd,
-    TRUE ~ continente_fundar
-  )) %>% 
-  select(iso3 = codigo_fundar, region)
-
-
-
-df_output <- df_wb %>% 
-  inner_join(df_gasto, join_by(anio, iso3)) %>% 
-  group_by(iso3) %>% 
-  dplyr::filter(anio == max(anio)) %>% 
-  ungroup() %>% 
-  drop_na(gasto_pub_gdp) %>% 
-  drop_na(gdp_pc_ppp_kd) %>%
-  left_join(geonomenclador, join_by(iso3)) %>%  
-  rename(`Gasto público consolidado como porcentaje del PIB` = gasto_pub_gdp, `PIB per cápita PPP (en dólares internacionales constantes de 2021)` =  gdp_pc_ppp_kd) %>% 
-  pivot_longer(., !all_of(c('anio', 'iso3', 'pais_nombre', 'region')),
-               names_to = 'variable',
-               values_to = 'valor') %>% 
-  rename(geocodigoFundar = iso3, geonombreFundar = pais_nombre)
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
-  rename(geocodigoFundar = cod_pais, 
-         geonombreFundar = pais,
-         `Gasto público consolidado como porcentaje del PIB` = gasto_publico_porcentaje_del_pib, 
-         `PIB per cápita PPP (en dólares internacionales constantes de 2021)` =  pib_per_capita_ppp) %>%
-  pivot_longer(., !all_of(c('geocodigoFundar', 'geonombreFundar')),
-               names_to = 'variable',
-               values_to = 'valor') 
-  
+  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais) %>% 
+  mutate(anio = as.integer(anio))
 
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geocodigoFundar", "variable")
+  pk = c("geocodigoFundar", "anio")
 )
 
 
@@ -126,18 +129,12 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("anio",
-                      "geocodigoFundar", 
+  variable_nombre = c("geocodigoFundar", 
                       "geonombreFundar",
-                      "region",
-                      "variable",
-                      "valor"),
-  descripcion = c("Año de referencia",
-                  "Códigos de país ISO 3166 - alfa 3",
-                  "Nombre de país de referencia",
-                  "Región de países de referencia",
-                  "Indica si la variable observada es `Gasto público consolidado como porcentaje del PIB` o `PIB per cápita PPP (en dólares internacionales constantes de 2021)`",
-                  "Valor observado")
+                      "fuente"),
+  descripcion = c("Códigos de país ISO 3166 - alfa 3",
+                  "Nombre de país",
+                  "Fuente de información utilizada")
 )
 
 
@@ -154,13 +151,12 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar", "variable"),
+    pk = c("geocodigoFundar", "anio"),
     descripcion_columnas = descripcion,
-    unidades = list("valor" = "unidades")
+    unidades = list("gasto_publico_consolidado" = "porcentaje")
   )
 
 
 output_name <- gsub("\\.csv", "", output_name)
 mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "dev")
 mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "dev")
-

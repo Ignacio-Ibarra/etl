@@ -1,58 +1,39 @@
-# Limpio la memoria
+#Limpio la memoria
 rm(list = ls())  # Borro todos los objetos
 gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_promedio_paises.csv"
+output_name <- "gasto_publico_consolidado_social_funciones.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
+
+fuente1 <- 'R325C200' # Gasto Público consolidado % PIB
 
 
-df_imf <- argendataR::get_clean_path(fuente1) %>% 
-  arrow::read_parquet(.)
+df_mecon <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
 
-df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
-
-
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL", anio>=2014) %>% 
-  summarise(gasto_pub_gdp = mean(valores, na.rm=T)) %>% 
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina', 
-         fuente = "MECON") %>% 
-  select(iso3, pais_nombre, gasto_pub_gdp, fuente)
+df_output <- df_mecon %>% 
+  dplyr::filter(grepl("^1\\.2\\..*", codigo), nchar(codigo) == 5) %>% 
+  mutate(funciones = str_remove(nombre_apertura, "^[IVX\\.0-9]+\\s+")) %>% 
+  select(anio, codigo, funciones, gasto_publico_social_consolidado = valores)
 
 
-df_output <- df_imf %>% 
-  dplyr::filter(anio>=2014) %>% 
-  group_by(iso3, pais_nombre) %>% 
-  summarise(
-    gasto_pub_gdp = mean(exp, na.rm = T)
-  ) %>% 
-  ungroup() %>% 
-  dplyr::filter(iso3 != "ARG") %>% 
-  mutate(fuente = "FMI") %>% 
-  bind_rows(df_arg) %>% 
-  arrange(-gasto_pub_gdp) %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_promedio = gasto_pub_gdp, fuente)
-
+comparable_df <- df_output %>% 
+  mutate(funciones = funciones %>% janitor::make_clean_names(., allow_dupes = T)) 
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
-
+  mutate(anio = as.integer(anio))
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_output,
+  df = comparable_df,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geocodigoFundar")
+  pk = c("anio", "funciones")
 )
 
 
@@ -100,12 +81,10 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
 output_cols <- names(df_output) # lo puedo generar así si tengo df_output
 
 etiquetas_nuevas <- data.frame(
-  variable_nombre = c("geocodigoFundar", 
-                      "geonombreFundar",
-                      "fuente"),
-  descripcion = c("Códigos de país ISO 3166 - alfa 3",
-                  "Nombre de país",
-                  "Fuente de información utilizada")
+  variable_nombre = c("anio", 
+                      "codigo"),
+  descripcion = c("Año de referencia",
+                  "Código identificador de función")
 )
 
 
@@ -122,9 +101,9 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar"),
+    pk = c("anio", "funciones"),
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_promedio" = "Gasto público consolidado promedio del periodo 2014 a la fecha (en porcentaje del PIB)")
+    unidades = list("gasto_publico_social_consolidado" = "porcentaje")
   )
 
 

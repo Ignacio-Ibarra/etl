@@ -4,55 +4,55 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "FISCAL"
-output_name <- "gasto_publico_promedio_paises.csv"
+output_name <- "base_socx_odce_cepal.csv"
 analista <- "María Fernanda Villafañe & Micaela Fernandez Erlauer"
 
-fuente1 <- 'R424C272'
-fuente2 <- 'R325C200'
+fuente1 <- 'R403C254' # OECD Social Expenditure Database
+fuente2 <- 'R404C255' # Gasto social público y privado (metodología SOCX), en porcentajes del PIB
 
-
-df_imf <- argendataR::get_clean_path(fuente1) %>% 
+df_oecd <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet(.)
 
-df_mecon <- argendataR::get_clean_path(fuente2) %>% 
-  arrow::read_parquet(.)
+df_cepal <- argendataR::get_clean_path(fuente2) %>% 
+  arrow::read_parquet()
+
+tabla_ocde <- df_oecd %>% 
+  dplyr::filter(grepl("TP\\d{2}$|_T", programme_type),# Filtro los programas a dos dígitos
+                unit_measure == "PT_B1GQ", # Porcentaje de PIB
+                expend_source == "ES10", # Público 
+                programme_type == "_T", #Total
+                spending_type == "_T") %>% 
+  select(geocodigoFundar = ref_area, anio = time_period, valor = obs_value) %>% 
+  mutate(anio = as.integer(anio),
+         fuente = "OECD")
 
 
-df_arg <- df_mecon %>% 
-  dplyr::filter(nombre_apertura == "GASTO PÚBLICO TOTAL", anio>=2014) %>% 
-  summarise(gasto_pub_gdp = mean(valores, na.rm=T)) %>% 
-  mutate(iso3 = 'ARG', 
-         pais_nombre = 'Argentina', 
-         fuente = "MECON") %>% 
-  select(iso3, pais_nombre, gasto_pub_gdp, fuente)
+tabla_cepal <- df_cepal %>% 
+  dplyr::filter(fuente_id == 79339, programa == "Total") %>% 
+  select(geocodigoFundar = iso3, anio, valor) %>% 
+  mutate(anio = as.integer(anio), 
+         fuente = "CEPAL")
 
+geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
-df_output <- df_imf %>% 
-  dplyr::filter(anio>=2014) %>% 
-  group_by(iso3, pais_nombre) %>% 
-  summarise(
-    gasto_pub_gdp = mean(exp, na.rm = T)
-  ) %>% 
-  ungroup() %>% 
-  dplyr::filter(iso3 != "ARG") %>% 
-  mutate(fuente = "FMI") %>% 
-  bind_rows(df_arg) %>% 
-  arrange(-gasto_pub_gdp) %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, gasto_publico_promedio = gasto_pub_gdp, fuente)
-
+df_output<- bind_rows(tabla_cepal, tabla_ocde) %>% 
+  left_join(geo_front, join_by(geocodigoFundar)) %>% 
+  drop_na(valor)
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
                                             drive = T) %>% 
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
+  select(anio, geocodigoFundar = iso3, geonombreFundar = pais_nombre, valor) %>% 
+  mutate(anio = as.integer(anio))
 
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = c("geocodigoFundar")
+  pk = c("geocodigoFundar", "anio")
 )
 
 
@@ -122,9 +122,13 @@ df_output %>%
     control = comparacion, 
     fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("geocodigoFundar"),
+    pk = c("geocodigoFundar", "anio"),
+    es_serie_tiempo = T,
+    nivel_agregacion = 'pais',
+    columna_indice_tiempo = 'anio',
+    columna_geo_referencia = 'geocodigoFundar',
     descripcion_columnas = descripcion,
-    unidades = list("gasto_publico_promedio" = "Gasto público consolidado promedio del periodo 2014 a la fecha (en porcentaje del PIB)")
+    unidades = list("valor" = "porcentaje")
   )
 
 

@@ -1,7 +1,14 @@
+#limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 library(sjlabelled)
 library(WDI)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
+
+fecha_actualizar <- "Sin informacion"
 
 url <- "https://data.worldbank.org/indicator/SP.POP.TOTL"
 indicator_code <- str_split_1(url, "/") %>% tail(.,1)
@@ -41,4 +48,8 @@ data %>% write_csv_fundar(glue::glue("{tempdir()}/{download_filename}"))
 #                    api = T
 # )
 
-actualizar_fuente_raw(id_fuente = 46, actualizable = T, dir = tempdir())
+actualizar_fuente_raw(id_fuente = 46,
+                      url = url, 
+                      fecha_actualizar = fecha_actualizar,
+                      path_raw = download_filename,
+                      script = code_name)

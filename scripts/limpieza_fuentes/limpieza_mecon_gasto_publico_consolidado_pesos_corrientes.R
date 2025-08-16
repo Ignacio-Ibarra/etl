@@ -51,7 +51,7 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
   # Leo datos
   sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
-                                   sheet = sheet_name, 
+                                   sheet = sheet_name,
                                    skip = skip, 
                                    col_names = F)
   
@@ -75,7 +75,7 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
                  values_to = values_to, 
                  values_transform = as.numeric) %>% 
     mutate(anio = as.integer(str_extract(anio, "\\d{4}"))
-           )
+    )
   
   
   return(df)
@@ -83,26 +83,26 @@ clean_sheet <- function(sheet_name, skip, filas_columnas, names_to, values_to){
 
 
 
-sheet_name <- "% del PIB"
+sheet_name <- "$ corrientes"
 skip = 5
 filas_columnas = 4
 names_to = 'anio' 
 values_to = 'valores'
 
 
+df_clean <- clean_sheet(sheet_name, skip, filas_columnas, names_to, values_to) %>% 
+  mutate(unidad_medida = ifelse(anio < 1987, "Miles de pesos corrientes", "Millones de pesos corrientes"))
 
-df_clean <- clean_sheet(sheet_name, skip, filas_columnas, names_to, values_to)
 
+clean_filename <- glue::glue("{nombre_archivo_raw}_pesos_corrientes_CLEAN.parquet")
 
-clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
-
-clean_title <- glue::glue("{titulo.raw} - Países")
+clean_title <- glue::glue("{titulo.raw} - En pesos corrientes")
 
 path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-# 
+ 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
 #                      path_clean = clean_filename,
 #                      nombre = clean_title,
@@ -110,7 +110,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 
-id_fuente_clean <- 200
+id_fuente_clean <- 276
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
