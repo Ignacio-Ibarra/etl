@@ -36,15 +36,16 @@ tabla_cepal <- df_cepal %>%
 geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
   select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
-df_output<- bind_rows(tabla_cepal, tabla_ocde) %>% 
+df_output<- bind_rows(tabla_cepal %>% 
+                        anti_join(tabla_ocde, join_by(anio, geocodigoFundar)),
+                      tabla_ocde) %>% 
   left_join(geo_front, join_by(geocodigoFundar)) %>% 
   drop_na(valor)
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
-                                            drive = T) %>% 
-  select(anio, geocodigoFundar = iso3, geonombreFundar = pais_nombre, valor) %>% 
+                                            drive = F) %>% 
   mutate(anio = as.integer(anio))
 
 
