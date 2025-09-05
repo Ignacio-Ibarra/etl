@@ -10,7 +10,8 @@ output_name <- 'ISA_nbi-multidimensional_it1-it2.csv'
 id_fuente <- 146
 fuente_raw1 <- sprintf("R%sC0",id_fuente)
 
-df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1)) 
+df_output <- readxl::read_excel(argendataR::get_fuente_path(fuente_raw1)) %>% 
+  mutate(province = ifelse(province == "PBA", "Interior de PBA", province))
 
 df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")
 
@@ -41,3 +42,6 @@ df_output %>%
     etiquetas_indicadores = list('nbi_rate' = 'Porcentajes de hogares con NBI'),
     unidades = list('nbi_rate' = 'porcentaje')
   )
+
+
+
