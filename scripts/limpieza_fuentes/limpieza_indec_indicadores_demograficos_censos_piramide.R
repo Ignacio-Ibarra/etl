@@ -6,7 +6,7 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 437
+id_fuente <- 432
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -19,28 +19,31 @@ titulo.raw <- fuentes_raw() %>%
   filter(codigo == fuente_raw) %>% 
   select(nombre) %>% pull()
 
-rawlist <- argendataR::get_raw_path(fuente_raw) %>% 
-  jsonlite::read_json(.)
 
-df_stage <- rawlist %>% 
-  bind_rows() 
+# Función para verificar si el número de NAs en cada fila es mayor o igual a un umbral
+check_na_threshold <- function(df, threshold) {
+  apply(df, 1, function(row) {
+    sum(is.na(row)) >= threshold
+  })
+}
 
-diccionario_prov <- argendataR::get_raw_path("R84C0") %>% 
-  read.csv() %>% 
-  distinct(prov_cod, prov_desc)
+white_cols <- function(df) {
+  sapply(df, function (col) all(is.na(col)))
+}
 
+df_raw <- argendataR::get_raw_path(fuente_raw) %>% 
+  readxl::read_excel(.)
+
+df_stage <- df_raw  %>% 
+  janitor::clean_names() %>%  
+  select(-provincia)
+
+num_cols <- length(df_stage)
 
 df_clean <- df_stage %>% 
-  janitor::clean_names() %>% 
-  left_join(diccionario_prov, join_by(provres == prov_cod)) %>% 
-  mutate(prov_desc = case_when(
-    provres == 98 ~ "Otro país",
-    provres == 99 ~ "Lugar no especificado",
-    TRUE ~ prov_desc
-  )) %>%
-  mutate(across(where(is.character), ~ str_replace_all(.x, "m<e1>s", "más")))
-
-
+  dplyr::filter(!check_na_threshold(df_stage, num_cols -1)) %>% 
+  mutate(censo = as.integer(censo),
+         poblacion = as.integer(poblacion))
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
 
@@ -58,7 +61,7 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 
-id_fuente_clean <- 282
+id_fuente_clean <- 278
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -66,7 +69,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = colnames(df_clean)[colnames(df_clean)!="cuenta"]
+                                     pk = c('censo', 'sexo', 'edad', 'nativo_extranjero')
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
