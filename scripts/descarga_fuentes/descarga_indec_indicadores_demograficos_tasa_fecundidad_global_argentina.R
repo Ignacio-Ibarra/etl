@@ -10,11 +10,11 @@ fecha_actualizar <- "Sin informacion"
 
 url <- "https://indecbeta.shinyapps.io/PAD_Demog_Arg/"
 
-nombre <- "Indicadores Demográficos. Pirámide de población por sexo y edad. Años censales: 1869 a 2022"
+nombre <- "Indicadores Demográficos. Tasa Global de Fecundidad. Años censales: 1869 a 2022"
 
 institucion <- "Instituto Nacional de Estadística y Censos"
 
-download_filename <- "INDEC_PAD_Seleccion-29_08_2025.xlsx" # copiado manualmente 
+download_filename <- "INDEC_PAD_Seleccion-03_09_2025.xlsx"   # copiado manualmente 
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
@@ -29,7 +29,7 @@ destfile <- glue::glue("{tempdir()}/{download_filename}")
 #                    api = F
 # )
 
-actualizar_fuente_raw(id_fuente = 432,
+actualizar_fuente_raw(id_fuente = 436,
                       url = url, 
                       nombre = nombre, 
                       institucion = institucion,
