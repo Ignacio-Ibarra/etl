@@ -30,8 +30,7 @@ df_saldos_lattes <- df_lattes_cuadro22 %>%
 
 
 df_poblacion_lattes <- df_lattes_cuadro21 %>% 
-  mutate(poblacion_mediagregar_fuente_raw(url = url,
-                                          institucion = institucion,a = 1000*(poblacion_total + lead(poblacion_total))/2)  %>% 
+  mutate(poblacion_media = 1000*(poblacion_total + lead(poblacion_total))/2)  %>% 
   select(anio, poblacion_media) 
 
 df_lattes_rates <- df_saldos_lattes %>% 
@@ -58,18 +57,84 @@ df_output <- df_lattes_rates %>%
   bind_rows(df_wpp_rates)
 
 
-df_plot <- df_output %>%
-  pivot_longer(cols = !anio, names_to = "variable", values_to = "tasa") %>%
-  mutate( variable = factor(variable, levels = c("tasa_migracion_neta", 'tasa_crecimiento_vegetativo')))
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico)
+
+pks <- c('anio')
+
+comparacion <- argendataR::comparar_outputs(
+  df = df_output,
+  df_anterior = df_anterior,
+  nombre = output_name,
+  pk = pks
+)
 
 
-ggplot(df_plot, aes(x = anio, y = tasa, fill = variable))  +
-  geom_area(alpha = 0.7, color = "black", size = 0.2) +
-  scale_fill_manual(values = c("#1f78b4", "#33a02c")) +
-  labs(
-    title = "",
-    x = "",
-    y = "Tasa",
-    fill = ""
-  ) +
-  theme_minimal() 
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), nombre_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
+    analista = analista,
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("tasa_migracion_neta" = "porcentaje", 
+                  "tasa_crecimiento_vegetativo" = "porcentaje"))
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
+

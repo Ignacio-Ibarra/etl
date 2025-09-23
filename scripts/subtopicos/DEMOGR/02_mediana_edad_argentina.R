@@ -39,35 +39,100 @@ df_mediana_censos <- df_censos  %>%
   filter(FA >= N/2) %>%
   slice(1) %>%
   mutate(
-    edad_mediana = Li + ((N/2 - FA_prev) / poblacion) * w
+    edad_mediana = Li + ((N/2 - FA_prev) / poblacion) * w,
+    fuente = "INDEC"
   ) %>%
-  select(anio, edad_mediana)
+  select(anio, edad_mediana, fuente)
 
 df_mediana_wpp <- df_wpp %>% 
   dplyr::filter(iso3_code == "ARG") %>% 
-  select(anio = time, edad_mediana = median_age_pop) 
+  mutate(fuente = "World Population Prospects (UN)" ) %>% 
+  select(anio = time, edad_mediana = median_age_pop, fuente) 
 
 df_output <- df_mediana_censos %>%
   dplyr::filter(anio < 1950) %>% 
   bind_rows(df_mediana_wpp)
 
-anios_completos <- data.frame(anio = min(df_stage$anio):max(df_stage$anio))
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico)
 
 
-df_plot <- anios_completos %>%
-  left_join(df_output, join_by(anio)) %>% 
-  arrange(anio) %>% 
-  mutate(
-    edad_mediana_interpolada = stats::approx(
-      x = anio[!is.na(edad_mediana)],  # años conocidos
-      y = edad_mediana[!is.na(edad_mediana)],  # valores conocidos
-      xout = anio,                  # todos los años
-      method = "linear",
-      rule = 2                      # 2 = no extrapola fuera de rango, repite extremos
-    )$y
-  ) 
+pks <- c('anio')
+
+comparacion <- argendataR::comparar_outputs(
+  df = df_output,
+  df_anterior = df_anterior,
+  nombre = output_name,
+  pk = pks
+)
+
+
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
   
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), nombre_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
 
 
-# ggplot(df_output, aes(x = anio, y = edad_mediana_interpolada)) + geom_line() + theme_minimal() + ylim(0,NA)
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
+    analista = analista,
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("edad_mediana" = "unidades"))
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
+
 
