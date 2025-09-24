@@ -8,28 +8,12 @@ gc()   #Garbage Collection
 
 
 subtopico <- "ESTPRO"
-output_name <- "particip_mujer"
+output_name <- "particip_mujer.csv"
 analista = "Gisella Pascuariello"
 
 fuente1 <- "R235C105" 
 
-get_clean_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
-  df_fuentes_clean <- fuentes_clean() 
-  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
-  return(paste0(prefix, path_clean))
-}
-
-
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
-
-df_bel_puestos_priv <- arrow::read_parquet(get_clean_path(fuente1))
+df_bel_puestos_priv <- arrow::read_parquet(argendataR::get_clean_path(fuente1))
 
 
 anios_completos <- df_bel_puestos_priv %>% distinct(periodo_trimestre_ano) %>% 
@@ -53,20 +37,21 @@ df_output <- df_bel_puestos_priv %>%
   group_by(anio, letra, letra_desc_abrev) %>% 
   mutate(porc_mujeres = puestos / sum(puestos, na.rm = T)) %>% 
   ungroup() %>% 
-  dplyr::filter(sexo == "Mujer") %>% 
+  dplyr::filter(sexo == "Mujeres") %>% 
   select(-sexo, -puestos) %>% 
   dplyr::filter(anio %in% anios_completos)
   
 
 
 # Modifico para que coincida con el nuevo formato
-df_anterior <- argendataR::descargar_output(nombre =output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") %>% 
-  mutate(anio = as.integer(anio))
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico)
+pks <- c("anio","letra")
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
-  pk = c("anio","letra"), # variables pk del dataset para hacer el join entre bases
+  pk = pks, # variables pk del dataset para hacer el join entre bases
   drop_joined_df =  F
 )
 
@@ -109,7 +94,7 @@ armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), outp
 
 # Tomo las variables output_name y subtopico declaradas arriba
 metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
-  dplyr::filter(grepl(paste0(output_name,".csv"), dataset_archivo)) %>% 
+  dplyr::filter(grepl(output_name, dataset_archivo)) %>% 
   distinct(variable_nombre, descripcion) 
 
 
@@ -145,12 +130,14 @@ df_output %>%
   argendataR::write_output(
     output_name = output_name,
     subtopico = subtopico,
-    fuentes = colectar_fuentes(),
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "letra"),
-    es_serie_tiempo = T,
-    columna_indice_tiempo = 'anio',
-    descripcion_columnas = descripcion,
-    unidades = list("porc_mujeres" = "unidades")
-  )
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("porc_mujeres" = "proporción"))
 
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
