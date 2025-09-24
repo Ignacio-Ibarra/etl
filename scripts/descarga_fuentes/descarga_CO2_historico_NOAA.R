@@ -16,7 +16,9 @@ download.file(url = co2_hist_url,
 #               nombre = "Evolución CO2 histórico"
 #                )
 
-actualizar_fuente_raw(id_fuente=100,url = "https://nuevaurl",
+comparar_archivos(x = glue::glue("{tempdir()}/co2_hist.xls"), y = get_fuente_path(codigo = "R100C0"))
+
+actualizar_fuente_raw(id_fuente=100,url = co2_hist_url,
                       fecha_actualizar = "Sin informacion")
 
 ## > list.files(tempdir())
