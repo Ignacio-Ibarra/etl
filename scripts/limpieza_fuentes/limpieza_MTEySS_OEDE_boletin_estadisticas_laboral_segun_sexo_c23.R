@@ -1,3 +1,7 @@
+# limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
@@ -58,14 +62,13 @@ clean_cuadros <- function(sheet_name, skip, filas_columnas, names_to, values_to)
   cols <- cols_[!white_cols(cols_)] %>%
     t() %>% # Transponer
     as.data.frame() %>% 
-    # replace_na(list(V1 = "", V2="")) %>% 
-    mutate(
-      concatenado = case_when(
-        is.na(V1) ~ V2,               # Si V1 es NA, tomar solo V2
-        is.na(V2) ~ V1,               # Si V2 es NA, tomar solo V1
-        TRUE ~ paste(V1, V2, sep = "#") # Si ninguna es NA, concatenar con "#"
-      )
-       ) %>% 
+    fill(V1, .direction = "down")
+  
+  cols$concatenado <- apply(cols, 1, function(x) {
+    paste(stats::na.omit(x), collapse = "#")
+  })
+  
+  cols <- cols %>% 
     pull(concatenado) %>% gsub("sd","Z", .)
   
   # Leo datos
@@ -91,6 +94,7 @@ clean_cuadros <- function(sheet_name, skip, filas_columnas, names_to, values_to)
                               names_sep = "#",
                               values_to = values_to, 
                               values_transform = as.numeric) %>% 
+    select(-letra_desc) %>% 
     left_join(dicc_sector, join_by(letra)) %>% 
     mutate(seccion = seccion_str, 
            cuadro = cuadro_str,
@@ -103,9 +107,9 @@ clean_cuadros <- function(sheet_name, skip, filas_columnas, names_to, values_to)
 
 
 sheet_name <- "C 2.3"
-skip <- 7
-filas_columnas <- 6:7
-names_to <- c('letra','sexo')
+skip <- 6
+filas_columnas <- 4:6
+names_to <- c('letra_desc','letra','sexo')
 values_to <- 'puestos'
 
 df_clean <- clean_cuadros(sheet_name = sheet_name, skip = skip, filas_columnas = filas_columnas, names_to = names_to, values_to = values_to )
@@ -138,5 +142,22 @@ clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 #                      nombre = clean_title,
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 105, path_clean = clean_filename, directorio = tempdir(), nombre = clean_title, script = code_name)
+id_fuente_clean <- 105
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) %>% 
+  mutate(sexo = ifelse(grepl("Muj", sexo), "Mujeres", "Varones"))
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c('periodo_trimestre_ano', 'letra', 'sexo')
+)
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
+
 

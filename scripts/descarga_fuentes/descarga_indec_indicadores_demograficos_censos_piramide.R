@@ -14,7 +14,7 @@ nombre <- "Indicadores Demográficos. Pirámide de población por sexo y edad. A
 
 institucion <- "Instituto Nacional de Estadística y Censos"
 
-download_filename <- "INDEC_PAD_Seleccion-29_08_2025.xlsx"
+download_filename <- "INDEC_PAD_Seleccion-29_08_2025.xlsx" # copiado manualmente 
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 

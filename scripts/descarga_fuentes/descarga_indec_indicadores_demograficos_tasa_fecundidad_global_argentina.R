@@ -5,27 +5,18 @@ gc()   #Garbage Collection
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
+
 fecha_actualizar <- "Sin informacion"
 
-source("scripts/utils/ministerio_salud_deis_scraper.R")
+url <- "https://indecbeta.shinyapps.io/PAD_Demog_Arg/"
 
-url <- "https://www.argentina.gob.ar/salud/deis/datos/nacidosvivos"
+nombre <- "Indicadores Demográficos. Tasa Global de Fecundidad. Años censales: 1869 a 2022"
 
-links_df <- DEIS.extraer_links(tema='nacidosvivos')
+institucion <- "Instituto Nacional de Estadística y Censos"
 
-columnas_nacidosvivos <- c("PROVRES","TIPPARTO","SEXO","IMEDAD","ITIEMGEST","IMINSTRUC","IPESONAC","CUENTA")
-
-rawlist <- DEIS.compilar(links_df, columnas_nacidosvivos) 
-
-nombre <- glue::glue("Nacidos Vivos ({min(links_df$anio)}-{max(links_df$anio)})")
-
-institucion <- "Ministerio de Salud. Dirección de Estadísticas e Información en Salud"
-
-download_filename <- nombre %>% janitor::make_clean_names() %>% paste0(.,".json", collapse = "")
+download_filename <- "INDEC_PAD_Seleccion-03_09_2025.xlsx"   # copiado manualmente 
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
-
-rawlist %>% jsonlite::write_json(., destfile)
 
 
 # agregar_fuente_raw(url = url,
@@ -38,7 +29,7 @@ rawlist %>% jsonlite::write_json(., destfile)
 #                    api = F
 # )
 
-actualizar_fuente_raw(id_fuente = 437,
+actualizar_fuente_raw(id_fuente = 436,
                       url = url, 
                       nombre = nombre, 
                       institucion = institucion,

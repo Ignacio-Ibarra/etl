@@ -5,27 +5,36 @@ gc()   #Garbage Collection
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
+
 fecha_actualizar <- "Sin informacion"
 
-source("scripts/utils/ministerio_salud_deis_scraper.R")
+source("scripts/utils/wpp_downloads.R")
 
-url <- "https://www.argentina.gob.ar/salud/deis/datos/nacidosvivos"
+mgroup <- "CSV format"
+sgroup <- "Fertility"
+ftitle <- "1950-2100, 5-year age groups"
 
-links_df <- DEIS.extraer_links(tema='nacidosvivos')
 
-columnas_nacidosvivos <- c("PROVRES","TIPPARTO","SEXO","IMEDAD","ITIEMGEST","IMINSTRUC","IPESONAC","CUENTA")
 
-rawlist <- DEIS.compilar(links_df, columnas_nacidosvivos) 
+search <- WPP_get_data_links() %>% 
+  dplyr::filter(MajorGroup == mgroup, 
+                SubGroup == sgroup, 
+                File_Title == ftitle)
 
-nombre <- glue::glue("Nacidos Vivos ({min(links_df$anio)}-{max(links_df$anio)})")
 
-institucion <- "Ministerio de Salud. Dirección de Estadísticas e Información en Salud"
+idescription <- search$Item_Description %>% read_html() %>% html_text() %>% str_replace_all(., "\\\n", ". ")
 
-download_filename <- nombre %>% janitor::make_clean_names() %>% paste0(.,".json", collapse = "")
+nombre <- glue::glue("World Population Proscpects - {sgroup}. {ftitle}. {idescription}. {mgroup}")
+
+url <- search$download_url
+
+institucion <- "United Nations, Department of Economic and Social Affairs, Population Division "
+
+download_filename <- basename(url)
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
-rawlist %>% jsonlite::write_json(., destfile)
+download.file(url, destfile)
 
 
 # agregar_fuente_raw(url = url,
@@ -38,7 +47,7 @@ rawlist %>% jsonlite::write_json(., destfile)
 #                    api = F
 # )
 
-actualizar_fuente_raw(id_fuente = 437,
+actualizar_fuente_raw(id_fuente = 438,
                       url = url, 
                       nombre = nombre, 
                       institucion = institucion,

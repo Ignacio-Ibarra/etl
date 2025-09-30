@@ -6,7 +6,7 @@ code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
-id_fuente <- 437
+id_fuente <- 448
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
 # Guardado de archivo
@@ -19,27 +19,12 @@ titulo.raw <- fuentes_raw() %>%
   filter(codigo == fuente_raw) %>% 
   select(nombre) %>% pull()
 
-rawlist <- argendataR::get_raw_path(fuente_raw) %>% 
-  jsonlite::read_json(.)
 
-df_stage <- rawlist %>% 
-  bind_rows() 
-
-diccionario_prov <- argendataR::get_raw_path("R84C0") %>% 
-  read.csv() %>% 
-  distinct(prov_cod, prov_desc)
-
-
-df_clean <- df_stage %>% 
-  janitor::clean_names() %>% 
-  left_join(diccionario_prov, join_by(provres == prov_cod)) %>% 
-  mutate(prov_desc = case_when(
-    provres == 98 ~ "Otro país",
-    provres == 99 ~ "Lugar no especificado",
-    TRUE ~ prov_desc
-  )) %>%
-  mutate(across(where(is.character), ~ str_replace_all(.x, "m<e1>s", "más")))
-
+df_clean <- read_csv(argendataR::get_raw_path(fuente_raw)) %>% 
+  mutate(sexo = ifelse(dim_30 == 31, "Mujer", 
+                       ifelse(dim_30 == 32, "Varón", 
+                              "Ambos"))) %>% 
+  select(cod_prov = code_1, sexo, poblacion_viviendas_particulares = value)
 
 
 clean_filename <- glue::glue("{nombre_archivo_raw}_CLEAN.parquet")
@@ -58,15 +43,17 @@ df_clean %>% arrow::write_parquet(., sink = path_clean)
 
 
 
-id_fuente_clean <- 282
+id_fuente_clean <- 289
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
-df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) 
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean )) %>% 
+  rename(anio = ano)
+
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = colnames(df_clean)[colnames(df_clean)!="cuenta"]
+                                     pk = c('cod_prov', 'sexo')
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
