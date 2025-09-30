@@ -14,7 +14,7 @@ fuente2 <- "R339C212" # Diccionario HS17 a Grandes Rubros
 fuente3 <- "R340C213" # Codigos HS con descripciones en portugués, inglés y español
  
 
-geonomenclador <- argendataR::get_nomenclador_geografico()
+geonomenclador <- argendataR::get_nomenclador_geografico_front()
 
 diccionario_ncm8 <- argendataR::get_clean_path(fuente2) %>% 
   arrow::read_parquet(.) 
@@ -75,12 +75,12 @@ posiciones_arg <- dbGetQuery(con, query_aux) %>%
 posiciones_str <- posiciones_arg %>% pull(ncm6) %>% paste0(., collapse=", ")
 
 query_output <- glue::glue(
-  "SELECT c.i as m49_code, p.country_iso3 as iso3, c.k as ncm6, SUM(c.v) as expo
+  "SELECT t as anio, c.i as m49_code, p.country_iso3 as iso3, c.k as ncm6, SUM(c.v) as expo
    FROM comercio as c
-   LEFT JOIN paises as p ON c.i = p.country_code  -- ✅ El JOIN ahora está antes del WHERE
+   LEFT JOIN paises as p ON c.i = p.country_code  
    WHERE c.k IN ({posiciones_str})
    AND c.t = (SELECT MAX(t) FROM comercio)
-   GROUP BY c.i, p.country_iso3, c.k"
+   GROUP BY c.i, p.country_iso3, c.k, t"
 )
 
 
@@ -96,7 +96,7 @@ df_output <- df_query %>%
   ) %>%
   ungroup() %>%
   left_join(geonomenclador %>% select(iso3 = geocodigo, pais_nombre = name_short), join_by(iso3)) %>%
-  select(iso3, pais_nombre, ncm6, desc_ncm6, expo, share, ranking)
+  select(anio, iso3, pais_nombre, ncm6, desc_ncm6, expo, share, ranking)
 
 
 
@@ -215,3 +215,4 @@ df_output %>%
     unidades = list("expo" = "miles de dólares",
                     "share" = "porcentaje")
   )
+

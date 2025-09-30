@@ -4,28 +4,31 @@ gc()   #Garbage Collection
 
 
 subtopico <- "AGROPE"
-output_name <- "comex_arg_agroindustria_MOA_PP_evo"
+output_name <- "comex_arg_agroindustria_MOA_PP_evo.csv"
 analista = "Franco A. Mendoza y Kevin Corfield"
 fuente1 <- "R306C174" # Subsecretaría de Programación Económica - Valores y Metadatos.  
+fuente2 <- "R335C210" # Ultimo dato de ICA
 
 
-df_prog <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
+df_mecon <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
 
 
+df_indec <- arrow::read_parquet(argendataR::get_clean_path(fuente2)) 
 
-df_expo_moa <- df_prog %>% 
+
+df_expo_moa <- df_mecon %>% 
   dplyr::filter(distribucion_id == 75.1) %>% 
   dplyr::filter(serie_titulo == "ica_total_moa") %>% 
   select(indice_tiempo, moa = valor)
 
 
-df_expo_pp <- df_prog %>% 
+df_expo_pp <- df_mecon %>% 
   dplyr::filter(distribucion_id == 75.1) %>% 
   dplyr::filter(serie_titulo == "ica_exportaciones_total_productos_primarios") %>%
   select(indice_tiempo, pp = valor)
 
 
-df_expo_pp_no_agro <- df_prog %>% 
+df_expo_pp_no_agro <- df_mecon %>% 
   dplyr::filter(distribucion_id == 162.1) %>% 
   dplyr::filter(serie_titulo %in% c("x_minerales_metaliferos_escorias_cenizas", # Capitulo 26
                                     "x_sal_azufre_tierras_piedras_yesos_cales_cementos")  # Capitulo 25
@@ -34,24 +37,56 @@ df_expo_pp_no_agro <- df_prog %>%
   summarise( pp_no_agro = sum(valor, na.rm = T)) %>% 
   ungroup()
 
-df_expo_total <- df_prog %>% 
+
+df_expo_total <- df_mecon %>% 
   dplyr::filter(distribucion_id == 75.1) %>% 
   dplyr::filter(serie_titulo == "ica_exportaciones_total_general") %>% 
   select(indice_tiempo, total = valor)
 
 
-df_output <- purrr::reduce(list(df_expo_moa, df_expo_pp, df_expo_pp_no_agro, df_expo_total), ~ left_join(.x, .y, by = "indice_tiempo")) %>% 
+df_output_mecon <- purrr::reduce(list(df_expo_moa, df_expo_pp, df_expo_pp_no_agro, df_expo_total), ~ left_join(.x, .y, by = "indice_tiempo")) %>% 
   mutate(pp_sin_mineria = pp - pp_no_agro,
-         participacion_expo_totales = (moa + pp_sin_mineria) / total,
          anio = year(as.Date(indice_tiempo))
-         ) %>% 
-  select(anio, pp_sin_mineria, moa, participacion_expo_totales)
+  ) %>% 
+  select(anio, moa, pp_sin_mineria, total)
+
+
+df_ultimo_anio_total <- df_indec %>% 
+  dplyr::filter(periodo_considerado == "Acumulado hasta diciembre", 
+                anio == max(anio)) %>% 
+  group_by(anio) %>% 
+  summarise(total = sum(expo, na.rm = T))
+  
+
+
+df_ultimo_anio_indec <- df_indec %>% 
+  dplyr::filter(periodo_considerado == "Acumulado hasta diciembre", 
+                    anio == max(anio), 
+                    grepl("(PP|MOA)", gran_rubro), 
+                    rubro != "Minerales metalíferos, escorias y cenizas") %>% 
+  group_by(anio, gran_rubro) %>% 
+  summarise(expo_indec = sum(expo)) %>% 
+  ungroup() %>% 
+  mutate(gran_rubro = ifelse(grepl("MOA", gran_rubro), "moa", "pp_sin_mineria")) %>% 
+  pivot_wider(., id_cols = anio, names_from = gran_rubro, values_from = expo_indec) %>% 
+  left_join(df_ultimo_anio_total, join_by(anio))
+
+
+df_output <- df_output_mecon %>% 
+  dplyr::filter(!(anio %in% df_ultimo_anio_indec$anio)) %>% 
+  bind_rows(df_ultimo_anio_indec) %>% 
+  mutate( participacion_expo_totales = (moa + pp_sin_mineria) / total)
+
+
+
+
+
+
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico,
-                                            entrega_subtopico = "primera_entrega") %>% 
-  rename(pp_sin_mineria = productos_primarios) %>% 
+                                            entrega_subtopico = "primera_entrega") %>%
   mutate(anio  = as.integer(anio))
 
 
@@ -103,7 +138,7 @@ armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), outp
 
 # Tomo las variables output_name y subtopico declaradas arriba
 metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
-  dplyr::filter(grepl(paste0("^", output_name,".csv"), dataset_archivo)) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), dataset_archivo)) %>% 
   distinct(variable_nombre, descripcion) 
 
 
@@ -160,7 +195,7 @@ df_output %>%
     pk = c('anio'),
     control = comparacion, 
     cambio_nombre_cols = list("pp_sin_mineria" = "productos_primarios"),
-    descripcion_columnas = descripcion,
+    # descripcion_columnas = descripcion,
     unidades = list("moa" = "millones de dólares",
                     "pp_sin_mineria" = "millones de dólares",
                     "participacion_expo_totales" = "unidades"),

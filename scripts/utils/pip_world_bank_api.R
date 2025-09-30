@@ -3,7 +3,6 @@
 
 
 library(httr)
-library(jsonlite)
 
 # Función auxiliar para convertir a una cadena separada por comas
 vector_to_string <- function(x) {
@@ -25,7 +24,7 @@ response_to_df <- function(url){
   
   # Parsear el contenido a JSON y convertirlo a data frame
   content <- content(response, as = "text")
-  json_data <- fromJSON(content)
+  json_data <- jsonlite::fromJSON(content)
   
   # Convertir el JSON a data frame
   df <- as.data.frame(json_data)
@@ -89,7 +88,8 @@ pip_api.get_data <- function(year, povline,
     povline = povline,
     fill_gaps = fill_gaps,
     welfare_tye = welfare_tye,
-    reporting_level = reporting_level
+    reporting_level = reporting_level,
+    ppp_version = ppp_version
     
   ))
   

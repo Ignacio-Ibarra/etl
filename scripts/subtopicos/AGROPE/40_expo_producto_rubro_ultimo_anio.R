@@ -1,10 +1,3 @@
-################################################################################
-##                              Dataset: nombre                               ##
-################################################################################
-
-# Este script es una copia del script ~/etl/scripts/subtopicos/ACECON/7_pib_comp_va.R
-
-
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
@@ -153,3 +146,5 @@ df_output %>%
     unidades = list("expo" = "millones de dólares",
                     "share" = "proporción")
   )
+
+

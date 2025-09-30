@@ -83,11 +83,8 @@ df_output <- df_all %>%
                values_to = "idh") 
 
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega")  %>% 
-  mutate(
-    iso3 = ifelse(grepl(".*WORLD", iso3),"WLD", iso3)
-  ) %>% 
-  rename(pais_nombre = country)
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico)
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
@@ -188,3 +185,8 @@ df_output %>%
     descripcion_columnas = descripcion,
     unidades = list("idh" = "indice")
   )
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
