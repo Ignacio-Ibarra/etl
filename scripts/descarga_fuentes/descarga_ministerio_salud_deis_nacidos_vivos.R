@@ -26,7 +26,7 @@ download_filename <- nombre %>% janitor::make_clean_names() %>% paste0(.,".json"
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
 rawlist %>% 
-  jsonlite::toJSON(., pretty = TRUE, auto_unbox = TRUE) %>% 
+  # jsonlite::toJSON(., pretty = TRUE, auto_unbox = TRUE) %>% 
   jsonlite::write_json(., destfile)
   
 

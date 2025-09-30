@@ -19,7 +19,7 @@ download.file(url = url,
 #                    fecha_actualizar = "Sin informacion",
 #                    path_raw = "temperature-anomaly-owid.csv",
 #                    directorio = tempdir(),
-#                    script = "descarga_R449C0.R",
+#                    script = "descarga_R450C0.R",
 #                    nombre = "Evolución de la anomalia de temperatura"
 # )
 
