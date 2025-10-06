@@ -1,7 +1,4 @@
-#limpio la memoria
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
+prop_empleo <- function(){
 # Metadatos 
 subtopico <- "INDUST"
 output_name <- "02a_prop_empleo_industria_arg"
@@ -112,5 +109,4 @@ df_empleo <- df_empleo %>%
                                 letra == 'N_O' ~ 'Serv. comunitarios, sociales y personales',
                                 letra == 'P' ~ 'Servicio doméstico'))
 
-# guardar resultados 
-readr::write_csv(df_empleo,file.path(outstub,'02a_prop_empleo_industria_arg.csv'))
+}
