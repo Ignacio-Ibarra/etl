@@ -8,10 +8,6 @@
 # y los 
 
 
-rm( list=ls() )  #Borro todos los objetos
-gc()   #Garbage Collection
-
-
 library(httr)
 library(jsonlite)
 
@@ -20,7 +16,7 @@ URL_BASE = "https://unstats.un.org/unsd/amaapi"
 
 
 
-get_response_result <- function(url){
+get_response <- function(url){
   response <- GET(url)
   
   # Verificar el estado de la respuesta
@@ -28,15 +24,21 @@ get_response_result <- function(url){
     stop("Error en la solicitud: ", status_code(response))
   }
   
-  requested_url <- response$url
-  # Parsear el contenido a JSON y convertirlo a data frame
-  content <- content(response, as = "text")
+  return(response)
+}
+
+get_response_result <- function(url){
+  
+  res <- get_response(url)
+  
+  content <- content(res, "text")
+  
   json_data <- fromJSON(content)
   
   # Convertir el JSON a data frame
   df <- as.data.frame(json_data)
   
-  result <- list(url = requested_url, data = df)
+  result <- list(url = url, data = df)
   return(result)
 }
 
@@ -105,7 +107,7 @@ ama_api.get_available_series = function(){
 ama_api.get_full_glossary = function(){
   endpoint = "/api/Metadata/glossary/0"
   url = paste0(URL_BASE, endpoint)
-  result = get_response_result(url)
+  res = get_response(url)
   return(result)
 }
 
@@ -128,3 +130,18 @@ ama_api.get_data = function(serieId, m49_codes, years){
 
 
 # data = ama_api.get_data(serieId = 26, m49_codes = c(32,76), years = 1900:2024)
+
+
+ama_api.download_file <- function(fileId, path){
+  endpoint <- "/api/File/"
+  url <- paste0(URL_BASE, endpoint, fileId)
+  
+  res <- get_response(url)
+  
+  # Guardar el contenido binario en un archivo temporal
+  writeBin(res$content, path)
+  
+  result <- list(url = url, download_path = path)
+  
+  return(result)
+}
