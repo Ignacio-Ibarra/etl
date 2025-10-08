@@ -6,6 +6,8 @@ rm(list = ls())
 url <- "https://ourworldindata.org/grapher/low-carbon-share-energy?country=ARG~OWID_WRL~BRA~CHL~SWE"
 
 
+archivo <- "participacion_fuentes_bajo_carbono_consumo.csv"
+
 participacion_fuentes_bajo_carbono_consumo <- owid_scraper(url)
 
 participacion_fuentes_bajo_carbono_consumo <- participacion_fuentes_bajo_carbono_consumo %>%
@@ -15,7 +17,11 @@ participacion_fuentes_bajo_carbono_consumo <- participacion_fuentes_bajo_carbono
                values_to = "valor")
 
 participacion_fuentes_bajo_carbono_consumo %>% 
-  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/participacion_fuentes_bajo_carbono_consumo.csv")))
+  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/{archivo}")))
+
+difs <- comparar_df(participacion_fuentes_bajo_carbono_consumo %>% 
+              mutate(anio = as.numeric(anio)), read_csv(get_raw_path("R71C0")),
+            pk = c("name", "entities_name", "anio"))
 
 # Descomentar y ejecutar la primera vez para registrar la fuente:
 # agregar_fuente_raw(
