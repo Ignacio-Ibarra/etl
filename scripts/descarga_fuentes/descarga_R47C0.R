@@ -3,6 +3,7 @@ rm(list = ls())
 # Global primary energy consumption by source ---------------
 url <- "https://ourworldindata.org/grapher/global-energy-consumption-source?facet=none"
 
+archivo <- "consumo_energia_global_owid.csv"
 
 consumo_energia_global <- owid_scraper(url)
 
@@ -12,8 +13,14 @@ consumo_energia_global <- consumo_energia_global %>%
                names_to = "anio",
                values_to = "valor")
 
+consumo_energia_global <- consumo_energia_global %>% 
+  mutate(anio = as.numeric(anio))
+
 consumo_energia_global %>% 
-  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/consumo_energia_global_owid.csv")))
+  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/{archivo}")))
+
+diferencia <- comparar_df(consumo_energia_global, df_anterior = read_csv(get_raw_path("R47C0")),
+            pk = c("name", "anio", "title"))
 
 # Descomentar y ejecutar la primera vez para registrar la fuente:
 # agregar_fuente_raw(url = url,
