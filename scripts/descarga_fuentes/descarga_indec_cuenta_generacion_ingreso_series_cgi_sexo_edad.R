@@ -4,18 +4,20 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 limpiar_temps()
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-periodicidad <- months(12)
-fecha_ultima_actualizacion <- as.Date("2024-08-31")
-fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
+fecha_actualizar <- "Sin informacion"
 
-# Descargo datos
 
 # Desactivo la verificacion de SSL
 options(download.file.method="curl", download.file.extra="-k -L")
 
 url <- "https://www.indec.gob.ar/ftp/cuadros/economia/series_cgi_sexo_edad.xlsx"
+
+nombre = "Cuenta de generación del ingreso (CGI). Remuneración al trabajo asalariado, ingreso mixto e insumo de mano de obra, por sexo y tramos de edad"
+
+institucion = "Instituto Nacional de Estadísticas y Censos"
 
 download_filename <- "series_cgi_sexo_edad.xlsx"
 
@@ -32,5 +34,11 @@ download.file(url, destfile = destfile, mode = "wb")
 #                    script = code_name
 # )
 
-ctualizar_fuente_raw(id_fuente = 228,
-                     path_raw = download_filename)
+
+actualizar_fuente_raw(id_fuente = 228,
+                      url = url, 
+                      nombre = nombre, 
+                      institucion = institucion,
+                      fecha_actualizar = fecha_actualizar,
+                      path_raw = download_filename,
+                      script = code_name)

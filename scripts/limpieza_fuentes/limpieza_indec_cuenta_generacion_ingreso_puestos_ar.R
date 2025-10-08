@@ -3,13 +3,8 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 id_fuente <- 228
 fuente_raw <- sprintf("R%sC0",id_fuente)
@@ -20,7 +15,7 @@ source("scripts/utils/funciones_limpieza_cgi_serie_sexo_edad.R")
 
 sheet_name <- "Puestos AR"
 
-all_data <- readxl::read_excel(get_raw_path(fuente_raw),
+all_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw),
                                sheet = sheet_name,
                                col_names = F,
                                na = c("","-"," - ","///"))
@@ -43,7 +38,7 @@ path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-code_name <- str_split_1(rstudioapi::getSourceEditorContext()$path, pattern = "/") %>% tail(., 1)
+
 
 titulo.raw <- fuentes_raw() %>% 
   filter(codigo == fuente_raw) %>% 
@@ -57,5 +52,20 @@ clean_title <- glue::glue("{titulo.raw} - {sheet_name}")
 #                      nombre = clean_title,
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 98, path_clean = clean_filename, directorio = tempdir(), nombre = clean_title, script = code_name)
+id_fuente_clean <- 98
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(argendataR::get_clean_path(codigo = codigo_fuente_clean )) 
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c('letra', 'edad_sexo', 'anio')
+)
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
 
