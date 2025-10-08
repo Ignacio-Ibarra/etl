@@ -1,5 +1,6 @@
-ids_grafs <- get_ids_graficos(c("https://argendata.fund.ar/topico/emisiones-de-gases-de-efecto-invernadero/#el-di%C3%B3xido-de-carbono-es-el-gei-m%C3%A1s-relevante",
-                   "https://argendata.fund.ar/notas/que-es-la-intensidad-de-carbono/"))
+ids_grafs <- get_ids_graficos(c("https://argendata.fund.ar/topico/transicion-energetica/"))
+
+ids_grafs <- stringr::str_extract(ids_grafs, "[A-Z]{6}_[gd]\\d{1,2}")
 
 get_mappings <- function(x) {
   
@@ -8,7 +9,7 @@ get_mappings <- function(x) {
   df
 }
 
-maps <- get_mappings(c("CAMCLI", "TRANEN"))
+maps <- get_mappings(c("TRANEN"))
 
 maps <- maps %>% 
   filter(public %in% ids_grafs)
@@ -52,5 +53,5 @@ f_clean <- fuentes_clean() %>% filter(codigo %in% f_clean_idx)
 maps %>% 
   mutate(f_raw = gsub("C\\d{1,2}", "C0", fuentes)) %>% 
   left_join(., f_raw, by = c("f_raw" = "codigo")) %>% 
-  writexl::write_xlsx("tmp/fuentes_emisiones.xlsx")
+  writexl::write_xlsx("tmp/fuentes_tranen.xlsx")
 
