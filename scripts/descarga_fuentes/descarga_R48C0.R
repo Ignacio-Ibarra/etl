@@ -4,6 +4,7 @@ rm(list = ls())
 
 url <- "https://ourworldindata.org/grapher/energy-consumption-by-source-and-country?country=~ARG"
 
+archivo <- "consumo_energia_por_fuentes_arg_owid.csv"
 
 consumo_energia_por_fuentes_arg <- owid_scraper(url)
 
@@ -14,7 +15,7 @@ consumo_energia_por_fuentes_arg <- consumo_energia_por_fuentes_arg %>%
                values_to = "valor")
 
 consumo_energia_por_fuentes_arg %>% 
-  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/consumo_energia_por_fuentes_arg_owid.csv")))
+  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/{archivo}")))
 
 # Descomentar y ejecutar la primera vez para registrar la fuente:
 # agregar_fuente_raw(
@@ -28,6 +29,10 @@ consumo_energia_por_fuentes_arg %>%
 #   fecha_actualizar = NULL,
 #   actualizable = T
 # )
+
+difs <- comparar_df(consumo_energia_por_fuentes_arg %>% 
+              mutate(anio = as.numeric(anio)), read_csv(get_raw_path("R48C0")),
+            pk = c("name", "anio", "entities_name"))
 
 # Actualizar la fuente (reemplazar 48 con el ID correcto si es necesario):
 actualizar_fuente_raw(48, script = "descarga_R48C0.R",
