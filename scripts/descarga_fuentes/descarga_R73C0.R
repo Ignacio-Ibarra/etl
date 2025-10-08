@@ -17,6 +17,11 @@ generacion_nuclear <- generacion_nuclear %>%
 generacion_nuclear %>% 
   write_csv_fundar(normalizePath(glue::glue("{tempdir()}/generacion_nuclear.csv")))
 
+difs <- comparar_df(generacion_nuclear %>% 
+              mutate(anio = as.numeric(anio)),
+            read_csv(get_raw_path("R73C0")), 
+            pk = c("name", "entities_name", "anio"))
+
 # Descomentar y ejecutar la primera vez para registrar la fuente:
 # agregar_fuente_raw(
 #   url = url,
