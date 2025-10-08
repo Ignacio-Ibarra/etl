@@ -13,9 +13,11 @@ fuente1 <- 'R452C295'
 df <- read_fuente_clean(295)
 
 
-df_output <- df %>% 
-  filter(code == "ARG") %>% 
-  mutate(temperature_anomaly = temperature_anomaly-mean(df$temperature_anomaly[df$year %in% 1940:1969])) %>% 
+df <- df %>% 
+  filter(code == "ARG")
+
+df_output <- df  %>% 
+  mutate(temperature_anomaly = temperature_anomaly-mean(temperature_anomaly[year %in% 1940:1969])) %>% 
   rename(geonombreFundar = entity, geocodigoFundar = code )
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
