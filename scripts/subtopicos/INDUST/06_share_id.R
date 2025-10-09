@@ -17,8 +17,6 @@ df_oecd <- argendataR::get_raw_path(fuente1) %>%
 geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
   select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
-
-
 # Seleccionar sectores
 df_berd <- df_oecd %>% 
   janitor::clean_names() %>% 
@@ -28,28 +26,27 @@ df_berd <- df_oecd %>%
          price_base == "V") %>% 
   select(anio = time_period, geocodigoFundar = ref_area, activity, obs_value) %>% 
   drop_na(obs_value) %>% 
-  group_by(anio, geocodigoFundar) %>% 
-  dplyr::filter(n() == 2) %>% 
-  ungroup() 
+  pivot_wider(id_cols = c(anio, geocodigoFundar), 
+              names_from = activity, 
+              values_from = obs_value) %>% 
+  rename(c = C,
+         t = `_T`)
 
 df_berd_wld <- df_berd %>% 
-  group_by(anio, activity) %>% 
-  summarise(obs_value = sum(obs_value, na.rm = T)) %>% 
-  ungroup() %>% 
   group_by(anio) %>% 
-  mutate(share_indust_id = obs_value / sum(obs_value)) %>% 
+  summarise(berd_manuf = sum(c, na.rm = T),
+            berd_total = sum(t, na.rm = T))  %>% 
   ungroup() %>% 
-  dplyr::filter(activity == "C") %>% 
-  select(-activity, -obs_value) %>% 
-  mutate(geocodigoFundar = "WLD")
+  mutate(share_indust_id = 100 * berd_manuf / berd_total) %>% 
+  mutate(geocodigoFundar = "WLD") %>% 
+  select(anio, geocodigoFundar, share_indust_id)
 
 
 df_output <- df_berd %>% 
-  group_by(anio, geocodigoFundar) %>% 
-  mutate(share_indust_id = obs_value / sum(obs_value)) %>% 
+  mutate(share_indust_id = 100 * c / t) %>% 
   ungroup() %>% 
-  dplyr::filter(activity == "C") %>% 
-  select(-activity, -obs_value) %>% 
+  drop_na(share_indust_id) %>% 
+  select(anio, geocodigoFundar, share_indust_id) %>% 
   bind_rows(., df_berd_wld) %>% 
   left_join(geo_front, join_by(geocodigoFundar)) %>% 
   select(anio, geocodigoFundar, geonombreFundar, share_indust_id)
@@ -62,8 +59,8 @@ df_anterior <- argendataR::descargar_output(nombre = output_name,
 df_comparable <- df_output %>% 
   rename(iso3 = geocodigoFundar,
          name_long = geonombreFundar) %>% 
-  mutate(anio = as.numeric(anio)) %>% 
-  dplyr::filter(iso3 != "WLD")
+  mutate(anio = as.numeric(anio), 
+         share_indust_id = share_indust_id / 100) 
 
 
 pks_comparacion <- c('anio','iso3')
