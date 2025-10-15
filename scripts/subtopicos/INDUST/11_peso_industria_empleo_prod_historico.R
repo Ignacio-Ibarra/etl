@@ -2,16 +2,22 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
+library(dplyr)
+library(tidyr)
+
 # Metadatos 
 subtopico <- "INDUST"
-output_name <- "11_peso_industria_empleo_historico"
+output_name <- "peso_industria_empleo_prod_historico.csv"
 analista <- "Nicolás Sidicaro"
 fuente1 <- 'R35C106' # Puestos CGI 
 fuente2 <- 'R453C296' # National Accounts. Analysis of Main Aggregates (AMA). Percentage Distribution (Shares) of GDP. All countries for all years - sorted alphabetically - Cuadro: Download-Shares-countries
 fuente3 <- 'R231C102' # Groningen Growth and Development Centre
-fuente4 <- "R36C13"
+fuente4 <- "R36C13" # 
 fuente5 <- "R38C7"
 
+
+geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
 df_cgi <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet()
@@ -182,49 +188,27 @@ df_break_arg <- bind_rows(pbisectores_fnys,
   distinct() %>% drop_na(valor)
 
 
-
-# carga de fuentes - nico 
-df_break <- dplyr::as_tibble(openxlsx::read.xlsx('https://unstats.un.org/unsd/amaapi/api/file/22',startRow = 3))
-df_empleo <- arrow::read_parquet('http://149.50.137.164:2147/static/etl-fuentes/clean/ETD_10SD_EASD_CLEAN.parquet')
-df_cgi <- arrow::read_parquet('http://149.50.137.164:2147/static/etl-fuentes/clean/puestos_serie_cgi_CLEAN.parquet')
-df_break_arg <- read_csv('https://raw.githubusercontent.com/argendatafundar/data/main/ACECON/7_pib_comp_va.csv')
-
 # ordenar breakdown
-df_break <- df_break %>% 
-  dplyr::filter(stringr::str_detect(IndicatorName,'ISIC D'))
-df_break <- df_break %>% 
-  tidyr::pivot_longer(-c(CountryID,Country,IndicatorName),values_to='industry_gdp',names_to='year')
-df_break$IndicatorName <- NULL
-df_break$CountryID <- NULL
-df_break$year <- as.numeric(df_break$year)
+df_break_tidy <- df_break %>% 
+  dplyr::filter(stringr::str_detect(indicator_name,'ISIC D')) %>% 
+  select(anio, iso3, pais_nombre, share_industrial_gdp = share ) 
 
 # filtrar datos de empleo
-df_empleo <- df_empleo %>% 
-  filter(var_code == 'EMP' & !is.na(value))
-
-# calcular participacion industria empleo 
-df_empleo <- df_empleo %>% 
+df_empleo_tidy <- df_empleo %>% 
+  filter(var_code == 'EMP' & !is.na(value)) %>% 
   group_by(year,cnt,sector) %>% 
-  summarize(value = sum(value))
-df_empleo <- df_empleo %>% 
+  summarize(value = sum(value, na.rm = T)) %>% 
   group_by(year,cnt) %>% 
-  mutate(prop = value / sum(value))
+  mutate(prop = value / sum(value)) %>% 
+  ungroup()
 
-# Agregar nombre de pais 
-df_empleo <- df_empleo %>% 
-  left_join(dicc_pais,by=c('cnt'='iso3c'))
 
 # Agregar empleo CGI 
-df_cgi <- df_cgi %>% 
-  filter(trim == 'Total')
-df_cgi <- df_cgi %>% 
-  filter(indicador %in% c('Total general','Industria manufacturera'))
-df_cgi <- df_cgi %>%  
+df_cgi_tidy <- df_cgi %>% 
+  filter(trim == 'Total', indicador %in% c('Total general','Industria manufacturera')) %>%  
   select(-c(letra,trim)) %>% 
-  pivot_wider(names_from = indicador,values_from=puestos)
-df_cgi <- df_cgi %>% 
-  mutate(prop = `Industria manufacturera` / `Total general`)
-df_cgi <- df_cgi %>% 
+  pivot_wider(names_from = indicador,values_from=puestos)%>% 
+  mutate(prop = `Industria manufacturera` / `Total general`) %>% 
   select(year=anio,prop) %>% 
   mutate(cnt = 'ARG',
          sector = 'Manufacturing',
@@ -232,63 +216,261 @@ df_cgi <- df_cgi %>%
          country = 'Argentina')
 
 # Tirar serie de argentina (CGI) para atras con GGDC
-df_empleo_arg <- df_empleo %>% 
-  filter(country == 'Argentina')
-df_empleo_arg <- df_empleo_arg %>% 
-  filter(sector == 'Manufacturing')
+df_empleo_arg <- df_empleo_tidy %>% 
+  filter(cnt == 'ARG', sector == 'Manufacturing')
+
+
+empalmar_series <- function(df_historico, df_oficial, 
+                            var_empalme = "prop", 
+                            grupos = c("cnt", "sector", "country"),
+                            año_empalme = 2016) {
+  
+  
+  
+  # 1. Calcular variaciones anuales en la serie histórica
+  print("Paso 1: Calculando variaciones anuales...")
+  
+  df_variaciones <- df_historico %>%
+    arrange(across(all_of(grupos)), year) %>%
+    group_by(across(all_of(grupos))) %>%
+    mutate(
+      # Calcular variación anual (tasa de crecimiento)
+      variacion_anual = ifelse(lag(.data[[var_empalme]]) != 0 & !is.na(lag(.data[[var_empalme]])),
+                               (.data[[var_empalme]] / lag(.data[[var_empalme]])) - 1,
+                               NA),
+      # También calcular el factor multiplicativo
+      factor_crecimiento = ifelse(!is.na(variacion_anual), 
+                                  1 + variacion_anual, 
+                                  NA)
+    ) %>%
+    ungroup() %>%
+    filter(!is.na(variacion_anual)) %>%
+    select(all_of(c("year", grupos, "variacion_anual", "factor_crecimiento")))
+  
+  print(paste("Variaciones calculadas para", nrow(df_variaciones), "observaciones"))
+  
+  # 2. Obtener valores de referencia del año de empalme en la serie oficial
+  print("Paso 2: Obteniendo valores de referencia...")
+  
+  df_referencia <- df_oficial %>%
+    filter(year == año_empalme) %>%
+    select(all_of(c(grupos, var_empalme))) %>%
+    rename(valor_referencia = !!sym(var_empalme))
+  
+  print(paste("Valores de referencia obtenidos para", nrow(df_referencia), "grupos"))
+  
+  # 3. Crear serie empalmada hacia atrás
+  print("Paso 3: Empalmando series hacia atrás...")
+  
+  # Obtener años únicos menores al año de empalme, ordenados de mayor a menor
+  años_empalme <- sort(unique(df_variaciones$year[df_variaciones$year < año_empalme]), 
+                       decreasing = TRUE)
+  
+  # Inicializar con valores de referencia
+  serie_empalmada <- df_referencia %>%
+    mutate(year = año_empalme,
+           !!sym(var_empalme) := valor_referencia) %>%
+    select(-valor_referencia)
+  
+  # Empalmar año por año hacia atrás
+  for(año in años_empalme) {
+    print(paste("Procesando año:", año))
+    
+    # Obtener variaciones para el año siguiente (año + 1)
+    variaciones_año <- df_variaciones %>%
+      filter(year == año + 1) %>%
+      select(all_of(c(grupos, "factor_crecimiento")))
+    
+    if(nrow(variaciones_año) > 0) {
+      # Calcular valores hacia atrás usando la variación
+      valores_año <- serie_empalmada %>%
+        filter(year == año + 1) %>%
+        inner_join(variaciones_año, by = grupos) %>%
+        mutate(
+          year = año,
+          !!sym(var_empalme) := .data[[var_empalme]] / factor_crecimiento
+        ) %>%
+        select(-factor_crecimiento)
+      
+      # Agregar a la serie empalmada
+      serie_empalmada <- bind_rows(serie_empalmada, valores_año)
+    }
+  }
+  
+  # 4. Combinar con la serie oficial (2016 en adelante)
+  print("Paso 4: Combinando con serie oficial...")
+  
+  serie_oficial_completa <- df_oficial %>%
+    select(all_of(c("year", grupos, var_empalme, "value")))
+  
+  # Crear serie final
+  serie_final <- bind_rows(
+    # Serie empalmada (años anteriores al empalme)
+    serie_empalmada %>% 
+      filter(year < año_empalme) %>%
+      mutate(fuente = "empalmada"),
+    
+    # Serie oficial (año de empalme en adelante)
+    serie_oficial_completa %>%
+      mutate(fuente = "oficial")
+  ) %>%
+    arrange(across(all_of(grupos)), year)
+  
+  print("Proceso completado exitosamente!")
+  
+  # Estadísticas del resultado
+  cat("\n=== RESUMEN DEL EMPALME ===\n")
+  cat("Años empalmados:", min(serie_final$year[serie_final$fuente == "empalmada"]), 
+      "a", año_empalme - 1, "\n")
+  cat("Años oficiales:", año_empalme, "a", max(serie_final$year), "\n")
+  cat("Total de observaciones:", nrow(serie_final), "\n")
+  cat("Grupos únicos:", nrow(distinct(serie_final, across(all_of(grupos)))), "\n")
+  
+  return(list(
+    serie_empalmada = serie_final,
+    variaciones_utilizadas = df_variaciones,
+    valores_referencia = df_referencia
+  ))
+}
+
+
 
 # Ejecutar el empalme
 resultado <- empalmar_series(
   df_historico = df_empleo_arg,
-  df_oficial = df_cgi,
+  df_oficial = df_cgi_tidy,
   var_empalme = "prop",
-  grupos = c("cnt", "sector", "country"),
+  grupos = c("cnt", "sector"),
   año_empalme = 2016
 )
 
 # Obtener la serie final
-serie_final <- resultado$serie_empalmada
-serie_final$fuente <- NULL
+serie_final <- resultado$serie_empalmada %>% 
+  select(-c(value, fuente))
 
-# Juntar la serie 
-df_empleo$value <- NULL
-df_empleo <- df_empleo %>% 
-  filter(cnt != 'ARG')
-serie_final$value <- NULL
-df_empleo <- bind_rows(df_empleo,serie_final)
 
-# Armar dato de share de PIB Industrial en Argentina 
-df_break <- df_break %>% 
-  filter(Country != 'Argentina')
-df_break_arg <- df_break_arg %>% 
-  filter(sector == 'industria_manufacturera')
-df_break_arg <- df_break_arg %>% 
-  mutate(Country = 'Argentina') %>% 
-  select(-sector)
-df_break_arg <- df_break_arg %>% 
-  select(Country,year=anio,industry_gdp = valor)
-df_break <- bind_rows(df_break,df_break_arg)
+df_empleo_final <- serie_final %>% 
+  bind_rows(
+    df_empleo_tidy %>% 
+      dplyr::filter(sector == "Manufacturing", cnt != "ARG") %>% 
+      select(-value)
+  )
+
+
+df_break_final <- df_break_tidy %>% 
+  dplyr::filter(iso3 != "ARG") %>% 
+  select(geocodigoFundar = iso3, anio, share_industrial_gdp ) %>% 
+  bind_rows(
+    df_break_arg %>% 
+      dplyr::filter(sector == "industria_manufacturera") %>% 
+      mutate(geocodigoFundar = "ARG") %>% 
+      select(anio, geocodigoFundar, share_industrial_gdp = valor)
+  ) %>% 
+  mutate(share_industrial_gdp = share_industrial_gdp /100)
+
 
 # Agregar tasas de gdp industry
-df_final <- df_empleo %>% 
-  filter(sector == 'Manufacturing') %>% 
-  select(-sector) %>% 
-  full_join(df_break,by=c('country'='Country','year'='year')) %>% 
-  mutate(cnt = if_else(country == 'Argentina','ARG',cnt))
+df_output <- df_empleo_final %>% 
+  select(anio = year, geocodigoFundar = cnt, share_industrial_employment = prop) %>% 
+  full_join(df_break_final, 
+            join_by(anio, geocodigoFundar)) %>% 
+  arrange(geocodigoFundar, anio) %>% 
+  left_join(geo_front, join_by(geocodigoFundar)) %>% 
+  pivot_longer(
+    matches("share.*"), 
+    names_to = 'variable',
+    values_to = 'valor'
+  ) %>% 
+  drop_na(valor)
 
-# Filtrar manufacturas
-df_final <- df_final %>% 
-  rename(share_industrial_employment=prop,
-         share_industrial_gdp = industry_gdp) %>% 
-  mutate(share_industrial_gdp = share_industrial_gdp / 100)
 
-# Pivotear 
-df_final <- df_final %>% 
-  pivot_longer(-c(year,cnt,country),names_to='variable',values_to='valor')
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico, drive = T) 
 
-# Sacar nulos 
-df_final <- df_final %>% 
-  filter(!is.na(valor))
 
-# guardar resultados 
-readr::write_csv(df_final,file.path(outstub,'11_peso_industria_empleo_prod_historico.csv'))
+df_comparable <- df_output %>% 
+  select(year = anio, cnt = geocodigoFundar, country = geonombreFundar, variable, valor)
+
+pks_comparacion <- c('year', 'cnt', 'variable')
+
+comparacion <- argendataR::comparar_outputs(
+  df = df_comparable,
+  df_anterior = df_anterior,
+  nombre = output_name,
+  pk = pks_comparacion
+)
+
+
+
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), nombre_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
+    analista = analista,
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
+
+
+
+
+
+

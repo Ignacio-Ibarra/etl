@@ -7,8 +7,8 @@ subtopico <- "INDUST"
 output_name <- "salarios_industriales.csv"
 analista <- "Nicolás Sidicaro"
 fuente1 <- 'R238C146' # Descriptor 
-fuente2 <- 'R239C182' # salarios
-fuente3 <- 'R238C138' # puestos
+fuente2 <- 'R239C300' # salarios 2 digitos C4
+fuente3 <- 'R238C145' # puestos 2 digitos C3
 fuente4 <- 'R239C111' # salario_letra
 
 

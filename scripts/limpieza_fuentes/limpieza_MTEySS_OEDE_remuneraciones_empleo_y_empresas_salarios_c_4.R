@@ -1,14 +1,24 @@
-#limpio la memoria
+# limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-
-
-id_fuente <- 238
+id_fuente <- 239
 fuente_raw <- sprintf("R%sC0",id_fuente)
+
+# Guardado de archivo
+nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
+                            filter(codigo == fuente_raw) %>% 
+                            select(path_raw) %>% 
+                            pull())
+
+
+titulo.raw <- fuentes_raw() %>% 
+  filter(codigo == fuente_raw) %>% 
+  select(nombre) %>% pull()
+
 
 # Función para verificar si el número de NAs en cada fila es mayor o igual a un umbral
 check_na_threshold <- function(df, threshold) {
@@ -22,16 +32,14 @@ white_cols <- function(df) {
 }
 
 
-
-
-clean_cuadro_c3 <- function(sheet_name, skip, filas_columnas, names_to, values_to){
+clean_cuadro_c6 <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
   str_titulos <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                     sheet = sheet_name,
                                     range = "A1:A1",
-                                    col_names = F) %>% pull()
+                                    col_names = F) %>% pull() %>% str_replace(., "Cuadro 4:","Cuadro 5:")
   
-  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
+  cols_ <- readxl::read_excel(get_raw_path(fuente_raw), 
                               sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
@@ -43,7 +51,7 @@ clean_cuadro_c3 <- function(sheet_name, skip, filas_columnas, names_to, values_t
     paste(stats::na.omit(x), collapse = "#")
   })
   
-  cols <- c('ciiu_rev3_2d',cols$concatenado[2:nrow(cols)])
+  cols <- c('ciiu_rev3_4d', 'rama_de_actividad', cols$concatenado[-1])
   
   # Leo datos
   sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
@@ -60,35 +68,26 @@ clean_cuadro_c3 <- function(sheet_name, skip, filas_columnas, names_to, values_t
   
   # saco las filas que tienen (num_cols - 1) nulos
   filter_bool <- check_na_threshold(sheet_data, num_cols-1)
-  df <- sheet_data %>% dplyr::filter(!filter_bool) %>% 
+  df <- sheet_data %>% 
+    dplyr::filter(!filter_bool) %>% 
     pivot_longer(!all_of(cols[1:2]),
                  names_to = names_to,
                  values_to = values_to,
-                 names_transform = as.integer,
+                 names_transform = as.character,
                  values_transform = as.numeric) %>% 
-    mutate(cuadro = str_titulos) %>% 
-    janitor::clean_names() 
-  
-  
+    mutate(cuadro = str_titulos,
+           anio = as.integer(anio)) 
   return(df)
 }
 
 
-sheet_name <- "C 3" # Cuadro 4 dice en la celda A1:A1 pero es Cuadro 5
+sheet_name <- "C 4" 
 filas_columnas <- 5
 skip <- 5
 names_to <- 'anio'
-values_to <- 'cant_promedio_puestos_privados'
+values_to <- 'salario_promedio_puestos_privados'
 
-df_clean <- clean_cuadro_c3(sheet_name = sheet_name, skip = skip, filas_columnas = filas_columnas, names_to = names_to, values_to = values_to )
-
-
-
-# Guardado de archivo
-nombre_archivo_raw <- sub("\\.[^.]*$", "", fuentes_raw() %>% 
-                            filter(codigo == fuente_raw) %>% 
-                            select(path_raw) %>% 
-                            pull())
+df_clean <- clean_cuadro_c6(sheet_name = sheet_name, skip = skip, filas_columnas = filas_columnas, names_to = names_to, values_to = values_to )
 
 normalized_sheet_name <- sheet_name %>% janitor::make_clean_names(.)
 
@@ -98,11 +97,6 @@ path_clean <- glue::glue("{tempdir()}/{clean_filename}")
 
 df_clean %>% arrow::write_parquet(., sink = path_clean)
 
-
-titulo.raw <- fuentes_raw() %>% 
-  filter(codigo == fuente_raw) %>% 
-  select(nombre) %>% pull()
-
 clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 
 # agregar_fuente_clean(id_fuente_raw = id_fuente,
@@ -111,7 +105,7 @@ clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 #                      nombre = clean_title,
 #                      script = code_name)
 
-id_fuente_clean <- 145
+id_fuente_clean <- 300
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -120,7 +114,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("anio", "ciiu_rev3_2d")
+                                     pk = c("anio", "ciiu_rev3_4d")
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
