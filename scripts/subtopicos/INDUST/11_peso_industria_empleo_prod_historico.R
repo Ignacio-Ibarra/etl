@@ -7,34 +7,180 @@ subtopico <- "INDUST"
 output_name <- "11_peso_industria_empleo_historico"
 analista <- "Nicolás Sidicaro"
 fuente1 <- 'R35C106' # Puestos CGI 
-fuente2 <- 'GDP Breakdown (%)' # UN - National Accounts - Analysis of Main Aggregates (AMA)
+fuente2 <- 'R453C296' # National Accounts. Analysis of Main Aggregates (AMA). Percentage Distribution (Shares) of GDP. All countries for all years - sorted alphabetically - Cuadro: Download-Shares-countries
 fuente3 <- 'R231C102' # Groningen Growth and Development Centre
+fuente4 <- "R36C13"
+fuente5 <- "R38C7"
 
-# Funciones
-source('indust/utils/empalme_serie_empleo_historica.R')
+
+df_cgi <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
+
+df_break <- argendataR::get_clean_path(fuente2) %>% 
+  arrow::read_parquet() 
+
+df_empleo <- argendataR::get_clean_path(fuente3) %>% 
+  arrow::read_parquet() 
 
 
-# rutas 
-outstub <- 'indust/input'
+# BREAKS ARGENTINA
 
-# Diccionario paises
-dicc_pais <- read_csv(file.path(outstub,'01_pib_industrial_per_capita.csv')) %>% 
-  select(country,iso3c) %>% 
-  distinct()
-paises_agregados <- data.frame(country=c('Bolivia (Plurinational State of)','Egypt','U.R. of Tanzania: Mainland',
-                                         'Republic of Korea','Taiwan','China, Hong Kong SAR',
-                                         "Lao People's DR",'Türkiye'),
-                               iso3c = c('BOL','EGY','TZA','KOR','TWN','HKG',
-                                         'LAO','TUR'))
-dicc_pais <- bind_rows(dicc_pais,paises_agregados)
 
-# carga de fuentes - Argendata 
-# df_cgi <- argendataR::get_clean_path(fuente1) %>% 
-#   arrow::read_parquet()
-# df_break <- argendataR::get_clean_path(fuente2) %>% 
-#   arrow::read_parquet()
-# df_empleo <- argendataR::get_clean_path(fuente3) %>% 
-#   arrow::read_parquet()
+# sectores a precios basicos como % del pib a precio de mercado y PIB a precio de basicos como % respecto a precio de mercado
+pbisectores_fnys <- arrow::read_parquet(argendataR::get_clean_path(fuente4))
+
+# vab por sectores a precios corrientes en millones de pesos corrientes 
+pbisectores_indec <- arrow::read_parquet(argendataR::get_clean_path(fuente5))
+
+
+# Procesamiento -------
+
+# me quedo solo con los datos de total anual
+pbisectores_indec <- pbisectores_indec %>% 
+  filter(trim == "Total") %>% 
+  select(-trim) 
+
+# selecciono anios que corresponden a la expansion
+pbisectores_indec <- pbisectores_indec %>%
+  filter(anio %in% 2004:max(anio))
+
+# seleccion de variables de interes
+pbisectores_indec %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  colnames()
+
+pbisectores_indec <- pbisectores_indec %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  select(anio,
+         valor_agregado_bruto_a_precios_basicos,
+         a_agricultura_ganaderia_caza_y_silvicultura,
+         b_pesca, c_explotacion_de_minas_y_canteras, d_industria_manufacturera,
+         e_electricidad_gas_y_agua, f_construccion,
+         g_comercio_mayorista_minorista_y_reparaciones,h_hoteles_y_restaurantes, i_transporte_almacenamiento_y_comunicaciones,
+         j_intermediacion_financiera, k_actividades_inmobiliarias_empresariales_y_de_alquiler,
+         l_administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria,
+         m_ensenanza, n_servicios_sociales_y_de_salud,
+         o_otras_actividades_de_servicios_comunitarias_sociales_y_personales, p_hogares_privados_con_servicio_domestico)
+
+
+# calculo de proporciones de vab por sector respecto al vab total
+pbisectores_indec <- pbisectores_indec %>%
+  mutate(across(-anio, function(x) 100*x/valor_agregado_bruto_a_precios_basicos,
+                .names = "prop_{.col}"))
+
+
+## datos fnys 
+# seleccion de variables de interes
+pbisectores_fnys <- pbisectores_fnys %>% 
+  filter(! indicador %in% c(
+    "PIB Total a precios de mercado",
+    "PIB a costo de factores / precios básicos"
+  ))
+
+
+# filtro anios de interes (la serie llega a 2018)
+pbisectores_fnys <- pbisectores_fnys %>%
+  filter(anio %in% 1935:2004)
+
+# pivot
+pbisectores_fnys <- pbisectores_fnys %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>% 
+  janitor::clean_names()
+
+
+# la serie de pesca tiene datos faltantes
+# se imputan con extrapolacion lineal
+pbisectores_fnys$pesca2 <- pbisectores_fnys$pesca
+pbisectores_fnys$pesca2[which(is.na(pbisectores_fnys$pesca))] <-  zoo::na.approx(pbisectores_fnys$pesca, xout = which(is.na(pbisectores_fnys$pesca)))
+
+# en los anios donde habia datos faltantes para pesca es necesario restar el valor imputado a agricultura
+# esto es xq entendemos que al sector agro se le sumo el dato de pesca para esos anios 
+pbisectores_fnys$agricultura_caza_y_silvicultura[which(is.na(pbisectores_fnys$pesca))] <- pbisectores_fnys$agricultura_caza_y_silvicultura[which(is.na(pbisectores_fnys$pesca))] -pbisectores_fnys$pesca2[which(is.na(pbisectores_fnys$pesca))] 
+
+# en algunos subsectores habia datos faltantes
+# se calcula la proporcion del subsector sobre el sector y se extrapola la proporcion para datos faltantes
+# se recalcula el valor del subsector como proporcion*total sector
+pbisectores_fnys <- pbisectores_fnys %>% 
+  mutate(prop_intermediacion_finan = intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera/intermediacion_financiera_y_actividades_inmobiliarias_total,
+         prop_actividades_inmobiliarias = intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler/intermediacion_financiera_y_actividades_inmobiliarias_total,
+         prop_admin_pub = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr/administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total,
+         prop_servicios_soc = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios/administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total) 
+
+
+columnas_prop <- grep("^prop_",colnames(pbisectores_fnys), value = T)
+
+
+for(i in columnas_prop) {
+  
+  pbisectores_fnys[which(is.na(pbisectores_fnys[i])),i] <- zoo::na.approx(pbisectores_fnys[[i]],
+                                                                          xout = which(is.na(pbisectores_fnys[[i]])))
+  
+}
+
+
+pbisectores_fnys <- pbisectores_fnys %>% 
+  mutate(
+    intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera = prop_intermediacion_finan*intermediacion_financiera_y_actividades_inmobiliarias_total,
+    intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler = prop_actividades_inmobiliarias*intermediacion_financiera_y_actividades_inmobiliarias_total,
+    administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr = prop_admin_pub*administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total,
+    administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios = prop_servicios_soc*administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_total
+    
+  )
+
+
+pbisectores_fnys <- pbisectores_fnys %>% 
+  mutate(pesca = pesca2) %>% 
+  select(-c("pesca2", 
+            starts_with("prop_"), ends_with("_total")))
+
+# se calcula la proporcion de cada sector sobre el total vab
+pbisectores_fnys <- pbisectores_fnys %>% 
+  rowwise() %>% 
+  mutate(total = sum(c_across(-anio)))
+
+pbisectores_fnys <- pbisectores_fnys %>% 
+  mutate(across(-c(anio, total), function(x) 100*x/total)) %>% 
+  select(-total)
+
+
+
+# junto las series
+# seleccion de columnas limpieza de nombres y pivot longer
+pbisectores_indec <- pbisectores_indec %>% 
+  select(anio, starts_with("prop"))
+
+pbisectores_indec <- pbisectores_indec %>% 
+  rowwise() %>% 
+  mutate(prop_comercio_mayorista_minorista_hoteles_restaurantes = sum(c_across(c(prop_h_hoteles_y_restaurantes, 
+                                                                                 prop_g_comercio_mayorista_minorista_y_reparaciones))),
+         prop_otros_servicios = sum(c_across(prop_m_ensenanza:prop_p_hogares_privados_con_servicio_domestico)))
+
+pbisectores_indec <- pbisectores_indec %>% 
+  select(-c(prop_g_comercio_mayorista_minorista_y_reparaciones,
+            prop_h_hoteles_y_restaurantes, prop_m_ensenanza:prop_p_hogares_privados_con_servicio_domestico))
+
+colnames(pbisectores_indec) <- gsub("prop_._|prop_", "",
+                                    colnames(pbisectores_indec))
+
+
+pbisectores_fnys <- pbisectores_fnys %>% 
+  rename( otros_servicios = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_otros_servicios,
+          administracion_publica_y_defensa_planes_de_seguridad_social_de_afiliacion_obligatoria = administrac_publica_y_defensa_y_servicios_sociales_comunales_y_personales_admin_publica_defensa_y_org_extraterr,
+          intermediacion_financiera = intermediacion_financiera_y_actividades_inmobiliarias_intermediacion_financiera,
+          actividades_inmobiliarias_empresariales_y_de_alquiler = intermediacion_financiera_y_actividades_inmobiliarias_act_inmobiliarias_empresariales_y_de_alquiler,
+          comercio_mayorista_minorista_hoteles_restaurantes = comercio_al_por_mayor_y_menor_y_hoteles_y_restaurantes,
+          industria_manufacturera =industrias_manufactureras,
+          agricultura_ganaderia_caza_y_silvicultura = agricultura_caza_y_silvicultura,
+  )
+
+
+
+df_break_arg <- bind_rows(pbisectores_fnys,
+                       pbisectores_indec) %>% 
+  pivot_longer(cols = -anio, names_to = "sector", values_to = "valor") %>% 
+  mutate(valor = round(valor, 4)) %>% 
+  distinct() %>% drop_na(valor)
+
 
 
 # carga de fuentes - nico 
