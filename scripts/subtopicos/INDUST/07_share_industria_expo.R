@@ -168,6 +168,7 @@ t2_atlas <- proyectar_con_indice(t1_atlas,t1_baci_1)
 
 
 df_output <- t2_atlas %>% 
+  dplyr::filter(! lall_desc_full %in% c('Otros','Transacciones no clasificadas')) %>% 
   left_join(geo_front, join_by(iso3 == geocodigoFundar)) %>% 
   group_by(anio, iso3) %>% 
   mutate(
