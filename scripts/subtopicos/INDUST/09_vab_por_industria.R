@@ -1,56 +1,32 @@
-# especializacion por rama 
-
-# librerias
-library(tidyverse)
-
 #limpio la memoria
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 # Metadatos 
 subtopico <- "INDUST"
-output_name <- "09_vab_por_industria"
+output_name <- "vab_por_industria.csv"
 analista <- "Nicolás Sidicaro"
-fuente1 <- 'tiva2023_indust_by_country.csv' # TiVA 2023 rama industria
+fuente1 <- 'R225C97' # TiVA 2023 rama industria
 
-# rutas 
-outstub <- 'indust/input'
-instub <- 'indust/raw'
+df_tiva <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
 
-# Cargar datos 
-df <- read_csv(file.path(instub,fuente1))
-df <- janitor::clean_names(df)
+geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
-# seleccionar variables 
-df <- df %>% 
-  select(-matches('x[0-9]+'))
+df_tiva_selection <- df_tiva %>% 
+  dplyr::filter(!sector %in% c('_T','BTE'), 
+                vab_usd > 0 )
 
-# Filtrar menores de 0 
-df <- df %>% 
-  filter(obs_value > 0)
+df_aux <- df_tiva %>% 
+  dplyr::filter(sector == "C") %>% 
+  select(anio, iso3, vab_usd_ind = vab_usd) 
 
-# Sacar actividades que no interesan 
-df <- df %>% 
-  filter(!activity %in% c('_T','BTE'))
+df_intermediate <- df_tiva_selection %>% 
+  left_join(df_aux, join_by(iso3, anio)) %>% 
+  dplyr::filter(sector != "C",
+                grepl("^C.*", sector))
 
-# seleccionar variables 
-df <- df %>% 
-  select(time_period,ref_area,activity,obs_value)
-df_aux <- df %>% 
-  filter(activity == 'C') %>% 
-  rename(obs_value_ind = obs_value) %>% 
-  distinct()
-df_aux$activity <- NULL
-df <- df %>% 
-  left_join(df_aux,by=c('ref_area','time_period'))
-df <- df %>% 
-  mutate(prop = obs_value / obs_value_ind)
-df <- df %>% 
-  select(anio=time_period,pais=ref_area,activity,prop_sobre_industria=prop)
-df <- df %>% 
-  filter(activity != 'C')
-
-# Codigos 
 traducir_actividades_tiva <- function(codigo) {
   case_when(
     # Códigos agregados de manufactura
@@ -92,104 +68,101 @@ traducir_actividades_tiva <- function(codigo) {
   )
 }
 
-df <- df %>% 
-  mutate(actividad = traducir_actividades_tiva(activity))
+df_output <- df_intermediate %>% 
+  mutate(
+    prop_sobre_industria = vab_usd / vab_usd_ind,
+    actividad = traducir_actividades_tiva(sector)) %>% 
+  select(anio, geocodigoFundar = iso3, sector, actividad, prop_sobre_industria) %>% 
+  left_join(geo_front, join_by(geocodigoFundar)) %>% 
+  dplyr::filter(!is.na(geonombreFundar))
+  
 
-# Agregar pais 
-traducir_paises_tiva <- function(codigo) {
-  case_when(
-    # Países OECD y principales economías
-    codigo == "AUS" ~ "Australia",
-    codigo == "AUT" ~ "Austria", 
-    codigo == "BEL" ~ "Bélgica",
-    codigo == "CAN" ~ "Canadá",
-    codigo == "CHL" ~ "Chile",
-    codigo == "COL" ~ "Colombia",
-    codigo == "CRI" ~ "Costa Rica",
-    codigo == "CZE" ~ "Chequia",
-    codigo == "DNK" ~ "Dinamarca",
-    codigo == "EST" ~ "Estonia",
-    codigo == "FIN" ~ "Finlandia",
-    codigo == "FRA" ~ "Francia",
-    codigo == "DEU" ~ "Alemania",
-    codigo == "GRC" ~ "Grecia",
-    codigo == "HUN" ~ "Hungría",
-    codigo == "ISL" ~ "Islandia",
-    codigo == "IRL" ~ "Irlanda",
-    codigo == "ISR" ~ "Israel",
-    codigo == "ITA" ~ "Italia",
-    codigo == "JPN" ~ "Japón",
-    codigo == "KOR" ~ "Corea del Sur",
-    codigo == "LVA" ~ "Letonia",
-    codigo == "LTU" ~ "Lituania",
-    codigo == "LUX" ~ "Luxemburgo",
-    codigo == "MEX" ~ "México",
-    codigo == "NLD" ~ "Países Bajos",
-    codigo == "NZL" ~ "Nueva Zelanda",
-    codigo == "NOR" ~ "Noruega",
-    codigo == "POL" ~ "Polonia",
-    codigo == "PRT" ~ "Portugal",
-    codigo == "SVK" ~ "Eslovaquia",
-    codigo == "SVN" ~ "Eslovenia",
-    codigo == "ESP" ~ "España",
-    codigo == "SWE" ~ "Suecia",
-    codigo == "CHE" ~ "Suiza",
-    codigo == "TUR" ~ "Turquía",
-    codigo == "GBR" ~ "Reino Unido",
-    codigo == "USA" ~ "Estados Unidos",
-    
-    # Economías emergentes y otros países
-    codigo == "ARG" ~ "Argentina",
-    codigo == "BGD" ~ "Bangladesh",
-    codigo == "BLR" ~ "Bielorrusia",
-    codigo == "BRA" ~ "Brasil",
-    codigo == "BRN" ~ "Brunéi Darussalam",
-    codigo == "BGR" ~ "Bulgaria",
-    codigo == "KHM" ~ "Camboya",
-    codigo == "CMR" ~ "Camerún",
-    codigo == "CHN" ~ "China (República Popular de)",
-    codigo == "CIV" ~ "Côte d'Ivoire",
-    codigo == "HRV" ~ "Croacia",
-    codigo == "CYP" ~ "Chipre",
-    codigo == "EGY" ~ "Egipto",
-    codigo == "HKG" ~ "Hong Kong, China",
-    codigo == "IND" ~ "India",
-    codigo == "IDN" ~ "Indonesia",
-    codigo == "JOR" ~ "Jordania",
-    codigo == "KAZ" ~ "Kazajistán",
-    codigo == "LAO" ~ "Laos (República Democrática Popular)",
-    codigo == "MYS" ~ "Malasia",
-    codigo == "MLT" ~ "Malta",
-    codigo == "MAR" ~ "Marruecos",
-    codigo == "MMR" ~ "Myanmar",
-    codigo == "NGA" ~ "Nigeria",
-    codigo == "PAK" ~ "Pakistán",
-    codigo == "PER" ~ "Perú",
-    codigo == "PHL" ~ "Filipinas",
-    codigo == "ROU" ~ "Rumania",
-    codigo == "RUS" ~ "Federación Rusa",
-    codigo == "SAU" ~ "Arabia Saudí",
-    codigo == "SEN" ~ "Senegal",
-    codigo == "SGP" ~ "Singapur",
-    codigo == "ZAF" ~ "Sudáfrica",
-    codigo == "TWN" ~ "Taipéi Chino",
-    codigo == "THA" ~ "Tailandia",
-    codigo == "TUN" ~ "Túnez",
-    codigo == "UKR" ~ "Ucrania",
-    codigo == "VNM" ~ "Vietnam",
-    codigo == "WXD" ~ "Resto del mundo",
-    
-    # Si no encuentra el código, devuelve el original
-    TRUE ~ paste0("País no reconocido: ", codigo)
-  )
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico, drive = T) 
+
+
+df_comparable <- df_output %>% 
+  select(pais = geonombreFundar, 
+         anio, 
+         actividad,
+         prop_sobre_industria)
+
+
+pks_comparacion <- c('pais','anio', 'actividad')
+
+comparacion <- argendataR::comparar_outputs(
+  df = df_comparable,
+  df_anterior = df_anterior,
+  nombre = output_name,
+  pk = pks_comparacion
+)
+
+
+
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
 }
 
-df <- df %>% 
-  mutate(pais2 = traducir_paises_tiva(pais))
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), nombre_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
 
-# Guardar df 
-df <- df %>% 
-  select(pais=pais2,actividad,anio,prop_sobre_industria)
 
-# Guardar 
-readr::write_csv(df,file.path(outstub,paste0(output_name,'.csv')))
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
+    analista = analista,
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
