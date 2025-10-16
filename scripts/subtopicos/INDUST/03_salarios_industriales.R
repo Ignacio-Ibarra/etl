@@ -8,8 +8,7 @@ output_name <- "salarios_industriales.csv"
 analista <- "Nicolás Sidicaro"
 fuente1 <- 'R238C146' # Descriptor 
 fuente2 <- 'R239C300' # salarios 2 digitos C4
-fuente3 <- 'R238C145' # puestos 2 digitos C3
-fuente4 <- 'R239C111' # salario_letra
+fuente3 <- 'R239C111' # salario_letra
 
 
 df_dicc <- argendataR::get_clean_path(fuente1) %>% 
@@ -18,10 +17,7 @@ df_dicc <- argendataR::get_clean_path(fuente1) %>%
 df_wage <- argendataR::get_clean_path(fuente2) %>% 
   arrow::read_parquet()
 
-df_puestos <- argendataR::get_clean_path(fuente3) %>% 
-  arrow::read_parquet()
-
-df_sal_letra <- argendataR::get_clean_path(fuente4) %>% 
+df_sal_letra <- argendataR::get_clean_path(fuente3) %>% 
   arrow::read_parquet()
 
 # Filtrar diccionario 
@@ -65,43 +61,25 @@ descripcion_abrev <- c(
 
 df_output <- df_wage %>% 
   dplyr::filter(rama_de_actividad != "Total") %>% 
-  select(ciiu_rev3_4d,anio,salario_promedio_puestos_privados) %>% 
-  inner_join(
-    # Join con puestos
-    df_puestos %>% 
-      dplyr::filter(rama_de_actividad != "Total") %>%  
-      select(ciiu_rev3_4d,anio,cant_promedio_puestos_privados),
-    join_by(ciiu_rev3_4d, anio)
-  ) %>% 
-  mutate(
-    # Creo ciiu 2digitos
-    ciiu_rev3_2d = str_pad(ciiu_rev3_4d,4,pad = '0',side='left')%>% 
-           str_extract(.,'\\d{2}')) %>% 
-  drop_na(cant_promedio_puestos_privados) %>% 
-  group_by(anio, ciiu_rev3_2d) %>% 
-  summarize(
-    # salario ponderado a 2d
-    salario_ponderado = stats::weighted.mean(salario_promedio_puestos_privados, cant_promedio_puestos_privados)) %>% 
-  ungroup() %>% 
-  left_join(df_dicc_2d, join_by(ciiu_rev3_2d == codigo)) %>% 
+  mutate(ciiu_rev3_2d = str_pad(ciiu_rev3_2d, width = 2, side = "left", pad = "0" ) ) %>%
+  select(anio, ciiu_rev3_2d, rama_de_actividad, salario_promedio_puestos_privados) %>% 
   filter(as.integer(ciiu_rev3_2d) %in% c(15:37)) %>% 
   bind_rows(., 
             # Agrego promedio de industria
             df_sal_letra %>% 
               filter(letra == 'D')  %>% 
               mutate(ciiu_rev3_2d = "99",
-                     descripcion = 'Promedio industria')  %>% 
-              select(anio, ciiu_rev3_2d, salario_ponderado = salario_promedio_privados)) %>% 
+                     rama_de_actividad = 'Promedio industria')  %>% 
+            select(anio, ciiu_rev3_2d, rama_de_actividad, salario_promedio_puestos_privados = salario_promedio_privados)) %>% 
   left_join(
     # Tomo media del sector privado
-    df_sal_privados %>% select(anio, salario_promedio_puestos_privados),
+    df_sal_privados %>% select(anio, salario_promedio_puestos_privados_total_economia = salario_promedio_puestos_privados),
     join_by(anio)
     
   ) %>% 
-  mutate(salario_respecto_media = ((salario_ponderado - salario_promedio_puestos_privados)/salario_promedio_puestos_privados)*100,
-         descripcion_corta = descripcion_abrev[ciiu_rev3_2d]) %>% 
-  select(-c(salario_ponderado,salario_promedio_puestos_privados)) %>% 
-  select(anio, ciiu_rev3_2d, descripcion, descripcion_corta, salario_respecto_media)
+  mutate(salario_respecto_media = ((salario_promedio_puestos_privados - salario_promedio_puestos_privados_total_economia)/salario_promedio_puestos_privados_total_economia)*100,
+         descripcion_corta = descripcion_abrev[ciiu_rev3_2d])  %>% 
+  select(anio, ciiu_rev3_2d, rama_de_actividad, descripcion_corta, salario_respecto_media)
 
 
 
