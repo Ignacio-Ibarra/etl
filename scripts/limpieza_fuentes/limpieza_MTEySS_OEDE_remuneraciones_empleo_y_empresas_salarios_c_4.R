@@ -51,7 +51,7 @@ clean_cuadro_c6 <- function(sheet_name, skip, filas_columnas, names_to, values_t
     paste(stats::na.omit(x), collapse = "#")
   })
   
-  cols <- c('ciiu_rev3_4d', 'rama_de_actividad', cols$concatenado[-1])
+  cols <- c('ciiu_rev3_2d', 'rama_de_actividad', cols$concatenado[-1])
   
   # Leo datos
   sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
@@ -114,7 +114,7 @@ df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_c
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c("anio", "ciiu_rev3_4d")
+                                     pk = c("anio", "ciiu_rev3_2d")
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
