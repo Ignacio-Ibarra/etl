@@ -60,9 +60,9 @@ df_output <- bind_rows(
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-pks_comparacion <- c('anio', 'provincia_id')
+pks_comparacion <- c('anio','provincia_id')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,

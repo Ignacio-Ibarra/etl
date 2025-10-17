@@ -99,9 +99,9 @@ df_output <- bind_rows(df_historico, df_am_final) %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-pks_comparacion <- c('anio', 'sector')
+pks_comparacion <- c('anio','sector')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
@@ -109,7 +109,6 @@ comparacion <- argendataR::comparar_outputs(
   nombre = output_name,
   pk = pks_comparacion
 )
-
 
 
 armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){

@@ -4,6 +4,7 @@ gc()   #Garbage Collection
 options(scipen=999) # notacion cientifica
 # Metadatos 
 subtopico <- "INDUST"
+analista <- "Nicolás Sidicaro"
 output_name <- "expo_industriales.csv"
 fuente1 <- 'R104C0' # Atlas Location
 fuente2 <- 'R457C0' # Atlas SITC
@@ -180,27 +181,15 @@ df_output <- t2_atlas %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-
-df_comparable <- df_output %>% 
-  mutate(manufacturas = "Industrial") %>% 
-  select(
-         year = anio,
-         location_code = geocodigoFundar, 
-         manufacturas,
-         exportaciones = exportaciones_industriales, 
-         prop, 
-         name_long = geonombreFundar)
-
-
-pks <- c('location_code','year')
+pks_comparacion <- c('anio','geocodigoFundar')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = pks
+  pk = pks_comparacion
 )
 
 

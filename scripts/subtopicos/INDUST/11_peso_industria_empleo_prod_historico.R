@@ -385,16 +385,12 @@ df_output <- df_empleo_final %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-
-df_comparable <- df_output %>% 
-  select(year = anio, cnt = geocodigoFundar, country = geonombreFundar, variable, valor)
-
-pks_comparacion <- c('year', 'cnt', 'variable')
+pks_comparacion <- c('anio','geocodigoFundar', 'variable')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion

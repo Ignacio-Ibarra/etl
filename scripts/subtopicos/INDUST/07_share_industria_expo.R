@@ -180,19 +180,12 @@ df_output <- t2_atlas %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-
-df_comparable <- df_output %>% 
-  rename(location_code = geocodigoFundar,
-         name_long = geonombreFundar,
-         year = anio)
-
-
-pks_comparacion <- c('year','location_code', 'lall_desc_full')
+pks_comparacion <- c('anio','geocodigoFundar', 'lall_code')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion

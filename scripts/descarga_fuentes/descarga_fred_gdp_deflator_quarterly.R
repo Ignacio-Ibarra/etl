@@ -7,8 +7,8 @@ code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 source("scripts/utils/st_lous_fed_api.R")
 
-result_metadata <- FRED.get_series_metadata('CPIAUCSL')
-result_data <- FRED.get_series_observations('CPIAUCSL')
+result_metadata <- FRED.get_series_metadata('GDPDEF')
+result_data <- FRED.get_series_observations('GDPDEF')
 
 periodicidad <- months(1)
 fecha_ultima_actualizacion <- result_metadata$data$seriess$last_updated %>% as.Date(.)
@@ -18,7 +18,7 @@ url <- result_data$url
 
 df_raw <- result_data$data$observations
 
-download_filename <- "consumer_price_index_monthly_data.csv"
+download_filename <- "gdp_deflator_quarterly.csv"
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
@@ -36,7 +36,7 @@ institucion = "Federal Reserve Bank of St. Louis"
 #                    fecha_actualizar = fecha_actualizar)
 
 
-actualizar_fuente_raw(id_fuente = 273,
+actualizar_fuente_raw(id_fuente = 462,
                       nombre = nombre,
                       institucion = institucion,
                       fecha_actualizar = fecha_actualizar,
