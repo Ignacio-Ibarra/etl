@@ -85,19 +85,12 @@ df_output <- df_wage %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-
-df_comparable <- df_output %>% 
-  rename(ciiu_rev3_4d = ciiu_rev3_2d) %>% 
-  mutate(anio = as.numeric(anio), 
-         ciiu_rev3_4d = as.numeric(ciiu_rev3_4d))
-
-
-pks_comparacion <- c('anio','ciiu_rev3_4d')
+pks_comparacion <- c('anio','ciiu_rev3_2d')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion

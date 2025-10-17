@@ -6,7 +6,7 @@ gc()   #Garbage Collection
 subtopico <- "INDUST"
 output_name <- "vab_por_industria.csv"
 analista <- "Nicolás Sidicaro"
-fuente1 <- 'R225C97' # TiVA 2023 rama industria
+fuente1 <- 'R225C97' # TiVA 2025 rama industria
 
 df_tiva <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet()
@@ -39,60 +39,27 @@ traducir_actividades_tiva <- function(codigo) {
     codigo == "C28" ~ "Maquinaria y equipos, n.c.o.p.",
     codigo == "C29_30" ~ "Equipos de transporte",
     codigo == "C31T33" ~ "Manufactura n.c.o.p.; reparación e instalación de maquinaria y equipos",
-    
-    # Códigos individuales detallados
-    codigo == "C16" ~ "Madera y productos de madera y corcho",
-    codigo == "C17_18" ~ "Productos de papel e impresión",
-    codigo == "C19" ~ "Coque y productos derivados del petróleo refinado",
-    codigo == "C20_21" ~ "Productos químicos y farmacéuticos",
-    codigo == "C20" ~ "Productos químicos",
-    codigo == "C21" ~ "Productos farmacéuticos, medicinales químicos y botánicos",
-    codigo == "C22" ~ "Productos de caucho y plásticos",
-    codigo == "C23" ~ "Otros productos minerales no metálicos",
-    codigo == "C24" ~ "Metales básicos",
-    codigo == "C25" ~ "Productos metálicos fabricados",
-    codigo == "C26" ~ "Equipos informáticos, electrónicos y ópticos",
-    codigo == "C27" ~ "Equipos eléctricos",
-    codigo == "C29" ~ "Vehículos automotores, remolques y semirremolques",
-    codigo == "C30" ~ "Otros equipos de transporte",
-    
-    # Códigos adicionales
-    codigo == "_T" ~ "Total manufactura",
-    codigo == "C" ~ "Total manufactura",
-    codigo == "BTE" ~ "Servicios empresariales y telecomunicaciones",
-    codigo == "CTOTAL" ~ "Total economía",
-    codigo == "DTOTAL" ~ "Total industrias",
-    
-    # Si no encuentra el código, devuelve el original
-    TRUE ~ paste0("Código no reconocido: ", codigo)
-  )
+    TRUE ~ NA_character_)
+  
 }
 
 df_output <- df_intermediate %>% 
   mutate(
     prop_sobre_industria = vab_usd / vab_usd_ind,
     actividad = traducir_actividades_tiva(sector)) %>% 
+  dplyr::filter(!is.na(actividad)) %>% 
   select(anio, geocodigoFundar = iso3, sector, actividad, prop_sobre_industria) %>% 
   left_join(geo_front, join_by(geocodigoFundar)) %>% 
   dplyr::filter(!is.na(geonombreFundar))
   
 
-
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-
-df_comparable <- df_output %>% 
-  select(pais = geonombreFundar, 
-         anio, 
-         actividad,
-         prop_sobre_industria)
-
-
-pks_comparacion <- c('pais','anio', 'actividad')
+pks_comparacion <- c('anio','geocodigoFundar', 'sector')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion

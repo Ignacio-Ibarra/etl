@@ -2,64 +2,183 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
+options(scipen=999) # notacion cientifica
+
 # Metadatos 
 subtopico <- "INDUST"
-output_name <- "18_participacion_arg_pib_ind_mundial"
+output_name <- "participacion_arg_pib_ind_mundial.csv"
 analista <- "Nicolás Sidicaro"
 
-# rutas 
-outstub <- 'indust/input'
+fuente1 <- 'R464C302' # National Accounts. Analysis of Main Aggregates (AMA). Value Added by activity - Constant 2015 -US Dollars - Limpio
 
-# carga de fuentes - nico 
-df_break <- dplyr::as_tibble(openxlsx::read.xlsx('https://unstats.un.org/unsd/amaapi/api/file/6',startRow = 3))
-df_mundo <- dplyr::as_tibble(openxlsx::read.xlsx('https://unstats.un.org/unsd/amaapi/api/file/7',startRow = 3))
 
-# Diccionario paises 
-dicc_pais <- read_csv(file.path('indust/auxiliar/dicc_paises_UNSD — Methodology.csv'))
-dicc_pais <- janitor::clean_names(dicc_pais)
-dicc_pais <- dicc_pais %>% 
-  select(CountryID=m49_code,iso3=iso_alpha3_code)
-# Filtrar mundo 
-df_mundo <- df_mundo %>% 
-  filter(`Region/Subregion` == 'World') %>% 
-  filter(IndicatorName == 'Manufacturing (ISIC D)')
-df_mundo <- df_mundo %>% 
-  tidyr::pivot_longer(-c(`Region/Subregion`,IndicatorName),values_to='industry_gdp',names_to='year')
-df_mundo$IndicatorName <- NULL
-df_mundo$`Region/Subregion` <- NULL
-df_mundo <- df_mundo %>% 
-  rename(industry_gdp_wld = industry_gdp)
-df_mundo <- df_mundo %>% 
-  mutate(year = as.numeric(year)) %>% 
-  filter(!is.na(year))
-# limpiar nombres 
-df_break <- dplyr::rename(df_break,'country'='Country')
+fill_missing_backwards <- function(data, value_col, growth_col, new_col_name = NULL, group_vars = NULL) {
+  
+  value_col_sym <- sym(value_col)
+  growth_col_sym <- sym(growth_col)
+  
+  # Si no se especifica nombre para nueva columna, crear uno automáticamente
+  if (is.null(new_col_name)) {
+    new_col_name <- paste0(value_col, "_filled")
+  }
+  new_col_sym <- sym(new_col_name)
+  
+  if (!is.null(group_vars)) {
+    data <- data %>% group_by(across(all_of(group_vars)))
+  }
+  
+  result <- data %>%
+    arrange(anio) %>%
+    mutate(
+      !!new_col_sym := {
+        vals <- !!value_col_sym  # Copiar valores originales
+        growth_vals <- !!growth_col_sym
+        
+        first_valid <- which(!is.na(vals))[1]
+        
+        if (!is.na(first_valid) && first_valid > 1) {
+          for (i in (first_valid - 1):1) {
+            if (is.na(vals[i])) {
+              vals[i] <- vals[i + 1] / (1 + growth_vals[i])
+            }
+          }
+        }
+        vals
+      }
+    )
+  
+  if (!is.null(group_vars)) {
+    result <- result %>% ungroup()
+  }
+  
+  return(result)
+}
 
-# Pivotear 
-df_break <- df_break %>% 
-  pivot_longer(-c(CountryID,country,IndicatorName),names_to='year',values_to='industry_gdp')
-df_break <- df_break %>% 
-  filter(IndicatorName == 'Manufacturing (ISIC D)')
-df_break$IndicatorName <- NULL
-# Agregar ISO 
-df_break <- df_break %>% 
-  left_join(dicc_pais %>% mutate(CountryID = as.numeric(CountryID)),by=c('CountryID'))
-# joinear datos 
-df_break <- df_break %>% 
-  mutate(year = as.numeric(year)) %>% 
-  left_join(df_mundo,by=c('year')) 
+df_break <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
 
-# filtrar datos sin informacion
-df_break <- df_break %>% 
-  dplyr::filter(!is.na(industry_gdp))
 
-# calcular peso industrial anual 
-df_break <- df_break %>% 
-  mutate(prop = industry_gdp / industry_gdp_wld)
+df_break_manuf <- df_break %>% 
+  select(-c(country_en,indicator_name, note, unit)) %>% 
+  dplyr::filter(stringr::str_detect(sector_name,'ISIC D|ISIC C-E')) %>% 
+  pivot_wider(., id_cols = c(iso3, pais_nombre, anio),
+              names_from = sector_name, 
+              values_from = value) %>% 
+  janitor::clean_names() %>% 
+  group_by(iso3) %>% 
+  mutate(interanual_var = (lead(mining_manufacturing_utilities_isic_c_e) - mining_manufacturing_utilities_isic_c_e) / mining_manufacturing_utilities_isic_c_e) %>% 
+  fill_missing_backwards("manufacturing_isic_d", "interanual_var",
+                         new_col_name = "manufacturing_isic_d_complete" ,
+                         group_vars = c("iso3", "pais_nombre"))  %>% 
+  mutate(manufacturing_isic_d = if_else(is.na(manufacturing_isic_d) & !is.na(interanual_var),
+                                        manufacturing_isic_d_complete,
+                                        manufacturing_isic_d)) %>% 
+  select(-c(interanual_var, manufacturing_isic_d_complete, mining_manufacturing_utilities_isic_c_e))  %>% 
+  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, anio, gdp_indust = manufacturing_isic_d) %>% 
+  arrange(geocodigoFundar, anio) 
 
-# seleccionar var 
-df_break <- df_break %>% 
-  select(year,iso3,prop_industry_gdp = prop)
 
-# guardar resultados 
-readr::write_csv(df_break,file.path(outstub,'18_participacion_arg_pib_ind_mundial.csv'))
+df_break_manuf_paises <- df_break_manuf %>% 
+  dplyr::filter(geocodigoFundar != "WLD")
+
+
+df_break_manuf_wld <- df_break_manuf %>% 
+  dplyr::filter(geocodigoFundar == "WLD") %>% 
+  select(anio, gdp_indust_wld = gdp_indust)
+
+
+df_output <- df_break_manuf_paises %>% 
+  left_join(df_break_manuf_wld, join_by(anio)) %>% 
+  mutate(prop_industry_gdp = gdp_indust / gdp_indust_wld) %>% 
+  select(anio, geocodigoFundar, geonombreFundar, industry_gdp = gdp_indust, prop_industry_gdp)
+
+
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico, drive = T) 
+
+pks_comparacion <- c('anio','geocodigoFundar')
+
+comparacion <- argendataR::comparar_outputs(
+  df = df_output,
+  df_anterior = df_anterior,
+  nombre = output_name,
+  pk = pks_comparacion
+)
+
+
+
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), nombre_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
+    analista = analista,
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
+
+
+
+
+
+
+
+

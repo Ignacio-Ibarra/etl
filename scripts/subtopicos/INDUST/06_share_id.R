@@ -53,25 +53,17 @@ df_output <- df_berd %>%
   
   
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
 
-df_comparable <- df_output %>% 
-  rename(iso3 = geocodigoFundar,
-         name_long = geonombreFundar) %>% 
-  mutate(anio = as.numeric(anio), 
-         share_indust_id = share_indust_id / 100) 
-
-
-pks_comparacion <- c('anio','iso3')
+pks_comparacion <- c('anio','geocodigoFundar')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion
 )
-
 
 
 armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){

@@ -251,21 +251,16 @@ df_output <- df_intermediate %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
-
-
-df_comparable <- df_output %>% 
-  select(anio, vab_indust_pc_base_1970 = vab_indust_pc_indice)
+                                            subtopico = subtopico) 
 
 pks_comparacion <- c('anio')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion
 )
-
 
 
 armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){

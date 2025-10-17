@@ -213,24 +213,16 @@ df_output <- df_comex %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
-
-df_comparable <- df_output %>%  
-  rename(
-    year = anio,
-    iso3 = geocodigoFundar)
-
-
-pks <- c('iso3','year', 'variable')
+pks_comparacion <- c('anio','geocodigoFundar', 'variable')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = pks
+  pk = pks_comparacion
 )
-
 
 armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
   # metadatos: data.frame sus columnas son variable_nombre y descripcion y 

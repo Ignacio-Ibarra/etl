@@ -84,23 +84,17 @@ df_output <- df_gdp %>%
   dplyr::left_join(df_break_manuf,by=c('iso3','anio')) %>% 
   dplyr::mutate(gdp_indust_pc = (gdp_per_cap*(manufacturing_isic_d/100))) %>% 
   dplyr::filter(!is.na(gdp_per_cap)) %>% 
-  select(iso3, pais_nombre, anio, gdp_indust_pc)
+  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, anio, gdp_indust_pc)
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico, drive = T) 
+                                            subtopico = subtopico) 
 
 
-df_comparable <- df_output %>% 
-  select(iso3c = iso3, 
-         year = anio,
-         gdp_indust_pc)
-
-
-pks <- c('iso3c','year')
+pks <- c('geocodigoFundar','anio')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks
