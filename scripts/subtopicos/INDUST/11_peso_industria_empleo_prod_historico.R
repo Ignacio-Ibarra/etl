@@ -384,8 +384,10 @@ df_output <- df_empleo_final %>%
   drop_na(valor)
 
 
+
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico) 
+
 
 pks_comparacion <- c('anio','geocodigoFundar', 'variable')
 

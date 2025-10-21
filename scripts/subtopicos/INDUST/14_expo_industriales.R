@@ -165,25 +165,42 @@ t1_atlas <- df_atlas_lall %>% rename(expo = export_value)
 t2_atlas <- proyectar_con_indice(t1_atlas,t1_baci_1)
 
 
-df_output <- t2_atlas %>% 
-  dplyr::filter(! lall_desc_full %in% c('Otros','Transacciones no clasificadas')) %>% 
-  mutate(manufacturas = if_else(str_detect(lall_desc_full,'Manufacturas'),'Industrial','No industrial')) %>% 
-  group_by(anio, iso3, manufacturas) %>% 
+df_stage <- t2_atlas %>% 
+  dplyr::filter(! lall_desc_full %in% c('Otros','Transacciones no clasificadas'))
+
+df_intermediateA <- df_stage %>% 
+  mutate(lall_desc_full = ifelse(str_detect(lall_desc_full,'Manufacturas'), "Total manufacturas", "otro")) %>% 
+  group_by(anio, iso3, lall_desc_full) %>% 
+  summarize(exportaciones = sum(expo)) %>% 
+  ungroup() %>% 
+  group_by(anio, iso3) %>% 
+  mutate(prop = exportaciones / sum(exportaciones)) %>% 
+  ungroup() %>% 
+  dplyr::filter(lall_desc_full == "Total manufacturas")
+  
+
+df_intermediateB <- df_stage %>% 
+  group_by(anio, iso3, lall_desc_full) %>% 
   summarize(exportaciones = sum(expo)) %>% 
   ungroup() %>%
   group_by(anio, iso3) %>% 
   mutate(prop = exportaciones / sum(exportaciones)) %>% 
   ungroup() %>% 
+  dplyr::filter(grepl("Manufacturas", lall_desc_full))
+
+
+df_output <- bind_rows(df_intermediateA, df_intermediateB) %>% 
   left_join(geo_front, join_by(iso3 == geocodigoFundar)) %>% 
   dplyr::filter(!is.na(geonombreFundar)) %>% 
-  dplyr::filter(manufacturas == 'Industrial') %>% 
-  select(anio, geocodigoFundar = iso3, geonombreFundar, exportaciones_industriales = exportaciones, prop)
+  select(anio, geocodigoFundar = iso3, geonombreFundar, lall_desc_full, exportaciones_industriales = exportaciones, prop)
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico) 
 
-pks_comparacion <- c('anio','geocodigoFundar')
+
+
+pks_comparacion <- c('anio','geocodigoFundar', 'lall_desc_full')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
