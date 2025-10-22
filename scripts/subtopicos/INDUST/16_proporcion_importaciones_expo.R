@@ -206,7 +206,7 @@ ipi_anio_base <- df_ipi_anual %>%
   pull(ipi_deflator)
 
 df_ipi_anual_base <- df_ipi_anual %>%
-  mutate(ipi_base = (ipi_deflator / ipi_anio_base) * 100) %>% 
+  mutate(ipi_base = ipi_deflator / ipi_anio_base) %>% 
   select(anio, ipi_base)
 
 
@@ -214,8 +214,8 @@ df_output <- t2_atlas %>%
   dplyr::filter(grepl("Manufacturas.*", lall_desc_full)) %>% 
   group_by(anio, iso3) %>% 
   summarise(
-    `Exportaciones industriales` = sum(expo, na.rm = T),
-    `Importaciones industriales` = sum(impo, na.rm = T)
+    `Exportaciones industriales` = sum(expo, na.rm = T) * 1/1000000,
+    `Importaciones industriales` = sum(impo, na.rm = T) * 1/1000000
   ) %>% 
   pivot_longer(
     cols = -c(anio, iso3),
@@ -235,7 +235,7 @@ df_anterior <- argendataR::descargar_output(nombre = output_name,
 pks_comparacion <- c('anio','geocodigoFundar', 'flujo')
 
 comparacion <- argendataR::comparar_outputs(
-  df = df_comparable,
+  df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion
