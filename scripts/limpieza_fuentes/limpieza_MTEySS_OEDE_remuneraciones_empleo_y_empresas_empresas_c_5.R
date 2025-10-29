@@ -3,14 +3,6 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
-
 id_fuente <- 237
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
@@ -30,12 +22,12 @@ white_cols <- function(df) {
 
 clean_cuadro_c5 <- function(sheet_name, skip, filas_columnas, names_to, values_to){
   
-  str_titulos <- readxl::read_excel(get_raw_path(fuente_raw), 
+  str_titulos <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                     sheet = sheet_name,
                                     range = "A1:A1",
                                     col_names = F) %>% pull() %>% str_replace(., "Cuadro 4:","Cuadro 5:")
   
-  cols_ <- readxl::read_excel(get_raw_path(fuente_raw), 
+  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                               sheet = sheet_name,
                               col_names = F) %>% slice(filas_columnas)
   
@@ -50,7 +42,7 @@ clean_cuadro_c5 <- function(sheet_name, skip, filas_columnas, names_to, values_t
   cols <- c('ciiu_rev3_4d',cols$concatenado)
   
   # Leo datos
-  sheet_data <- readxl::read_excel(get_raw_path(fuente_raw), 
+  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                    sheet = sheet_name, 
                                    skip = skip, 
                                    col_names = F)
@@ -116,12 +108,21 @@ clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 #                      nombre = clean_title,
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 108,
+
+id_fuente_clean <- 108
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
+
+
+df_clean_anterior <- arrow::read_parquet(argendataR::get_clean_path(codigo = codigo_fuente_clean )) 
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c('anio', 'ciiu_rev3_4d')
+)
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
                         path_clean = clean_filename,
                         nombre = clean_title, 
                         script = code_name,
-                        descripcion = "El archivo contiene la cantidad de empresas privadas activas a nivel de 4 dígitos del CIIU Rev. 3, para poder anonimizar hay varios sectores donde no se presentan datos porque la cantidad de empresas es muy pequeña, es por ello que se conservan las fila donde se presenta el valor total de todas las empresas por anio, allí donde rama_de_actividad == 'Total'")
-
-
-
+                        comparacion = comparacion)
 
