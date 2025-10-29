@@ -85,15 +85,16 @@ df_output <- df_wage %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico) 
+                                            subtopico = subtopico) %>% 
+  mutate(ciiu_rev3_2d = as.character(ciiu_rev3_2d))
 
-pks_comparacion <- c('anio','ciiu_rev3_2d')
+pks <- c('anio','ciiu_rev3_2d')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = pks_comparacion
+  pk = pks
 )
 
 
@@ -158,7 +159,7 @@ df_output %>%
     analista = analista,
     pk = pks,
     descripcion_columnas = descripcion, 
-    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+    unidad = list("salario_respecto_media" = "porcentaje"))
 
 
 output_name <- gsub("\\.csv", "", output_name)

@@ -56,13 +56,13 @@ df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico) 
 
 
-pks_comparacion <- c('anio','geocodigoFundar')
+pks <- c('anio','geocodigoFundar')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = pks_comparacion
+  pk = pks
 )
 
 
@@ -126,7 +126,7 @@ df_output %>%
     analista = analista,
     pk = pks,
     descripcion_columnas = descripcion, 
-    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+    unidad = list("share_indust_id" = "porcentaje"))
 
 
 output_name <- gsub("\\.csv", "", output_name)
