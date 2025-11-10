@@ -6,7 +6,7 @@ gc()   #Garbage Collection
 
 subtopico <- "DESHUM"
 output_name_anterior <- "ranking_diferencia_idh_idhp_2022_flourish"
-output_name <- "ranking_diferencia_idh_idhp"
+output_name <- "ranking_diferencia_idh_idhp.csv"
 analista = "Pablo Zongzoni"
 fuente1 <- "R282C151" # hdi
 fuente2 <- "R291C160" # phdi
@@ -63,13 +63,17 @@ df_output <- df_all %>%
   ) %>% 
   left_join(geonomenclador , join_by(iso3)) %>% 
   mutate(
-    pais_nombre = case_when(
-      iso3 %in% codigos_hdr ~ poner_nombre[iso3],
-      TRUE ~ pais_nombre
-    ),
     metrica = ifelse(metrica == "value", "Índice", "Ranking"),
     tipo_idh = ifelse(tipo_idh == "hdi", "IDH", "IDH-P")
+  ) %>% 
+  rename(
+    geocodigoFundar = iso3,
+    geonombreFundar = pais_nombre
   )
+
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico) 
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name_anterior, subtopico = subtopico, entrega_subtopico = "primera_entrega")  %>% 
