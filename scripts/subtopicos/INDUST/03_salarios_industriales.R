@@ -4,65 +4,90 @@ gc()   #Garbage Collection
 
 # Metadatos 
 subtopico <- "INDUST"
-output_name <- "cambio_industria_decadas.csv"
+output_name <- "salarios_industriales.csv"
 analista <- "Nicolás Sidicaro"
-fuente1 <- 'R221C92' # PBG CEPAL CEP
-fuente2 <- 'R461C0' # Libro MinDeP
+fuente1 <- 'R238C146' # Descriptor 
+fuente2 <- 'R239C300' # salarios 2 digitos C4
+fuente3 <- 'R239C111' # salario_letra
 
 
-# carga de fuentes - nico 
-df_cepal <- argendataR::get_clean_path(fuente1) %>% 
+df_dicc <- argendataR::get_clean_path(fuente1) %>% 
   arrow::read_parquet()
 
-df_salles <- argendataR::get_raw_path(fuente2) %>% 
-  read.csv() %>% 
-  janitor::clean_names()  
+df_wage <- argendataR::get_clean_path(fuente2) %>% 
+  arrow::read_parquet()
+
+df_sal_letra <- argendataR::get_clean_path(fuente3) %>% 
+  arrow::read_parquet()
+
+# Filtrar diccionario 
+df_dicc_2d <- df_dicc %>% 
+  filter(digitos == 2) %>% 
+  select(-digitos) %>% 
+  mutate(codigo = str_pad(codigo,2,pad = '0',side='left'))
+
+# Salario de los privados 
+df_sal_privados <- df_wage %>% 
+  filter(rama_de_actividad == 'Total')
 
 
-
-# armar datos pbg 
-seleccionar_industrias_pbg <- df_cepal %>% 
-  select(sector_de_actividad_economica) %>% 
-  distinct() %>%  
-  filter(row_number() > 5 & row_number() < 30) %>% 
-  pull(sector_de_actividad_economica)
-
-df_cepal_pbg_industrial <- df_cepal %>% 
-   dplyr::filter(sector_de_actividad_economica %in% seleccionar_industrias_pbg, 
-                 provincia != 'No distribuido') %>% 
-  group_by(anio,provincia,provincia_id) %>% 
-  summarize(vab_pb = sum(vab_pb)) %>% 
-  ungroup() %>% 
-  group_by(anio) %>% 
-  mutate(prop = vab_pb / sum(vab_pb)) %>%
-  ungroup() %>% 
-  select(anio,provincia_id,provincia,prop)
-
-
-dicc_prpovincias <- df_cepal_pbg_industrial %>% distinct(provincia_id, provincia)
-
-df_pbg_hist <- df_salles %>% 
-  pivot_longer(-provincia,
-               names_to='anio',
-               values_to='prop', 
-               names_transform = function(x){as.numeric(str_remove(x,"x"))}) %>% 
-  mutate(provincia = case_when(provincia == 'Ciudad de Buenos Aires'~ 'CABA',
-                               TRUE ~ provincia)) %>% 
-  left_join(dicc_prpovincias, join_by(provincia))
+descripcion_abrev <- c(
+  "15" = "Alimentos y bebidas",
+  "16" = "Tabaco",
+  "17" = "Textiles",
+  "18" = "Prendas de vestir y pieles",
+  "19" = "Cueros y calzado",
+  "20" = "Madera y corcho",
+  "21" = "Papel",
+  "22" = "Edición e impresión",
+  "23" = "Productos del petróleo",
+  "24" = "Productos químicos",
+  "25" = "Caucho y plástico",
+  "26" = "Productos minerales no metálicos",
+  "27" = "Metales comunes",
+  "28" = "Productos de metal",
+  "29" = "Maquinaria y equipo",
+  "30" = "Maquinaria de oficina e informática",
+  "31" = "Maquinaria eléctrica",
+  "32" = "Radio, TV y comunicaciones",
+  "33" = "Instrumentos médicos y de precisión",
+  "34" = "Vehículos automotores",
+  "35" = "Equipos de transporte",
+  "36" = "Muebles y otras manufacturas",
+  "37" = "Reciclamiento",
+  "99" = "Promedio industria"
+)
 
 
-df_output <- bind_rows(
-  df_pbg_hist, 
-  df_cepal_pbg_industrial
+df_output <- df_wage %>% 
+  dplyr::filter(rama_de_actividad != "Total") %>% 
+  mutate(ciiu_rev3_2d = str_pad(ciiu_rev3_2d, width = 2, side = "left", pad = "0" ) ) %>%
+  select(anio, ciiu_rev3_2d, rama_de_actividad, salario_promedio_puestos_privados) %>% 
+  filter(as.integer(ciiu_rev3_2d) %in% c(15:37)) %>% 
+  bind_rows(., 
+            # Agrego promedio de industria
+            df_sal_letra %>% 
+              filter(letra == 'D')  %>% 
+              mutate(ciiu_rev3_2d = "99",
+                     rama_de_actividad = 'Promedio industria')  %>% 
+            select(anio, ciiu_rev3_2d, rama_de_actividad, salario_promedio_puestos_privados = salario_promedio_privados)) %>% 
+  left_join(
+    # Tomo media del sector privado
+    df_sal_privados %>% select(anio, salario_promedio_puestos_privados_total_economia = salario_promedio_puestos_privados),
+    join_by(anio)
+    
   ) %>% 
-  arrange(provincia_id, anio) %>% 
-  select(anio, provincia_id, provincia, prop)
+  mutate(salario_respecto_media = ((salario_promedio_puestos_privados - salario_promedio_puestos_privados_total_economia)/salario_promedio_puestos_privados_total_economia)*100,
+         descripcion_corta = descripcion_abrev[ciiu_rev3_2d])  %>% 
+  select(anio, ciiu_rev3_2d, rama_de_actividad, descripcion_corta, salario_respecto_media)
+
+
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico) 
 
-pks_comparacion <- c('anio','provincia_id')
+pks_comparacion <- c('anio','ciiu_rev3_2d')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
@@ -139,5 +164,6 @@ df_output %>%
 output_name <- gsub("\\.csv", "", output_name)
 mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
 mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
+
 
 

@@ -5,27 +5,18 @@ gc()   #Garbage Collection
 code_path <- this.path::this.path()
 code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
-source("scripts/utils/st_lous_fed_api.R")
 
-result_metadata <- FRED.get_series_metadata('CPIAUCSL')
-result_data <- FRED.get_series_observations('CPIAUCSL')
+fecha_actualizar <- "Sin informacion"
 
-periodicidad <- months(1)
-fecha_ultima_actualizacion <- result_metadata$data$seriess$last_updated %>% as.Date(.)
-fecha_actualizar <- fecha_ultima_actualizacion  %m+% periodicidad
 
-url <- result_data$url
-
-df_raw <- result_data$data$observations
-
-download_filename <- "consumer_price_index_monthly_data.csv"
+download_filename <- "country_sitcproduct4digit_year.fst"
 
 destfile <- glue::glue("{tempdir()}/{download_filename}")
 
-df_raw %>% write_csv_fundar(., destfile)
+url <- "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/H8SFD2"
 
-nombre <- result_metadata$data$seriess$title
-institucion = "Federal Reserve Bank of St. Louis"
+nombre = glue::glue("The Growth Lab at Harvard University. International Trade Data - SITC Rev. 1 - OLD VERSION")
+institucion = "Harvard Dataverse"
 
 # agregar_fuente_raw(url = url,
 #                    nombre = nombre,
@@ -36,7 +27,7 @@ institucion = "Federal Reserve Bank of St. Louis"
 #                    fecha_actualizar = fecha_actualizar)
 
 
-actualizar_fuente_raw(id_fuente = 273,
+actualizar_fuente_raw(id_fuente = 457,
                       nombre = nombre,
                       institucion = institucion,
                       fecha_actualizar = fecha_actualizar,

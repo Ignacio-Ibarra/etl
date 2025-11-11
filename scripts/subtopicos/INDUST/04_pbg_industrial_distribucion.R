@@ -4,63 +4,111 @@ gc()   #Garbage Collection
 
 # Metadatos 
 subtopico <- "INDUST"
-output_name <- "04_pbg_industrial_distribucion"
+output_name <- "pbg_industrial_distribucion.csv"
 analista <- "Nicolás Sidicaro"
 fuente1 <- 'R221C92' # PBG CEPAL CEP
-fuente2 <- 'pbg_industria_1913_2003.csv' # Libro MinDeP
 
-# rutas 
-outstub <- 'indust/input'
-instub <- 'indust/raw'
-
-# carga de fuentes - Argendata 
-# df_pbg <- argendataR::get_clean_path(fuente1) %>% 
-#   arrow::read_parquet()
-
-# carga de fuentes - nico 
-df_pbg <- arrow::read_parquet('http://149.50.137.164:2147/static/etl-fuentes/clean/cepal_desagregacion_provincial_vab_por_sector_CLEAN.parquet')
-df_hist <- readr::read_csv(file.path(instub,fuente2))
-df_hist <- janitor::clean_names(df_hist)
+# carga de fuentes
+df_pbg <- argendataR::get_clean_path(fuente1) %>% 
+  arrow::read_parquet()
 
 # armar datos pbg 
 seleccionar_industrias_pbg <- df_pbg %>% 
   select(sector_de_actividad_economica) %>% 
-  distinct() %>%  
+  distinct() %>% 
   filter(row_number() > 5 & row_number() < 30) %>% 
   pull(sector_de_actividad_economica)
-df_pbg <- df_pbg %>% 
-  mutate(industria = if_else(sector_de_actividad_economica %in% seleccionar_industrias_pbg,'industria','otro'))
-df_pbg <- df_pbg %>% 
-  filter(provincia != 'No distribuido')
-df_pbg <- df_pbg %>% 
+
+
+df_output <- df_pbg %>% 
+  mutate(industria = if_else(sector_de_actividad_economica %in% seleccionar_industrias_pbg,'industria','otro')) %>% 
+  filter(provincia != 'No distribuido') %>% 
   group_by(anio,provincia,provincia_id,industria) %>% 
-  summarize(vab_pb = sum(vab_pb))
-df_pbg <- df_pbg %>% 
-  filter(industria == 'industria') %>% 
-  group_by(anio) %>% 
-  mutate(prop = vab_pb / sum(vab_pb))
-df_pbg <- df_pbg %>% 
-  select(anio,provincia_id,provincia,prop)
+  summarize(vab_pb = sum(vab_pb)) %>% 
+  ungroup() %>% 
+  filter(industria == 'industria', anio == max(anio)) %>% 
+  mutate(prop_industria = vab_pb / sum(vab_pb)) %>% 
+  select(anio, provincia_id, provincia, prop_industria)
 
-# preparar datos historicos 
-df_hist <- df_hist %>% 
-  pivot_longer(-provincia,names_to='anio',values_to='prop')
-df_hist <- df_hist %>% 
-  mutate(anio = as.numeric(str_remove(anio,'^x')))
-# homogeneizar nombres de provincias 
-df_hist <- df_hist %>% 
-  mutate(provincia = case_when(provincia == 'Ciudad de Buenos Aires'~ 'CABA',
-                               TRUE ~ provincia))
-# juntar datos 
-df_final <- bind_rows(df_hist,df_pbg)
-df_final$provincia_id <- NULL
-aux <- df_pbg %>% ungroup() %>% select(provincia,provincia_id) %>% distinct()
-df_final <- df_final %>% 
-  left_join(aux,by='provincia')
 
-# ordenar columnas 
-df_final <- df_final %>% 
-  select(anio,provincia_id,provincia,prop)
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico) 
 
-# guardar resultados 
-readr::write_csv(df_final,file.path(outstub,'04_pbg_industrial_distribucion.csv'))
+
+pks <- c('anio','provincia_id')
+
+comparacion <- argendataR::comparar_outputs(
+  df = df_output,
+  df_anterior = df_anterior,
+  nombre = output_name,
+  pk = pks
+)
+
+
+
+armador_descripcion <- function(metadatos, etiquetas_nuevas = data.frame(), output_cols){
+  # metadatos: data.frame sus columnas son variable_nombre y descripcion y 
+  # proviene de la info declarada por el analista 
+  # etiquetas_nuevas: data.frame, tiene que ser una dataframe con la columna 
+  # variable_nombre y la descripcion
+  # output_cols: vector, tiene las columnas del dataset que se quiere escribir
+  
+  etiquetas <- metadatos %>% 
+    dplyr::filter(variable_nombre %in% output_cols) 
+  
+  
+  etiquetas <- etiquetas %>% 
+    bind_rows(etiquetas_nuevas)
+  
+  
+  diff <- setdiff(output_cols, etiquetas$variable_nombre)
+  
+  stopifnot(`Error: algunas columnas de tu output no fueron descriptas` = length(diff) == 0)
+  
+  # En caso de que haya alguna variable que le haya cambiado la descripcion pero que
+  # ya existia se va a quedar con la descripcion nueva. 
+  
+  etiquetas <- etiquetas %>% 
+    group_by(variable_nombre) %>% 
+    filter(if(n() == 1) row_number() == 1 else row_number() == n()) %>%
+    ungroup()
+  
+  etiquetas <- stats::setNames(as.list(etiquetas$descripcion), etiquetas$variable_nombre)
+  
+  return(etiquetas)
+  
+}
+
+# Tomo las variables output_name y subtopico declaradas arriba
+metadatos <- argendataR::metadata(subtopico = subtopico) %>% 
+  dplyr::filter(grepl(paste0("^", output_name), nombre_archivo)) %>% 
+  distinct(variable_nombre, descripcion) 
+
+
+
+# Guardo en una variable las columnas del output que queremos escribir
+output_cols <- names(df_output) # lo puedo generar así si tengo df_output
+
+
+
+descripcion <- armador_descripcion(metadatos = metadatos,
+                                   # etiquetas_nuevas = etiquetas_nuevas,
+                                   output_cols = output_cols)
+
+
+
+df_output %>%
+  argendataR::write_output(
+    output_name = output_name,
+    subtopico = subtopico,
+    control = comparacion, 
+    fuentes = argendataR::colectar_fuentes(),
+    analista = analista,
+    pk = pks,
+    descripcion_columnas = descripcion, 
+    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+
+
+output_name <- gsub("\\.csv", "", output_name)
+mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")

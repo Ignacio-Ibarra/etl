@@ -13,36 +13,64 @@ library(xml2)
 
 
 
-#' Obtener la lista de datasets disponibles en la API de la OECD
-#' @return Un dataframe con los datasets disponibles
-oecd_api.get_datasets <- function() {
-  url <- "https://sdmx.oecd.org/public/rest/dataflow/all"
-  response <- httr::GET(url)
+oecd_api.get_datasets <- function(){
   
-  if (status_code(response) == 200) {
-    content_xml <- content(response, as = "text", encoding = "UTF-8")
-    
-    doc <- xml2::read_xml(content_xml)
-    
-    # Obtener namespaces
-    namespaces <- xml_ns(doc)
-    
-    # Extraer los identificadores, nombres y agencyID de los datasets
-    datasets <- xml_find_all(doc, "//structure:Dataflow", ns = namespaces)
-    
-    dataset_list <- lapply(datasets, function(ds) {
-      id <- xml_attr(ds, "id")
-      agencyID <- xml_attr(ds, "agencyID")
-      title <- xml_text(xml_find_first(ds, ".//common:Name[@xml:lang='en']", ns = namespaces))
-      structure_query <- glue::glue("https://sdmx.oecd.org/public/rest/dataflow/{agencyID}/{id}/?references=all")
-      list(id = id, agencyID = agencyID, title = title, structure_query = structure_query)
-    })
-    
-    return(bind_rows(dataset_list))
-  } else {
-    stop(paste("Error en la solicitud:", status_code(response)))
-  }
+  url <- "https://sdmx.oecd.org/public/rest/dataflow/all"
+  
+  response <- GET(
+    url,
+    add_headers(Accept = "application/vnd.sdmx.dataflow+json;version=1.0")
+  )
+  
+  # Verificamos el estado
+  stop_for_status(response)
+  
+  # Parseamos el contenido a JSON
+  data <- content(response, as = "text", encoding = "UTF-8") |> jsonlite::fromJSON()
+  
 }
+
+
+
+# oecd_api.get_datasets <- function() {
+#   url <- "https://sdmx.oecd.org/public/rest/dataflow/all"
+#   response <- httr::GET(url, httr::add_headers(Accept = "application/json"))
+#   
+#   if (httr::status_code(response) != 200) {
+#     stop("Error en la solicitud: ", httr::status_code(response))
+#   }
+#   
+#   # Leer como binario y luego convertir
+#   content_raw <- httr::content(response, as = "raw")
+#   content_json <- rawToChar(content_raw)
+#   
+#   # Verificar longitud mínima
+#   if (nchar(content_json) < 100) {
+#     stop("La respuesta JSON parece vacía o truncada:\n", content_json)
+#   }
+#   
+#   # Intentar parsear
+#   data <- tryCatch(
+#     jsonlite::fromJSON(content_json),
+#     error = function(e) stop("No se pudo parsear JSON: ", e$message)
+#   )
+#   
+#   refs <- data$references
+#   if (length(refs) == 0) stop("No se encontraron datasets.")
+#   
+#   datasets <- lapply(refs, function(x) {
+#     list(
+#       id = x$id,
+#       agencyID = x$agencyID,
+#       title = x$name,
+#       description = x$description,
+#       version = x$version,
+#       structure_query = glue::glue("https://sdmx.oecd.org/public/rest/dataflow/{x$agencyID}/{x$id}/?references=all")
+#     )
+#   })
+#   
+#   dplyr::bind_rows(datasets)
+# }
 
 
 

@@ -3,14 +3,6 @@ rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
 
-get_raw_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}raw/")
-  df_fuentes_raw <- fuentes_raw() 
-  path_raw <- df_fuentes_raw[df_fuentes_raw$codigo == codigo,c("path_raw")]
-  return(paste0(prefix, path_raw))
-}
-
-
 id_fuente <- 223
 fuente_raw <- sprintf("R%sC0",id_fuente)
 
@@ -47,7 +39,7 @@ dicc_sector <- data.frame(sector_letra, letra, letra_desc_abrev)
 
 clean_cuadros_trimestrales <- function(sheet_name, skip){
   
-  str_variable <- readxl::read_excel(get_raw_path(fuente_raw), 
+  str_variable <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
                                      sheet = sheet_name,
                                      range = "A1:A2",
                                      col_names = F) %>% 
@@ -135,6 +127,21 @@ clean_title <- glue::glue("{titulo.raw} - {sheet_name}")
 #                      nombre = clean_title,
 #                      script = code_name)
 
-actualizar_fuente_clean(id_fuente_clean = 93, path_clean = clean_filename, directorio = tempdir(), nombre = clean_title, script = code_name)
+id_fuente_clean <- 93
+codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
+
+df_clean_anterior <- arrow::read_parquet(get_clean_path(codigo = codigo_fuente_clean ))
+
+
+comparacion <- comparar_fuente_clean(df_clean,
+                                     df_clean_anterior,
+                                     pk = c("anio", "trimestre", "letra", "sub_sector")
+)
+
+actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
+                        path_clean = clean_filename,
+                        nombre = clean_title, 
+                        script = code_name,
+                        comparacion = comparacion)
 

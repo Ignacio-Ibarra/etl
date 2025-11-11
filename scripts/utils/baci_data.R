@@ -1,10 +1,7 @@
-library(rvest)
 library(httr)
 library(DBI)
 library(duckdb)
 library(data.table)
-
-
 
 
 URL_CONSULTA <- "https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37"
@@ -107,7 +104,7 @@ BACI.get_db_from_zip <- function(zip_file) {
     unlink(extract_dir, recursive = TRUE)
   }
   
-  # Crear el directorio
+  # Crear el directorio y extraer el ZIP
   dir.create(extract_dir)
   unzip(zip_file, exdir = extract_dir)
   
@@ -130,6 +127,7 @@ BACI.get_db_from_zip <- function(zip_file) {
     } else if (grepl("country_codes.*", table_name)) {
       data <- fread(csv_file)
       dbWriteTable(con, "paises", data, overwrite = TRUE)
+      
     } else {
       # Leer el archivo CSV de comercio
       comercio_data <- fread(csv_file)
@@ -142,10 +140,18 @@ BACI.get_db_from_zip <- function(zip_file) {
         dbAppendTable(con, "comercio", comercio_data)
       }
     }
-    cat(table_name, "...creada\n\n")
+    
+    # Mensaje de confirmación
+    cat(table_name, "...creada\n")
+    
+    # 🔥 Eliminar el archivo CSV luego de cargarlo
+    if (file.exists(csv_file)) {
+      file.remove(csv_file)
+      cat("Archivo eliminado:", csv_file, "\n\n")
+    }
   }
   
-  # Devolver
+  # Devolver la conexión a la base
   return(con)
 }
 
@@ -201,6 +207,7 @@ BACI.get_table <- function(con, table_name){
   return(table)
  
 }
+  
 
 # # Crear un archivo temporal para la base de datos
 # db_file <- tempfile(fileext = ".duckdb")
