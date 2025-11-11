@@ -42,20 +42,42 @@ df_output <- data %>%
   mutate(porcentaje = 100*valor_en_twh/sum(valor_en_twh, na.rm = T)) %>% 
   ungroup() %>% 
   mutate(tipo_energia = case_when(
-    fuente_energia %in% c("Gas natural", "Carbon", "Petroleo") ~ "Sucias",
+    fuente_energia %in% c("Gas natural", "Carbón", "Petróleo") ~ "Sucias",
     T ~ "Limpias"
   )) 
 
 
+df_output %>% 
+  group_by(tipo_energia, iso3, anio) %>% 
+  mutate(part_tipo = valor_en_twh/sum(valor_en_twh, na.rm = T))  %>% 
+  ungroup() %>% 
+  view()
 
-df_anterior <- argendataR::descargar_output(nombre = output_name, subtopico = subtopico, entrega_subtopico = "primera_entrega") 
+check_iso3(df_output$iso3)
+
+df_output <- df_output %>% 
+  mutate(iso3 = case_when(
+    iso3 == "OWID_WRL" ~ "WLD",
+    T ~ iso3
+  )) %>% 
+  rename(geocodigoFundar = iso3)
+
+geonomen <- get_nomenclador_geografico_front() 
+
+geonomen <- geonomen %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
+
+df_output <- left_join(df_output, geonomen)
+
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico) 
 
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
   df = df_output,
   nombre = output_name,
-  pk = c("anio", "iso3", "tipo_energia", "fuente_energia"),
+  pk = c("anio", "geocodigoFundar", "tipo_energia", "fuente_energia"),
   drop_joined_df =  F
 )
 
@@ -99,14 +121,6 @@ metadatos <- argendataR::metadata(subtopico = subtopico) %>%
   distinct(variable_nombre, descripcion) 
 
 
-# Guardo en una variable las columnas del output que queremos escribir
-output_cols <- names(df_output) # lo puedo generar así si tengo df_output
-
-
-descripcion <- armador_descripcion(metadatos = metadatos,
-                                   # etiquetas_nuevas = etiquetas_nuevas,
-                                   output_cols = output_cols)
-
 
 colectar_fuentes <- function(pattern = "^fuente.*"){
   
@@ -133,7 +147,9 @@ colectar_fuentes <- function(pattern = "^fuente.*"){
 aclaracion <- paste0("Se corrigió el calculo del porcentaje. ",
                      "Se corrigen las string Carbon, Petroleo y Eloica porque no tienen acento. ",
                      "Para dichos casos no se hace comparación. ")
-                     
+
+
+desc <- argendataR::armador_descripcion(metadatos, output_cols = c("porcentaje", "valor_en_twh"))                     
 
 df_output %>%
   argendataR::write_output(
@@ -141,18 +157,19 @@ df_output %>%
     subtopico = subtopico,
     fuentes = colectar_fuentes(),
     analista = analista,
-    pk = c("anio", "iso3", "tipo_energia", "fuente_energia"),
+    pk = c("anio", "geocodigoFundar", "tipo_energia", "fuente_energia"),
     es_serie_tiempo = T,
-    control = comparacion, 
+    control = list("Controles", "fix etiquetas"), 
     columna_indice_tiempo = 'anio',
-    descripcion_columnas = descripcion,
+    descripcion_columnas = c(desc, list("geocodigoFundar" = "Codigo geo",
+                                "geonombreFundar" = "Nombre geografico")),
     unidades = list("porcentaje" = "porcentaje",
                     'valor_en_twh' = 'twh'),
-    aclaracion = aclaracion
+    aclaracion = ""
   )
 
 
-mandar_data(paste0(gsub("\\.csv$", "", output_name), ".csv"), subtopico = "TRANEN", branch = "dev")
-mandar_data(paste0(gsub("\\.csv$", "", output_name), ".json"), subtopico = "TRANEN",  branch = "dev")
+mandar_data(paste0(gsub("\\.csv$", "", output_name), ".csv"), subtopico = "TRANEN", branch = "main")
+mandar_data(paste0(gsub("\\.csv$", "", output_name), ".json"), subtopico = "TRANEN",  branch = "main")
 
 

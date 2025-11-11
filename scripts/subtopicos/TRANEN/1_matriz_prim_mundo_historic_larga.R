@@ -6,6 +6,7 @@
 #' Consumo energético por fuente a nivel global, 1800-2022. (En TWh Y %)
 #'
 limpiar_temps()
+rm(list = ls())
 
 output_name <- "matriz_prim_mundo_historic_larga"
 
@@ -15,7 +16,7 @@ output_name <- "matriz_prim_mundo_historic_larga"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-data <- readr::read_csv(argendataR::get_temp_path("R47C0"))
+data <- readr::read_csv(argendataR::get_raw_path("R47C0"))
 
 
 #-- Parametros Generales ----
@@ -62,10 +63,9 @@ df_output <- data
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                              entrega_subtopico = "datasets_update",
                                               subtopico = "TRANEN")
 
-df_anterior$tipo_energia <-df_anterior$tipo_energia %>% gsub("\xf3", "ó",.)
+# df_anterior$tipo_energia <-df_anterior$tipo_energia %>% gsub("\xf3", "ó",.)
 
 
 comparacion <- comparar_outputs(
@@ -75,7 +75,7 @@ comparacion <- comparar_outputs(
   drop_joined_df = F
 )
 
-# fix caracteres rotos x encoding
+
 
 # comparacion manual
 
@@ -101,4 +101,13 @@ df_output %>%
     unidades = list("valor_en_twh" = "TWh", "porcentaje" = "porcentaje")
   )
 
-rm(list = ls())
+
+
+mandar_data(paste0(output_name, ".csv"), subtopico = "TRANEN", branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = "TRANEN",  branch = "main")
+
+
+
+
+
+
