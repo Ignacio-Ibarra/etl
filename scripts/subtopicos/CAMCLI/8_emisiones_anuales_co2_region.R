@@ -8,7 +8,8 @@ rm(list = ls())
 #' Breve descripcion de output creado
 #'
 
-output_name <- "emisiones_anuales_co2_region"
+output_name_old <- "emisiones_anuales_co2_region"
+output_name <- "emisiones_anuales_gei_region"
 
 #-- Librerias ----
 
@@ -16,8 +17,8 @@ output_name <- "emisiones_anuales_co2_region"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 
-emis_anual_co2_region<-readr::read_csv(get_raw_path("R119C0"))
-geonomenclador <- argendataR::get_nomenclador_geografico()
+df <-readr::read_csv(get_raw_path("R468C0"))
+geonomenclador <- argendataR::get_nomenclador_geografico_front()
 
 #-- Parametros Generales ----
 
@@ -27,52 +28,46 @@ geonomenclador <- argendataR::get_nomenclador_geografico()
 
 ## transformo los datos
 
-emis_anual_co2_region <- emis_anual_co2_region %>% 
-  mutate(entities_code = ifelse(entities_name %in% c("International shipping", "International aviation"), "TRANS", entities_code))
+# no cinlcuye transprote 
+# df <- emis_anual_co2_region %>% 
+#   mutate(entities_code = ifelse(entities_name %in% c("International shipping", "International aviation"), "TRANS", entities_code))
+
+df <- df %>%
+  janitor::clean_names() %>% 
+  rename(anio = year, valor  = annual_emissions_ghg_total_co2eq) 
 
 
-# me quedo con las variables que necesitamos
-emis_anual_co2_region <- emis_anual_co2_region %>% 
-  select(-name,-id,-unit,-shortUnit,-datasetId,-entities_id)
-
-# paso a formato long
-emis_anual_co2_region_long <- pivot_longer(emis_anual_co2_region, 
-              cols = -c(entities_name,entities_code),  # Columnas a mantener fijas
-              names_to = "anio",             # Nombre para la columna de años
-              values_to = "valor")          # Nombre para la columna de valores
-
-# paso anio a numeric
-emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
-  mutate(anio = as.numeric(anio))
-
-emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
-  group_by(pick(entities_code, anio)) %>% 
-  summarise(valor = sum(valor, na.rm = T)) %>% 
-  ungroup()
 
 print(paste(rep("#", 80), collapse = ""))
 print("Entidades geograficas sin codigo y por tanto excluidas")
-unique(emis_anual_co2_region_long$entities_name[is.na(emis_anual_co2_region_long$entities_code)])
+unique(df$entity[is.na(df$code)])
 print(paste(rep("#", 80), collapse = ""))
 
-emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
-  filter(!is.na(entities_code))
+df <- df %>% 
+  filter(!is.na(code))
+
+
+check_iso3(df$code)
+
+df$code[df$code == "OWID_WRL"] <- "WLD"
+
+
+check_iso3(df$code)
+
 
 # tragio info genomenclador
-emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
-  inner_join(geonomenclador, by = c("entities_code" = "codigo_fundar"))
+df <- df %>% 
+  inner_join(geonomenclador, by = c("code" = "geocodigo"))
 
 # dejo la variables que ncesitamos
-emis_anual_co2_region_long <- emis_anual_co2_region_long %>% 
-  select(entities_code,continente_fundar,anio,valor) %>% 
-  rename(iso3 = entities_code,
-         valor_en_ton=valor)
-
+df <- df %>% 
+  select(geocodigoFundar = code, geonombreFundar = name_long, anio,valor) 
+        
 ## elimino NA en valor
-emis_anual_co2_region_long <- emis_anual_co2_region_long %>%
-  filter(!is.na(valor_en_ton))
+df <- df %>%
+  filter(!is.na(valor))
 
-df_output <- emis_anual_co2_region_long
+df_output <- df
 
 head(df_output)
 
@@ -83,27 +78,18 @@ head(df_output)
 
 df_anterior <- get_output_repo("emisiones_anuales_co2_region.csv", subtopico = "CAMCLI")
 
-df_anterior <- df_anterior %>% 
-  filter(!is.na(iso3)) 
 
 
 comparacion <- argendataR::comparar_outputs(
-  emis_anual_co2_region_long,
-  df_anterior = df_anterior,
+  df,
+  df_anterior = df_anterior %>% 
+    rename(valor = valor_en_ton),
   subtopico = "CAMCLI",
-  pk = c("iso3","anio"),
-  drop_joined_df = F
+  pk = c("geocodigoFundar","anio"),
+  drop_joined_df = T
 )
 
 #-- Exportar Output ----
-
-check_iso3(df_output$iso3)
-
-df_output$iso3[df_output$iso3 == "OWID_KOS"] <- "XKX"
-
-df_output$iso3[df_output$iso3 == "OWID_WRL"] <- "WLD"
-
-check_iso3(df_output$iso3)
 
  
 # Usar write_output con exportar = T para generar la salida
@@ -112,22 +98,26 @@ check_iso3(df_output$iso3)
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    cambio_nombre_output = list('nombre_nuevo' = output_name,
+                                'nombre_anterior' = output_name_old),
     control = comparacion,
     subtopico = "CAMCLI",
-    fuentes = c("R119C0"),
+    fuentes = c("R468C0"),
     analista = "",
-    pk = c("anio", "iso3"),
+    pk = c("anio", "geocodigoFundar"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
+    columna_geo_referencia = "geocodigoFundar",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("valor_en_ton" = "Valor emisiones co2 en troneladas"),
-    unidades = list("valor_en_ton" = "toneladas")
+    etiquetas_indicadores = list( "geocodigoFundar" = "codigo geonomenclador",
+                                  "geonombreFundar" = "Nombre geografico", "anio" = "Año",
+                                 "valor" = "Valor emisiones en toneladas de CO2 equivalentes"),
+    unidades = list("valor" = "toneladas")
   )
 
 
 
-mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "main")
 
 

@@ -1,4 +1,13 @@
-rm(list = ls())
+
+# emisiones_sector_global_1850-2014 co2  -----------
+
+#   -----------
+# limpio la memoria
+rm( list=ls() )  #Borro todos los objetos
+gc()   #Garbage Collection
+
+code_path <- this.path::this.path()
+code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
 # emisiones_sector_global_2016 co2  -----------

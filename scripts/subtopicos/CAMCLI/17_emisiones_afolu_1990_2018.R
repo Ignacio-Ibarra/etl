@@ -9,43 +9,47 @@ rm(list = ls())
 #'
 #'
 
-output_name <- "emisiones_afolu_1990_2018"
+output_name <- "emisiones_afolu_arg"
+old_name <- "emisiones_afolu_1990_2018"
 
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
+  #-- Lectura de Datos ----
+
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 
-descargar_fuente_raw(id_fuente = 131, tempdir())
+fuente <- "R131C55" 
 
 # traigo la data 
-emis_1990_2018_arg_afolu<- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
-  janitor::clean_names()
+emisiones_arg <- read_fuente_clean(55)
+
+emisiones_arg <- emisiones_arg %>% 
+  mutate(anio = as.numeric(anio))
+
 
 #-- Parametros Generales ----
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
+emisiones_arg <- emisiones_arg %>%
+  filter(sector %in% c("Agricultura y ganadería", "Usos de la tierra, cambios de uso de la tierra y silvicultura")) 
 
-#-- Procesamiento ----
+# equivalencias vs 2018
+# Categoria	= Actividad
+# Subcategoria 1er Orden = Subactividad
+# Fuente = Categoria
 
-emis_1990_2018_arg_afolu_final <- emis_1990_2018_arg_afolu %>%
-  filter(sector == "Agricultura, ganadería, silvicultura y otros usos de la tierra") %>%
+emisiones_arg <- emisiones_arg %>%
   mutate(sector = "AGSyOUT") %>% 
   mutate(subsector = case_when(
-    subcategoria_1er_orden %in% c("Emisiones directas de N2O de los suelos gestionados", 
-                                  "Emisiones indirectas de N2O de los suelos gestionados", 
-                                  "Emisiones indirectas de N2O resultantes de la gestión del estiércol", 
-                                  "Cultivo de Arroz") ~ "Emisiones directas e indirectas de N2O y otros",
-    subcategoria_1er_orden == "Emisiones de la quema de biomasa" ~ "Emisiones de la quema de biomasa",
-    categoria == "Ganado" ~ "Ganado",
-    categoria == "Tierra" ~ "Tierras",
-    TRUE ~ NA_character_)) %>%
-  group_by(ano, sector, subsector) %>%
-  summarise(valor_en_mtco2e = round(sum(valor, na.rm = TRUE), 2)) %>% 
-  rename(anio=ano) %>%
-  drop_na() 
+    str_detect(categoria, "Quema") ~ "Emisiones de la quema de biomasa",
+    actividad == "Ganadería" ~ "Ganado",
+    actividad == "Tierra" ~ "Tierras",
+    T ~ "Emisiones directas e indirectas de N2O y otros")) %>%
+  group_by(anio, sector, subsector) %>%
+  summarise(valor_en_mtco2e = round(sum(valor_en_mtco2e, na.rm = TRUE), 2)) %>% 
+  ungroup()
 
 #-- Controlar Output ----
 
@@ -53,9 +57,9 @@ emis_1990_2018_arg_afolu_final <- emis_1990_2018_arg_afolu %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df_output <- emis_1990_2018_arg_afolu_final
+df_output <- emisiones_arg
 
-df_anterior <- descargar_output(nombre=output_name,
+df_anterior <- descargar_output(nombre=old_name,
                                 subtopico = "CAMCLI")
 
 #-- Controlar Output ----
@@ -79,24 +83,28 @@ comparacion <- argendataR::comparar_outputs(df_output,
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    cambio_nombre_output = list(nombre_nuevo = output_name,
+                                nombre_anterior = old_name),
     subtopico = "CAMCLI",
     control = comparacion,
-    fuentes = c("R131C0"),
+    fuentes = c(fuente),
     analista = "",
     pk = c("anio","sector","subsector"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    aclaraciones = "Hay una diferencia contra el dataset del analista en la categoría Emisiones directas e indirectas de N2O y otros de la variable subsector. En el script de explicación de como se arma el dataset explicita que suma a la categría antes mencionada la fuente de emisón cultivos de arroz, pero en algunos años no la está sumando. El total para la categoría primeramente mencioanda es de 1095.67 para analista y de 1022,55 en este dataset producto del scripting",
+    aclaraciones = "Actualizacion de fuente",
     #columna_geo_referencia = "iso3",
     nivel_agregacion = "sector",
-    etiquetas_indicadores = list("anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
+    etiquetas_indicadores = list("sector" = "sector de origen de emisiones",
+                                 "subsector" = "subsector de origen de emisiones",
+                                 "anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
     unidades = list("valor_en_mtco2e" = "Millones de toneladas de CO2 equivalente")
   )
 
 
 
-mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "main")
 
 
 

@@ -8,12 +8,10 @@ code_name <- code_path %>% str_split_1(., pattern = "/") %>% tail(., 1)
 
 
 
+url <- "https://ourworldindata.org/grapher/population-long-run-with-projections.csv?v=1&csvType=full&useColumnShortNames=true"
 
-# traigo url del gráfico en owid al que corresponde el dataset 
-url <- "https://ourworldindata.org/grapher/total-ghg-emissions.csv?v=1&csvType=full&useColumnShortNames=true"
-urlmetadata <- "https://ourworldindata.org/grapher/total-ghg-emissions.metadata.json?v=1&csvType=full&useColumnShortNames=true"
 
-filename <- "total_gei_emisiones_historico_paises.csv"
+filename <- "poblacion_regiones_owid.csv"
 # metadata <- jsonlite::read_json(urlmetadata)
 # 
 # metadata <- metadata$columns[[1]]
@@ -35,12 +33,13 @@ df %>%
 #                    dir = tempdir(),
 #                    script = code_name,
 #                    fecha_actualizar = "Sin informacion",
-#                    nombre = "Emisiones anuales de gases de efecto invernadero, incluido el uso de la tierra"
+#                    nombre = "De facto total population in a country, area or region as of 1 July of the year indicated."
 # )
 
-actualizar_fuente_raw(id_fuente= 468,
-                      # url = url,
-                      path_raw = filename,
+actualizar_fuente_raw(id_fuente= 472,
+                      url = url,
+                      nombre = "Population by country, available from 10,000 BCE to 2023, based on data and estimates from different sources.",
+                      path_raw = filename,script = code_name,
                       fecha_actualizar = "Sin informacion")
 
 # limpiar_temps()

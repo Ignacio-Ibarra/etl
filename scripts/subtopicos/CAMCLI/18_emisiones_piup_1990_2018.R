@@ -9,40 +9,42 @@ rm(list = ls())
 #'
 #'
 
-output_name <- "emisiones_piup_1990_2018"
-
+old_name <- "emisiones_piup_1990_2018"
+output_name <- "emisiones_piup_arg"
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
-# Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
-# Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-
-descargar_fuente_raw(id_fuente = 131, tempdir())
+fuente <- "R131C55" 
 
 # traigo la data 
-emis_1990_2018_arg_piup<- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
-  janitor::clean_names()
+emisiones_arg <- read_fuente_clean(55)
 
-#-- Parametros Generales ----
+emisiones_arg <- emisiones_arg %>% 
+  mutate(anio = as.numeric(anio))
 
-# fechas de corte y otras variables que permitan parametrizar la actualizacion de outputs
 
+#-- Parametros Generales 
 #-- Procesamiento ----
 
-emis_1990_2018_arg_piup_final <- emis_1990_2018_arg_piup %>%
-  filter(sector == "Procesos industriales y uso de productos") %>%
+emisiones_arg <- emisiones_arg %>%
+  filter(sector == "Procesos industriales y uso de productos") 
+
+# equivalencias vs 2018
+# Categoria	= Actividad
+# Subcategoria 1er Orden = Subactividad
+# Fuente = Categoria
+
+emisiones_arg <- emisiones_arg %>% 
   mutate(sector = "Procesos industriales y uso de productos") %>% 
   mutate(subsector = case_when(
-    categoria =="Industria de los minerales" ~ "Industria de los minerales",
-    categoria =="Industria química" ~ "Industria química",
-    categoria =="Industria de los metales" ~ "Industria de los metales",
-    categoria %in% c("Uso de productos no energéticos de combustibles y de solvente",
-                     "Usos de productos como sustitutos de las sustancias que agotan la capa de ozono") ~ "Otros",
-    TRUE ~ NA_character_)) %>%
-  group_by(ano, sector, subsector) %>%
-  summarise(valor_en_mtco2e = round(sum(valor, na.rm = TRUE), 2)) %>% 
-  rename(anio=ano) %>%
+    actividad =="Industria de los minerales" ~ "Industria de los minerales",
+    actividad =="Industria química" ~ "Industria química",
+    actividad =="Industria de los metales" ~ "Industria de los metales",
+    str_detect(actividad, "Uso de productos") ~ "Otros",
+    TRUE ~ NA_character_)) %>% 
+  group_by(anio, sector, subsector) %>% 
+  summarise(valor_en_mtco2e = round(sum(valor_en_mtco2e, na.rm = TRUE), 2)) %>% 
   drop_na() 
 
 #-- Controlar Output ----
@@ -51,9 +53,9 @@ emis_1990_2018_arg_piup_final <- emis_1990_2018_arg_piup %>%
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df_output <- emis_1990_2018_arg_piup_final
+df_output <- emisiones_arg
 
-df_anterior <- descargar_output(nombre=output_name,
+df_anterior <- descargar_output(nombre=old_name,
                                 subtopico = "CAMCLI",
                                 entrega_subtopico = "datasets_segunda_entrega")
 
@@ -78,8 +80,10 @@ comparacion <- argendataR::comparar_outputs(df_output,
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    cambio_nombre_output = list(nombre_nuevo = output_name,
+                                nombre_anterior = old_name),
     subtopico = "CAMCLI",
-    fuentes = c("R131C0"),
+    fuentes = c(fuente),
     control = comparacion,
     analista = "",
     pk = c("anio","sector","subsector"),
@@ -87,14 +91,16 @@ df_output %>%
     columna_indice_tiempo = "anio",
     #columna_geo_referencia = "iso3",
     nivel_agregacion = "sector",
-    etiquetas_indicadores = list("anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
+    etiquetas_indicadores = list("sector" = "sector de origen de emisiones",
+                                 "subsector" = "subsector de origen de emisiones",
+                                 "anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
     unidades = list("valor_en_mtco2e" = "Millones de toneladas de CO2 equivalente")
   )
 
 
 
-mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "main")
 
 
 
