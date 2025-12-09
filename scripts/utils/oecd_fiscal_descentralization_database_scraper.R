@@ -39,4 +39,3 @@ OECD_FISCAL_DESCENTRALIZATION_DATABASE.get_links <- function(pattern = ".*") {
 
 
 
-OECD_FISCAL_DESCENTRALIZATION_DATABASE.get_links()
