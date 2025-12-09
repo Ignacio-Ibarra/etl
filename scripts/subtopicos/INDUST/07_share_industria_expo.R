@@ -182,13 +182,13 @@ df_output <- t2_atlas %>%
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico) 
 
-pks_comparacion <- c('anio','geocodigoFundar', 'lall_code')
+pks <- c('anio','geocodigoFundar', 'lall_code')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = pks_comparacion
+  pk = pks
 )
 
 

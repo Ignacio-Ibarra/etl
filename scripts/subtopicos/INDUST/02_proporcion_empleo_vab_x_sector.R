@@ -207,7 +207,7 @@ df_output %>%
     analista = analista,
     pk = pks,
     descripcion_columnas = descripcion, 
-    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+    unidad = list("prop_empleo" = "porcentaje", "prop_vab" = "porcentaje"))
 
 
 output_name <- gsub("\\.csv", "", output_name)

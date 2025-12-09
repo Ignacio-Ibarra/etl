@@ -14,14 +14,7 @@ analista = "Gisella Pascuariello"
 fuente1 <- "R237C108"
 
 
-get_clean_path <- function(codigo){
-  prefix <- glue::glue("{Sys.getenv('RUTA_FUENTES')}clean/")
-  df_fuentes_clean <- fuentes_clean() 
-  path_clean <- df_fuentes_clean[df_fuentes_clean$codigo == codigo,c("path_clean")]
-  return(paste0(prefix, path_clean))
-}
-
-df_clean <- arrow::read_parquet(get_clean_path(fuente1)) 
+df_clean <- arrow::read_parquet(argendataR::get_clean_path(fuente1)) 
 
 df_output <- df_clean[df_clean$rama_de_actividad == "Total", c('anio','cant_empresas_privadas_activas')]
 

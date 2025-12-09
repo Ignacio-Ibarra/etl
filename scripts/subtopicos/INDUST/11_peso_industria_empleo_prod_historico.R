@@ -16,6 +16,49 @@ fuente4 <- "R36C13" #
 fuente5 <- "R38C7"
 
 
+fill_missing_backwards <- function(data, value_col, growth_col, new_col_name = NULL, group_vars = NULL) {
+  
+  value_col_sym <- sym(value_col)
+  growth_col_sym <- sym(growth_col)
+  
+  # Si no se especifica nombre para nueva columna, crear uno automáticamente
+  if (is.null(new_col_name)) {
+    new_col_name <- paste0(value_col, "_filled")
+  }
+  new_col_sym <- sym(new_col_name)
+  
+  if (!is.null(group_vars)) {
+    data <- data %>% group_by(across(all_of(group_vars)))
+  }
+  
+  result <- data %>%
+    arrange(anio) %>%
+    mutate(
+      !!new_col_sym := {
+        vals <- !!value_col_sym  # Copiar valores originales
+        growth_vals <- !!growth_col_sym
+        
+        first_valid <- which(!is.na(vals))[1]
+        
+        if (!is.na(first_valid) && first_valid > 1) {
+          for (i in (first_valid - 1):1) {
+            if (is.na(vals[i])) {
+              vals[i] <- vals[i + 1] / (1 + growth_vals[i])
+            }
+          }
+        }
+        vals
+      }
+    )
+  
+  if (!is.null(group_vars)) {
+    result <- result %>% ungroup()
+  }
+  
+  return(result)
+}
+
+
 geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
   select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
@@ -182,7 +225,7 @@ pbisectores_fnys <- pbisectores_fnys %>%
 
 
 df_break_arg <- bind_rows(pbisectores_fnys,
-                       pbisectores_indec) %>% 
+                          pbisectores_indec) %>% 
   pivot_longer(cols = -anio, names_to = "sector", values_to = "valor") %>% 
   mutate(valor = round(valor, 4)) %>% 
   distinct() %>% drop_na(valor)
@@ -190,8 +233,21 @@ df_break_arg <- bind_rows(pbisectores_fnys,
 
 # ordenar breakdown
 df_break_tidy <- df_break %>% 
-  dplyr::filter(stringr::str_detect(indicator_name,'ISIC D')) %>% 
-  select(anio, iso3, pais_nombre, share_industrial_gdp = share ) 
+  select(-c(country_en,titulo)) %>% 
+  dplyr::filter(stringr::str_detect(indicator_name,'ISIC D|ISIC C-E')) %>% 
+  pivot_wider(., id_cols = c(iso3, pais_nombre, anio),
+              names_from = indicator_name, 
+              values_from = share) %>% 
+  janitor::clean_names() %>% 
+  group_by(iso3) %>% 
+  mutate(interanual_var = (lead(mining_manufacturing_utilities_isic_c_e) - mining_manufacturing_utilities_isic_c_e) / mining_manufacturing_utilities_isic_c_e) %>% 
+  fill_missing_backwards("manufacturing_isic_d", "interanual_var",
+                         new_col_name = "manufacturing_isic_d_complete" ,
+                         group_vars = c("iso3", "pais_nombre"))  %>% 
+  mutate(manufacturing_isic_d = if_else(is.na(manufacturing_isic_d) & !is.na(interanual_var),
+                                        manufacturing_isic_d_complete,
+                                        manufacturing_isic_d)) %>% 
+  select(anio, iso3, pais_nombre, share_industrial_gdp = manufacturing_isic_d) 
 
 # filtrar datos de empleo
 df_empleo_tidy <- df_empleo %>% 
@@ -389,13 +445,13 @@ df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico) 
 
 
-pks_comparacion <- c('anio','geocodigoFundar', 'variable')
+pks <- c('anio','geocodigoFundar', 'variable')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
   df_anterior = df_anterior,
   nombre = output_name,
-  pk = pks_comparacion
+  pk = pks
 )
 
 
@@ -460,7 +516,7 @@ df_output %>%
     analista = analista,
     pk = pks,
     descripcion_columnas = descripcion, 
-    unidad = list("poblacion" = "unidades", "share" = "porcentaje"))
+    unidad = list("valor" = "porcentaje"))
 
 
 output_name <- gsub("\\.csv", "", output_name)

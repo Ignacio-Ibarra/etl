@@ -1,10 +1,10 @@
 library(httr2)
 library(rvest)
 
-OECD_FISCAL_DESCENTRALIZATION_DATABASE.get_links <- function(pattern = ".*") {
+
+UNWTO.bulk_download <- function() {
   
-  url_base <- "https://www.oecd.org"
-  page_url <- "https://www.oecd.org/en/data/datasets/oecd-fiscal-decentralisation-database.html"
+  page_url <- "https://www.untourism.int/tourism-statistics/tourism-statistics-database"
   
   # Emular navegador
   resp <- request(page_url) %>%
@@ -26,16 +26,13 @@ OECD_FISCAL_DESCENTRALIZATION_DATABASE.get_links <- function(pattern = ".*") {
     html_elements("a") %>%
     html_text2()
   
-  match_idx <- grepl(pattern, links)
+  match_idx <- grepl("UN_Tourism_bulk_data_download", links)
   filtered_links <- links[match_idx]
-  filtered_texts <- text_links[match_idx]
   
-  filtered_links <- ifelse(grepl("^https?://", filtered_links),
-                           filtered_links,
-                           paste0(url_base, filtered_links))
-  
-  data.frame(link = filtered_links, title = filtered_texts)
+  return(filtered_links)
 }
+
+
 
 
 
