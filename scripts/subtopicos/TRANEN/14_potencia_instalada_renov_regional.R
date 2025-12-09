@@ -9,17 +9,29 @@
 #' Replico los nombres de las energías y obtengo los porcentajes en "porcentaje". 
 #' Paso a formato long, con los valores en MW en "valor_en_mw"
 limpiar_temps()
+rm(list = ls())
 
 output_name <- "potencia_instalada_renov_regional"
+subtopico <- "TRANEN"
 
+df_anterior <- descargar_output(output_name, subtopico)
 #-- Librerias ----
 
 #-- Lectura de Datos ----
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-data <- readr::read_csv(argendataR::get_temp_path("R81C0"))
 
+
+data <- read_fuente_clean("R467C304")
+
+
+colnames(data)
+data %>% distinct(ano, mes)
+
+data %>% distinct(tecnologia, tipo_maquina )
+
+data %>% distinct(region)
 
 #-- Parametros Generales ----
 
@@ -28,65 +40,67 @@ data <- readr::read_csv(argendataR::get_temp_path("R81C0"))
 #-- Procesamiento ----
 
 data <- data %>% 
-  rename(region = nemoRegion, tipo_energia = name) %>% 
-  select(- unidad)
-
-data$tipo_energia
-
-data <- data %>%
-  mutate(tipo_energia = case_when(
-    str_detect(tipo_energia, "hidraulica_menorigual_50") ~ "Hidro",
-    str_detect(tipo_energia, "fotovoltaica") ~ "Fotovoltaica",
-    str_detect(tipo_energia, "biocom") ~ "Bioenergía",
-    str_detect(tipo_energia, "eolica") ~ "Eólica"
-  ))
-
-data <- data %>%
-  filter(!is.na(tipo_energia))
+  select(region, tecnologia, potencia_instalada_mw)
 
 data <- data %>% 
+  mutate(region = str_to_title(region)) %>% 
   mutate(region = case_when(
-    region == "NOA"      ~     "Noroeste Argentino",
-    region == "NEA"      ~ "Noreste Argentino",
-    region == "CUY"      ~ "Cuyo",               
-    region == "CEN"      ~ "Centro",             
-    region == "LIT"      ~ "Litoral",             
-    region == "COM"      ~ "Comahue",
-    region == "PAT"      ~ "Patagonia",                        
-    region == "BAS + GBA"~ "CABA y Provincia de Buenos Aires",
-    region == "Total" ~ "Total"
+  str_detect(region, "Buenos Aires") ~ "CABA y Provincia de Buenos Aires",
+  str_detect(region, "Gran") ~ "CABA y Provincia de Buenos Aires",
+  str_detect(region, "Noreste") ~ "Noreste Argentino",
+  str_detect(region, "Noroeste") ~ "Noroeste Argentino",
+  str_detect(region, "Pata") ~ "Patagonia",
+  T ~ region
   ))
 
-data <- data %>% 
-  filter(!is.na(region))
 
+# unique(df_anterior$region)[!unique(df_anterior$region) %in% unique(data$region)]
+
+data <- data %>%
+  filter(
+    tecnologia %in% c(
+      "Biogas",
+      "Biomasa",
+      # "Ciclos Combinados",
+      "Eólica",
+      # "Hidráulica",
+      "Hidráulica renovable",
+      # "Motor Diesel",
+      # "Nuclear",
+      "Solar"
+      # "Turbina a gas",
+      # "Turbovapor"
+    )
+  ) %>% 
+  mutate(tecnologia = case_when(
+    str_detect(tecnologia, "renovable|Hidr") ~ "Hidro",
+    str_detect(tecnologia, "Bio") ~ "Bioenergía",
+    str_detect(tecnologia, "Solar") ~ "Fotovoltaica",
+    T ~ tecnologia
+    
+  ))
+  
 data <- data %>% 
-  group_by(anio, region, tipo_energia) %>% 
-  summarise(value = sum(value, na.rm = T)) %>% 
-  ungroup()
+  summarise(valor_en_mw = sum(potencia_instalada_mw),
+            .by = c(region, tecnologia))
 
 total <- data %>%
-  group_by(anio, tipo_energia) %>% 
-  summarise(value = sum(value, na.rm = T)) %>% 
-  ungroup() %>% 
+  summarise(valor_en_mw = sum(valor_en_mw, na.rm = T), .by = tecnologia) %>% 
   mutate(region = "Total")
 
-data <- bind_rows(data, total)
+
+data <- bind_rows(data, total)  
+
 
 data <- data %>% 
-  group_by(region, anio) %>% 
-  mutate(porcentaje = 100*value/sum(value, na.rm = T)) %>% 
+  group_by(region) %>% 
+  mutate(porcentaje = 100*valor_en_mw/sum(valor_en_mw, na.rm = T)) %>% 
   ungroup()
 
-data <- data %>% 
-  rename(valor_en_mw = value) %>% 
-  select(-anio)
 
-
-
-
-
-df_output <- data
+df_output <- data %>% 
+  rename(tipo_energia = tecnologia) %>% 
+  complete(region, tipo_energia, fill = list(valor_en_mw = 0, porcentaje = 0))
 
 
 
@@ -98,9 +112,8 @@ df_output <- data
 
 comparacion <- argendataR::comparar_outputs(
   df_output,
-  nombre = output_name,
-  subtopico = "TRANEN",
-  entrega_subtopico = "datasets_update",
+  df_anterior,
+  # entrega_subtopico = "datasets_update",
   pk = c("region", "tipo_energia"),
   drop_joined_df = F
 )
@@ -133,5 +146,11 @@ df_output %>%
                                  "porcentaje" = "Porcentaje sobre el total de capacidad instalada renovable"),
     unidades = list("valor_en_mw" = "MW", "porcentaje" = "Porcentaje")
   )
+
+
+mandar_data(paste0(gsub("\\.csv$", "", output_name), ".csv"), subtopico = "TRANEN", branch = "main")
+mandar_data(paste0(gsub("\\.csv$", "", output_name), ".json"), subtopico = "TRANEN",  branch = "main")
+
+
 
 rm(list = ls())

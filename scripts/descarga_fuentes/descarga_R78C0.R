@@ -4,6 +4,7 @@ rm(list = ls())
 
 url <- "https://ourworldindata.org/grapher/kaya-identity-co2"
 
+archivo <- "identidad_kaya_factores.csv"
 
 identidad_kaya_factores <- owid_scraper(url)
 
@@ -14,7 +15,7 @@ identidad_kaya_factores <- identidad_kaya_factores %>%
                values_to = "valor")
 
 identidad_kaya_factores %>% 
-  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/identidad_kaya_factores.csv")))
+  write_csv_fundar(normalizePath(glue::glue("{tempdir()}/{archivo}")))
 
 # Descomentar y ejecutar la primera vez para registrar la fuente:
 # agregar_fuente_raw(
@@ -28,6 +29,11 @@ identidad_kaya_factores %>%
 #   fecha_actualizar = NULL,
 #   actualizable = T
 # )
+
+difs <- comparar_df(identidad_kaya_factores %>% 
+                      mutate(anio = as.numeric(anio)),
+                    read_csv(get_raw_path("R78C0")),
+                    pk = c("name", "anio", "entities_name"))
 
 # Actualizar la fuente (reemplazar 78 con el ID correcto si es necesario):
 actualizar_fuente_raw(78, script = "descarga_R78C0.R",

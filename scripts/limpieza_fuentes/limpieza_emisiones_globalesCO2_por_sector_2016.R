@@ -2,8 +2,11 @@
 ## descargo fuente raw
 descargar_fuente_raw(id_fuente = 125, tempdir())
 
+get_raw_path("R125C0") %>% 
+  readxl::excel_sheets()
+
 # me quedo con el sheet 1 que es donde está la data 
-emis_global_co2_sector_2016 <- readxl::read_xlsx(get_temp_path("R125C0"),
+emis_global_co2_sector_2016 <- readxl::read_xlsx(get_raw_path("R125C0"),
                                sheet = 1)
 
 # limpio nombre variables y cambio nombre sub_sector

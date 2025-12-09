@@ -28,6 +28,9 @@ df <- df %>%
   mutate(dif = temperature_anomaly_20_adel- temperature_anomaly_40_69)
 
 df <- df %>% 
+  filter(entity != "Australia (NIAID)")
+
+df <- df %>% 
   mutate(entity = str_replace(entity, "\\s+\\(NIAID\\)\\s*", ""))
 
 
@@ -93,9 +96,7 @@ df_output <- df %>%
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
-                                            subtopico = subtopico,
-                                            drive = T) %>%
-  rename(geocodigoFundar = codigo_pais, geonombreFundar = pais)
+                                            subtopico = subtopico) 
 
 
 comparacion <- argendataR::comparar_outputs(

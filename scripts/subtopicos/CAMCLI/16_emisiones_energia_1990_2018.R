@@ -8,7 +8,8 @@ rm(list = ls())
 #' Breve descripcion de output creado
 #'
 
-output_name <- "emisiones_energia_1990_2018"
+output_name <- "emisiones_energia_arg" 
+old_name <- "emisiones_energia_1990_2018"
 
 #-- Librerias ----
 
@@ -17,11 +18,14 @@ output_name <- "emisiones_energia_1990_2018"
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
 
-descargar_fuente_raw(id_fuente = 131, tempdir())
+fuente <- "R131C55" 
 
 # traigo la data 
-emis_1990_2018_arg_energia_subsector<- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
-  janitor::clean_names()
+emisiones_arg <- read_fuente_clean(55)
+
+emisiones_arg <- emisiones_arg %>% 
+  mutate(anio = as.numeric(anio))
+
 
 #-- Parametros Generales ----
 
@@ -29,36 +33,40 @@ emis_1990_2018_arg_energia_subsector<- readxl::read_xlsx (argendataR::get_temp_p
 
 #-- Procesamiento ----
 
-emis_1990_2018_arg_energia_subsector_final <- emis_1990_2018_arg_energia_subsector %>%
-  filter(sector=="Energía") %>% 
+emisiones_arg <- emisiones_arg %>%
+  filter(sector=="Energía")
+# equivalencias vs 2018
+# Categoria	= Actividad
+# Subcategoria 1er Orden = Subactividad
+# Fuente = Categoria
+
+emisiones_arg <- emisiones_arg %>%
   mutate(subsector = case_when(
-    subcategoria_1er_orden == "Industrias de la energía" ~ "Industrias de la energía",
-    subcategoria_1er_orden == "Industrias manufactureras y de la construcción" ~ "Industrias manufactureras y de la construcción",
-    subcategoria_1er_orden == "Transporte" ~ "Transporte",
-    subcategoria_1er_orden == "Otros sectores" ~ "Otros sectores",
-    subcategoria_1er_orden %in% c("Combustibles sólidos", "Petróleo y gas natural") ~ "Emisiones fugitivas provenientes de la fabricación de combustibles",
+    subactividad == "Industrias de la energía" ~ "Industrias de la energía",
+    subactividad == "Industrias manufactureras y de la construcción" ~ "Industrias manufactureras y de la construcción",
+    subactividad == "Transporte" ~ "Transporte",
+    subactividad == "Otros sectores" ~ "Otros sectores",
+    subactividad %in% c("Emisiones Fugitivas") ~ "Emisiones fugitivas provenientes de la fabricación de combustibles",
     TRUE ~ NA_character_  # En caso de que no se cumpla ninguna de las condiciones anteriores
   )) %>% 
-  group_by(ano, sector, subsector) %>%
-  summarise(valor_en_mtco2e = round(sum(valor, na.rm = TRUE), 2)) %>% 
-  rename(anio=ano)
-
+  group_by(anio, sector, subsector) %>%
+  summarise(valor_en_mtco2e = round(sum(valor_en_mtco2e, na.rm = TRUE), 2)) %>% 
+  ungroup() 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
 
 
-df_output <- emis_1990_2018_arg_energia_subsector_final
+df_output <- emisiones_arg
 
-df_anterior <- descargar_output(nombre=output_name,
+df_anterior <- descargar_output(nombre=old_name,
                                 subtopico = "CAMCLI")
 
 #-- Controlar Output ----
 
 # Usar la funcion comparar_outputs para contrastar los cambios contra la version cargada en el Drive
 # Cambiar los parametros de la siguiente funcion segun su caso
-
 
 comparacion <- argendataR::comparar_outputs(df_output,
                                             df_anterior,
@@ -75,18 +83,22 @@ comparacion <- argendataR::comparar_outputs(df_output,
 df_output %>%
   argendataR::write_output(
     output_name = output_name,
+    cambio_nombre_output = list(nombre_nuevo = output_name,
+                                nombre_anterior = old_name),
     control = comparacion,
     subtopico = "CAMCLI",
-    fuentes = c("R131C0"),
+    fuentes = c(fuente),
     analista = "",
     pk = c("anio","sector","subsector"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
     #columna_geo_referencia = "iso3",
     nivel_agregacion = "sector",
-    etiquetas_indicadores = list("anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
+    etiquetas_indicadores = list("sector" = "sector de origen de emisiones",
+                                 "subsector" = "subsector de origen de emisiones",
+                                 "anio" = "Año","valor_en_mtco2e"="Emisiones de dioxido de carbono en toneladas"),
     unidades = list("valor_en_mtco2e" = "Millones de toneladas de CO2 equivalente")
   )
 
-mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "dev")
-mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "dev")
+mandar_data(paste0(output_name, ".csv"), subtopico = "CAMCLI", branch = "main")
+mandar_data(paste0(output_name, ".json"), subtopico = "CAMCLI",  branch = "main")

@@ -6,8 +6,10 @@
 #' Breve descripcion de output creado
 #'
 limpiar_temps()
+rm(list = ls())
 
 output_name <- "produc_electricidad_fuente_mundo_twh"
+subtopico <- "TRANEN"
 
 #-- Librerias ----
 
@@ -15,7 +17,7 @@ output_name <- "produc_electricidad_fuente_mundo_twh"
 
 # Los datos a cargar deben figurar en el script "fuentes_SUBTOP.R" 
 # Se recomienda leer los datos desde tempdir() por ej. para leer maddison database codigo R37C1:
-data <- readr::read_csv(argendataR::get_temp_path("R77C0"))
+data <- readr::read_csv(argendataR::get_raw_path("R77C0"))
 
 
 data <- data %>% 
@@ -67,7 +69,38 @@ data <- data %>%
 #   mutate(porcentaje = replace_na(porcentaje, 0)) %>% 
 #   ungroup()
 
+excluir <- data %>% 
+  group_by(iso3) %>% 
+  summarise(n = n(),
+            zeros  = sum(porcentaje == 0)) %>% 
+  filter(n == zeros) %>% 
+  pull(iso3)
+
+data <- data %>% 
+  filter(! iso3 %in% excluir)
+
 df_output <- data
+
+
+
+df_output$iso3 %>% check_iso3()
+
+df_output <- df_output %>% 
+  mutate(iso3 = case_when(
+    iso3 == "OWID_WRL" ~ "WLD",
+    iso3 == "OWID_KOS" ~ "XKX",
+    T ~ iso3
+  )) %>% 
+  rename(geocodigoFundar = iso3)
+
+geonomen <- get_nomenclador_geografico_front() 
+
+geonomen <- geonomen %>% 
+  select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
+
+df_output <- left_join(df_output, geonomen)
+
+check_iso3(df_output$geocodigoFundar)
 
 
 #-- Controlar Output ----
@@ -80,11 +113,12 @@ comparacion <- argendataR::comparar_outputs(
   df_output,
   nombre = output_name,
   subtopico = "TRANEN",
-  entrega_subtopico = "datasets_update",
-  pk = c("anio", "iso3", "tipo_energia"),
+  pk = c("anio", "geocodigoFundar", "tipo_energia"),
   drop_joined_df = F
 )
 
+
+joined_df <- comparacion[["joined_df"]]
 
 
 
@@ -100,14 +134,21 @@ df_output %>%
     fuentes = c("R77C0"),
     analista = "",
     control = comparacion,
-    pk = c("anio", "iso3", "tipo_energia"),
+    pk = c("anio", "geocodigoFundar", "tipo_energia"),
     es_serie_tiempo = T,
     columna_indice_tiempo = "anio",
-    columna_geo_referencia = "iso3",
+    columna_geo_referencia = "geocodigoFundar",
     nivel_agregacion = "pais",
-    etiquetas_indicadores = list("tipo_energia" = "Tipo de energía",
+    etiquetas_indicadores = list(geocodigoFundar = "Codigo geografico",
+                                 geonombreFundar = "Nombre geografico",
+                                 "tipo_energia" = "Tipo de energía",
                                  "valor_en_twh" = "Producción de energía en Terawatts hora"),
     unidades = list("valor_en_twh" = "TWh")
   )
+
+mandar_data(paste0(gsub("\\.csv$", "", output_name), ".csv"), subtopico = "TRANEN", branch = "main")
+mandar_data(paste0(gsub("\\.csv$", "", output_name), ".json"), subtopico = "TRANEN",  branch = "main")
+
+
 
 rm(list = ls())

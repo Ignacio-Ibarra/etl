@@ -1,3 +1,7 @@
+### REVISAR ####
+#' Este procesamiento no corresponde al de una fuente clean.
+#' Deberia ser parte de un script de dataset de topico
+
 rm(list = ls())
 ## hay traer dos fuentes, una para mundo y otro para argentina
 ## la data hay que filtrarla para 2016 en ambas fuentes
@@ -30,7 +34,7 @@ emis_global_co2_sector_2016_final <- emis_global_co2_sector_2016 %>%
 descargar_fuente_raw(id_fuente = 131, tempdir())
 
 # traigo la data 
-emis_sector_2016_arg <- readxl::read_xlsx (argendataR::get_temp_path("R131C0"),skip = 1) %>% 
+emis_sector_2016_arg <- readxl::read_xlsx (argendataR::get_raw_path("R131C0"),skip = 1) %>% 
   janitor::clean_names()
 
 ## tranformo para generar share sector argentina para 2016 
@@ -65,6 +69,6 @@ write_csv_fundar(x = base_mundo_argentina,
 lista_comparacion <- comparar_fuente_clean(df = base_mundo_argentina, id = 62, pk = c("region", "sector"))
 
 # actualizo fuente clean
-actualizar_fuente_clean(id_fuente_clean = 62, comparacion = lista_comparacion, df = base_mundo_argentina)
+# actualizar_fuente_clean(id_fuente_clean = 62, comparacion = lista_comparacion, df = base_mundo_argentina)
 
 
