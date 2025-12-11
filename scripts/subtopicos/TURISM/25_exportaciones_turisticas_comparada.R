@@ -24,7 +24,17 @@ df_output <- df_imf %>%
     geocodigoFundar = COUNTRY, 
     expo_turisticas = OBS_VALUE
   ) %>%
+  mutate(
+    geocodigoFundar = case_when(
+      geocodigoFundar == "CWX" ~ "CUW",
+      geocodigoFundar == "KOS" ~ "XKX",
+      TRUE ~ geocodigoFundar
+    )
+  ) %>% 
   left_join(geo_front, join_by(geocodigoFundar)) %>% 
   select(anio, geocodigoFundar, geonombreFundar, expo_turisticas) %>% 
-  mutate(expo_turisticas = expo_turisticas/1000000)
+  mutate(expo_turisticas = expo_turisticas/1000000) %>% 
+  drop_na(geonombreFundar)
+
+
 
