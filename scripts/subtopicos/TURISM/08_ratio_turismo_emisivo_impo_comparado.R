@@ -19,7 +19,7 @@ geo_front <- argendataR::get_nomenclador_geografico_front() %>%
 
 
 df_output <- df_imf %>% 
-  dplyr::filter(BOP_ACCOUNTING_ENTRY == "DB_T") %>% 
+dplyr::filter(BOP_ACCOUNTING_ENTRY == "DB_T", INDICATOR %in% c("GS", "SD")) %>% 
   select(geocodigoFundar = COUNTRY,
          anio = TIME_PERIOD,
          valor = OBS_VALUE,
