@@ -85,3 +85,4 @@ df_output <- df_yvera_turismo_receptivo %>%
   ) %>% 
   select(anio, geocodigoFundar, geonombreFundar, arribos_turistas)
 
+

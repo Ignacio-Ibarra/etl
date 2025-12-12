@@ -4,9 +4,8 @@ gc()  # Garbage Collection
 
 # Defino variables
 subtopico <- "TURISM"
-output_name <- "arrivos_turisticos_comparado.csv"
+output_name <- "arribos_turisticos_comparado.csv"
 analista <- "Carola della Paolera & Joan Manuel Vezzato"
-
 fuente1 <- 'R476C0' # UNWTO Manual Dashboard
 fuente2 <- 'R469C306' # UNWTO inbound arraivals
 fuente3 <- 'R491C315' # OWID - International trips by region
