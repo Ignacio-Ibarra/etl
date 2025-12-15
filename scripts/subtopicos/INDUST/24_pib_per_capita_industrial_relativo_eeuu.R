@@ -2,15 +2,12 @@
 rm( list=ls() )  #Borro todos los objetos
 gc()   #Garbage Collection
 
-options(scipen=999) # notacion cientifica
-
 # Metadatos 
 subtopico <- "INDUST"
-output_name <- "participacion_arg_pib_ind_mundial.csv"
+output_name <- "pib_per_capita_industrial_relativo_eeuu.csv"
 analista <- "Nicolás Sidicaro"
-
 fuente1 <- 'R464C302' # National Accounts. Analysis of Main Aggregates (AMA). Value Added by activity - Constant 2015 -US Dollars - Limpio
-
+fuente2 <- 'R466C303' # National Accounts. Analysis of Main Aggregates (AMA). Population
 
 fill_missing_backwards <- function(data, value_col, growth_col, new_col_name = NULL, group_vars = NULL) {
   
@@ -58,7 +55,18 @@ df_break <- argendataR::get_clean_path(fuente1) %>%
   arrow::read_parquet()
 
 
+df_pop_ama <- argendataR::get_clean_path(fuente2) %>% 
+  arrow::read_parquet() %>% 
+  select(anio, iso3, population = value)
+
+
+geonomenclador <- argendataR::get_nomenclador_geografico() %>% 
+  select(geocodigoFundar = codigo_fundar, continente = continente_fundar, subregion_unsd, intermediate_region_unsd) %>% 
+  drop_na(continente)
+
+
 df_break_manuf <- df_break %>% 
+  dplyr::filter(iso3 != "WLD" ) %>% 
   select(-c(country_en,indicator_name, note, unit)) %>% 
   dplyr::filter(stringr::str_detect(sector_name,'ISIC D|ISIC C-E')) %>% 
   pivot_wider(., id_cols = c(iso3, pais_nombre, anio),
@@ -73,42 +81,69 @@ df_break_manuf <- df_break %>%
   mutate(manufacturing_isic_d = if_else(is.na(manufacturing_isic_d) & !is.na(interanual_var),
                                         manufacturing_isic_d_complete,
                                         manufacturing_isic_d)) %>% 
-  select(-c(interanual_var, manufacturing_isic_d_complete, mining_manufacturing_utilities_isic_c_e))  %>% 
-  select(geocodigoFundar = iso3, geonombreFundar = pais_nombre, anio, gdp_indust = manufacturing_isic_d) %>% 
-  arrange(geocodigoFundar, anio) 
+  select(-c(interanual_var, manufacturing_isic_d_complete, mining_manufacturing_utilities_isic_c_e)) 
 
 
-df_break_manuf_paises <- df_break_manuf %>% 
-  dplyr::filter(geocodigoFundar != "WLD")
+df_intermediate <- df_pop_ama %>% 
+  inner_join(df_break_manuf,by=c('iso3','anio')) %>% 
+  left_join(geonomenclador, join_by(iso3 == geocodigoFundar)) %>% 
+  mutate(region = case_when(subregion_unsd == 'América Latina y el Caribe' ~ 'América Latina',
+                            iso3 == 'TUR' ~ "Asia",
+                            continente == 'Europa' ~ 'Europa',
+                            continente == 'África' ~ 'África',
+                            iso3 == 'USA' ~ 'Estados Unidos',
+                            continente == 'Asia' ~ 'Asia',
+                            TRUE ~ 'Otros'))
 
 
-df_break_manuf_wld <-  df_break_manuf_paises  %>% 
-  group_by(anio) %>% 
+df_indust_gdp_pc_base <- df_intermediate %>% 
+  dplyr::filter(region == "Estados Unidos") %>% 
+  mutate(indust_gdp_pc_base = manufacturing_isic_d / population) %>% 
+  select(anio, indust_gdp_pc_base)
+
+df_asia_paises <- df_intermediate %>% 
+  dplyr::filter(region == 'Asia') %>% 
+  mutate(indust_gdp_pc = manufacturing_isic_d / population) %>% 
+  select(anio, iso3, pais_nombre, indust_gdp_pc) %>% 
+  left_join(df_indust_gdp_pc_base, join_by(anio)) %>% 
+  mutate(indust_gdp_pc_relative = 100 * indust_gdp_pc / indust_gdp_pc_base) %>% 
+  select(anio, geocodigoFundar = iso3, geonombreFundar = pais_nombre, indust_gdp_pc, indust_gdp_pc_relative)
+
+
+df_total_asia <- df_intermediate %>% 
+  dplyr::filter(region == 'Asia') %>% 
+  group_by(anio, geonombreFundar = "Promedio ponderado Asia") %>% 
   summarise(
-    gdp_indust_wld = sum(gdp_indust, na.rm = T)
-  ) 
+    population = sum(population, na.rm = T), 
+    manufacturing_isic_d = sum(manufacturing_isic_d, na.rm = T)
+  ) %>% 
+  left_join(df_indust_gdp_pc_base, join_by(anio)) %>% 
+  mutate(
+    indust_gdp_pc = manufacturing_isic_d / population,
+    indust_gdp_pc_relative =  100 * indust_gdp_pc / indust_gdp_pc_base) %>% 
+  select(anio, geonombreFundar, indust_gdp_pc, indust_gdp_pc_relative)
 
 
-df_output <- df_break_manuf_paises %>% 
-  left_join(df_break_manuf_wld, join_by(anio)) %>% 
-  mutate(prop_industry_gdp = gdp_indust / gdp_indust_wld) %>% 
-  select(anio, geocodigoFundar, geonombreFundar, industry_gdp = gdp_indust, prop_industry_gdp)
-
-
-df_output %>% write_csv_fundar(
-  .,
-  glue::glue("~/data/{subtopico}/{output_name}")
-)
+df_output <- df_asia_paises %>% 
+  bind_rows(
+    df_indust_gdp_pc_base %>% 
+      mutate(geocodigoFundar = 'USA', geonombreFundar = "Estados Unidos", indust_gdp_pc_relative=100) %>% 
+      select(anio, geocodigoFundar, geonombreFundar, indust_gdp_pc = indust_gdp_pc_base, indust_gdp_pc_relative)
+  ) %>% 
+  bind_rows(
+    df_total_asia %>% 
+      mutate(geocodigoFundar = NA)
+  )
 
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico, drive = T) 
 
-pks_comparacion <- c('anio','geocodigoFundar', 'geonombreFundar')
+pks_comparacion <- c('anio','region')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
-  df_anterior = df_output_b,
+  df_anterior = df_anterior,
   nombre = output_name,
   pk = pks_comparacion
 )
@@ -181,11 +216,3 @@ df_output %>%
 output_name <- gsub("\\.csv", "", output_name)
 mandar_data(paste0(output_name, ".csv"), subtopico = subtopico, branch = "main")
 mandar_data(paste0(output_name, ".json"), subtopico = subtopico,  branch = "main")
-
-
-
-
-
-
-
-
