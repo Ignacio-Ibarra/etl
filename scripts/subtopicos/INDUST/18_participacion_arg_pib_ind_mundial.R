@@ -82,9 +82,11 @@ df_break_manuf_paises <- df_break_manuf %>%
   dplyr::filter(geocodigoFundar != "WLD")
 
 
-df_break_manuf_wld <- df_break_manuf %>% 
-  dplyr::filter(geocodigoFundar == "WLD") %>% 
-  select(anio, gdp_indust_wld = gdp_indust)
+df_break_manuf_wld <-  df_break_manuf_paises  %>% 
+  group_by(anio) %>% 
+  summarise(
+    gdp_indust_wld = sum(gdp_indust, na.rm = T)
+  ) 
 
 
 df_output <- df_break_manuf_paises %>% 
@@ -93,15 +95,20 @@ df_output <- df_break_manuf_paises %>%
   select(anio, geocodigoFundar, geonombreFundar, industry_gdp = gdp_indust, prop_industry_gdp)
 
 
+df_output %>% write_csv_fundar(
+  .,
+  glue::glue("~/data/{subtopico}/{output_name}")
+)
+
 
 df_anterior <- argendataR::descargar_output(nombre = output_name,
                                             subtopico = subtopico, drive = T) 
 
-pks_comparacion <- c('anio','geocodigoFundar')
+pks_comparacion <- c('anio','geocodigoFundar', 'geonombreFundar')
 
 comparacion <- argendataR::comparar_outputs(
   df = df_output,
-  df_anterior = df_anterior,
+  df_anterior = df_output_b,
   nombre = output_name,
   pk = pks_comparacion
 )
