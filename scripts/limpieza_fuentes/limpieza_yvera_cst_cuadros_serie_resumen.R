@@ -18,41 +18,39 @@ white_cols <- function(df) {
 }
 
 
-
-clean_sheet_range <- function(sheet_name, col_range, data_range, names_to, values_to){
+clean_table <- function(X, filas_columnas = 3, filas_datos = 5:12, primeras_n_cols = 5, names_to = "indicador", values_to = "value"){
   
   
-  cols_ <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
-                              sheet = sheet_name,
-                              range = col_range,
-                              col_names = F) 
+  cols_ <- X %>% slice(filas_columnas) %>% 
+    select((1:primeras_n_cols))
   
   cols <- cols_[!white_cols(cols_)] %>%
     t() %>% # Transponer
-    as.data.frame() 
+    as.data.frame() %>% 
+    fill(V1)
   
   cols$concatenado <- apply(cols, 1, function(x) {
     paste(stats::na.omit(x), collapse = "#")
   })
   
-  unidad_medida <- cols$concatenado %>% 
-    { .[1]} %>% 
-    str_extract(., "\\((.*)\\)", group=1)
-  
-  cols <- cols$concatenado %>% 
-    str_remove_all(., "\\\r|\\\n|Año ") %>%
+   cols_clean <- cols$concatenado %>%
     { .[-1] } %>% 
-    c("indicador", .)
+    c("industria_turistica", .)
+  
+  anio_tabla <- X %>% 
+    slice(1) %>% 
+    select(1) %>% 
+    pull() %>% 
+    str_extract(., "\\d{4}") %>% 
+    as.integer()
   
   # Leo datos
-  sheet_data <- readxl::read_excel(argendataR::get_raw_path(fuente_raw), 
-                                   sheet = sheet_name, 
-                                   range = data_range, 
-                                   col_names = F)
+  sheet_data <- X %>% slice(filas_datos) %>% 
+    select(1:primeras_n_cols)
   
   sheet_data <- sheet_data[!white_cols(sheet_data)]
   
-  names(sheet_data) <- cols
+  names(sheet_data) <- cols_clean
   
   # cuento cantidad de columnas
   num_cols <- length(sheet_data)
@@ -60,45 +58,55 @@ clean_sheet_range <- function(sheet_name, col_range, data_range, names_to, value
   # saco las filas que tienen (num_cols - 1) nulos
   filter_bool <- check_na_threshold(sheet_data, num_cols-1)
   df <- sheet_data %>% dplyr::filter(!filter_bool) %>% 
-    pivot_longer(!all_of("indicador"),
+    pivot_longer(!all_of("industria_turistica"),
                  names_to = names_to,
                  values_to = values_to,
-                 names_transform = as.integer,
                  values_transform = as.numeric) %>% 
-    mutate(unidad_medida = unidad_medida)
+    mutate(anio = anio_tabla) 
   
   
   return(df)
 }
 
 
-sheet_name <- "Resumen" 
-col_range <- 'A7:I7'
-data_range <- 'A9:I13'
-names_to <- 'anio'
-values_to <- 'valor'
+clean_sheet <- function(raw, idxs){
+  
+  results <- data.frame()
+  for (i in 1:length(idxs)){
+    
+    start_row = idxs[i]
+    
+    if (i == length(idxs)){
+      end_row = nrow(raw)
+    }else{
+      end_row = idxs[i+1] - 3
+    }
+    
+    raw_data <- raw %>% 
+      slice(., start_row:end_row) 
+    
+    results <- results %>% 
+      bind_rows(.,
+                clean_table(X = raw_data)
+      )
+  }
+  
+  return(results)
+}
 
-df_stageA <- clean_sheet_range(sheet_name = sheet_name, 
-                              col_range = col_range, 
-                              data_range = data_range, 
-                              names_to = names_to, 
-                              values_to = values_to)
 
-sheet_name <- "Resumen" 
-col_range <- 'A16:I16'
-data_range <- 'A18:I29'
-names_to <- 'anio'
-values_to <- 'valor'
-
-df_stageB <- clean_sheet_range(sheet_name = sheet_name, 
-                               col_range = col_range, 
-                               data_range = data_range, 
-                               names_to = names_to, 
-                               values_to = values_to) %>% 
-  mutate(unidad_medida = ifelse(indicador == "Puestos de trabajo en las industrias turísticas  (en miles)", "En miles de personas", unidad_medida))
+sheet_name <- "Empleo en las IT" 
+df_raw <- argendataR::get_raw_path(fuente_raw) %>% 
+  readxl::read_excel(., sheet = sheet_name, 
+                     col_names = F)
 
 
-df_clean <- bind_rows(df_stageA, df_stageB)
+idxs <- which(grepl("Año", df_raw$...1))
+
+
+df_clean <- clean_sheet(df_raw, idxs) %>% 
+  dplyr::filter(industria_turistica != "Industrias turísticas / Total Economía")
+
 
 
 # Guardado de archivo
@@ -130,7 +138,7 @@ clean_title <- glue::glue("{titulo.raw} - Cuadro: {sheet_name}")
 #                      script = code_name)
 
 
-id_fuente_clean <- 308
+id_fuente_clean <- 317
 codigo_fuente_clean <- sprintf("R%sC%s", id_fuente, id_fuente_clean)
 
 
@@ -138,7 +146,7 @@ df_clean_anterior <- arrow::read_parquet(argendataR::get_clean_path(codigo = cod
 
 comparacion <- comparar_fuente_clean(df_clean,
                                      df_clean_anterior,
-                                     pk = c('anio', 'indicador', 'unidad_medida')
+                                     pk = c('anio', 'indicador', 'industria_turistica')
 )
 
 actualizar_fuente_clean(id_fuente_clean = id_fuente_clean,
