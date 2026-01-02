@@ -14,12 +14,11 @@ fuente2 <- 'R458C298' # Clasificador HS02 a Lall
 geo_front <- argendataR::get_nomenclador_geografico_front() %>% 
   select(geocodigoFundar = geocodigo, geonombreFundar = name_long)
 
+
 hs02_lall <- argendataR::get_clean_path(fuente2) %>% 
   arrow::read_parquet() %>% 
   select(hs02, lall_code) %>% 
-  filter(!lall_code %in% c('Otros')) %>% 
-  mutate(tipo_bien = if_else(lall_code == 'PP','Primarios','Manufacturas')) %>% 
-  select(hs02, tipo_bien)
+  filter(!lall_code %in% c('Otros')) 
   
 source("scripts/utils/baci_data.R")
 
@@ -48,16 +47,18 @@ df_query <- dbGetQuery(con, query_output) %>%
 
 
 df_output <- df_query %>% 
+  mutate(exporter_iso3 = ifelse(exporter_code == 490, "TWN", exporter_iso3)) %>%  
   dplyr::filter(!is.na(lall_code)) %>% 
-  left_join(geo_front, join_by(exporter_iso3 == geocodigoFundar)) %>% 
-  group_by(anio, exporter_iso3, geonombreFundar) %>% 
-  mutate(prop = 100 * impo / sum(impo)) %>% 
-  ungroup() %>% 
   mutate(clasificacion_lall = case_when(lall_code == 'PP' ~ 'Productos primarios',
                                         lall_code == 'MRRNN' ~ 'Manufacturas en basadas en RRNN',
                                         lall_code == 'MBT' ~ 'Manufacturas de baja tecnología',
-                                        lall_code == 'MMT' ~ 'Manufacturas de media tecnología',
-                                        lall_code == 'MAT' ~ 'Manufacturas de alta tecnología')) %>% 
+                                        lall_code %in% c('MMT', 'MAT') ~ 'Manufacturas de media o alta tecnología')) %>% 
+  group_by(anio, exporter_iso3, clasificacion_lall) %>% 
+  summarise(impo = sum(impo, na.rm = T)) %>% 
+  left_join(geo_front, join_by(exporter_iso3 == geocodigoFundar)) %>% 
+  group_by(anio, exporter_iso3, geonombreFundar) %>% 
+  mutate(prop = 100 * impo / sum(impo)) %>% 
+  ungroup()  
   select(anio, exporter_iso3, geonombreFundar, clasificacion_lall, impo, prop)
 
 rm(df_query)

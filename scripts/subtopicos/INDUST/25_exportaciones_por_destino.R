@@ -48,6 +48,7 @@ df_query <- dbGetQuery(con, query_output) %>%
 
 
 df_output <- df_query %>% 
+  mutate(importer_iso3 = ifelse(importer_code == 490, "TWN", importer_iso3)) %>%  
   dplyr::filter(!is.na(tipo_bien)) %>% 
   left_join(geo_front, join_by(importer_iso3 == geocodigoFundar)) %>% 
   group_by(anio, tipo_bien) %>% 

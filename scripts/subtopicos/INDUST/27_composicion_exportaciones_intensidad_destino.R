@@ -52,6 +52,7 @@ paises_ue <- c("AUT", "BEL", "BGR", "CYP", "CZE", "DEU", "DNK", "ESP",
 
               
 df_paises <- df_query %>% 
+  mutate(importer_iso3 = ifelse(importer_code == 490, "TWN", importer_iso3)) %>% 
   dplyr::filter(!is.na(lall_code)) %>% 
   left_join(geo_front, join_by(importer_iso3 == geocodigoFundar)) %>% 
   group_by(anio, importer_iso3, geonombreFundar) %>% 
@@ -79,7 +80,23 @@ df_ue <- df_query %>%
                                         lall_code == 'MAT' ~ 'Manufacturas de alta tecnología')) %>% 
   select(anio, importer_iso3, geonombreFundar, clasificacion_lall, expo, prop)
 
-df_output <- bind_rows(df_paises, df_ue)
+df_mundo <- df_query %>% 
+  mutate(importer_iso3 = "WLD", geonombreFundar = "Mundo") %>% 
+  dplyr::filter(!is.na(lall_code)) %>% 
+  group_by(anio, importer_iso3, geonombreFundar, lall_code) %>% 
+  summarise(expo = sum(expo)) %>% 
+  ungroup() %>% 
+  group_by(anio, importer_iso3, geonombreFundar) %>% 
+  mutate(prop = 100 * expo / sum(expo)) %>% 
+  ungroup() %>% 
+  mutate(clasificacion_lall = case_when(lall_code == 'PP' ~ 'Productos primarios',
+                                        lall_code == 'MRRNN' ~ 'Manufacturas en basadas en RRNN',
+                                        lall_code == 'MBT' ~ 'Manufacturas de baja tecnología',
+                                        lall_code == 'MMT' ~ 'Manufacturas de media tecnología',
+                                        lall_code == 'MAT' ~ 'Manufacturas de alta tecnología')) %>% 
+  select(anio, importer_iso3, geonombreFundar, clasificacion_lall, expo, prop)
+
+df_output <- bind_rows(df_paises, df_ue, df_mundo)
 
 
 rm(df_query)

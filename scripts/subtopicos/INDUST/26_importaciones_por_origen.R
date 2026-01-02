@@ -48,6 +48,7 @@ df_query <- dbGetQuery(con, query_output) %>%
 
 
 df_output <- df_query %>% 
+  mutate(exporter_iso3 = ifelse(exporter_code == 490, "TWN", exporter_iso3)) %>%  
   dplyr::filter(!is.na(tipo_bien)) %>% 
   left_join(geo_front, join_by(exporter_iso3 == geocodigoFundar)) %>% 
   group_by(anio, tipo_bien) %>% 
@@ -60,10 +61,9 @@ gc()
 
 pks <- c("anio", "exporter_iso3", "geonombreFundar", "tipo_bien")
 
-# df_anterior <- argendataR::descargar_output(nombre = output_name,
-#                                             subtopico = subtopico, branch = "main") 
+df_anterior <- argendataR::descargar_output(nombre = output_name,
+                                            subtopico = subtopico, branch = "main")
 
-df_anterior <- df_output
 
 comparacion <- argendataR::comparar_outputs(
   df_anterior = df_anterior,
